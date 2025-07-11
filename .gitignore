@@ -3,6 +3,16 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# Work in progress directories
+target_image/
+texture_image/
+
+# pycharrm ide stuff
+*.idea/
+
+# word
+*.docx
+
 # C extensions
 *.so
 
