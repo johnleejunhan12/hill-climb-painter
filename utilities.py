@@ -1,76 +1,159 @@
 import numpy as np
 from PIL import Image
 from matplotlib import pyplot as plt
+import os
+import warnings
+import numba as nb
 
-
-def import_image_as_rgba(image_path):
+# helper functions
+@nb.njit(cache=True)
+def clamp_int(x, low, high):
     """
-    Import a PNG/JPG image as a normalized float32 RGBA array.
+    Clamps x(int) in range [low(int), high(int)]
 
-    Args:
-        image_path (str): Path to the image file
+    Parameters:
+        x: Integer to be clamped
+        low: Inclusive lower bound
+        high: Inclusive higher bound
 
     Returns:
-        np.ndarray: Float32 array of shape (H, W, 4) with RGBA values in range [0, 1]
-                   Alpha channel is always 1.0 (composited against white background)
+        clamped x(int)
     """
-    # Open the image
-    img = Image.open(image_path)
-
-    # Convert to RGBA mode to handle transparency
-    img_rgba = img.convert('RGBA')
-
-    # Convert to numpy array
-    img_array = np.array(img_rgba, dtype=np.float32)
-
-    # Normalize to [0, 1] range
-    img_array = img_array / 255.0
-
-    # Extract RGB and alpha channels
-    rgb = img_array[:, :, :3]  # RGB channels
-    alpha = img_array[:, :, 3:4]  # Alpha channel (keep as 2D with last dim)
-
-    # Composite against white background
-    # Formula: result = alpha * foreground + (1 - alpha) * background
-    white_background = np.ones_like(rgb)  # White background
-    composited_rgb = alpha * rgb + (1 - alpha) * white_background
-
-    # Create output array with RGB + alpha=1
-    output = np.zeros((img_array.shape[0], img_array.shape[1], 4), dtype=np.float32)
-    output[:, :, :3] = composited_rgb  # RGB channels
-    output[:, :, 3] = 1.0  # Alpha always 1
-
-    return output
+    if x < low:
+        return low
+    elif x > high:
+        return high
+    else:
+        return x
 
 
-def import_image_as_greyscale_alpha(image_path):
+
+# Import image functions
+def import_image_as_normalized_rgba(filepath: str) -> np.ndarray:
     """
-    Import a PNG/JPG image as a normalized float32 greyscale array with alpha.
+    Reads a PNG or JPG file and returns a normalized RGBA image as a float32 numpy array.
+    JPGs will have alpha=1 added, and a warning will be issued.
 
-    Args:
-        image_path (str): Path to the image file
+    Parameters:
+        filepath (str): Path to the image file (.png or .jpg/.jpeg).
 
     Returns:
-        np.ndarray: Float32 array of shape (H, W, 2) with greyscale and alpha values in range [0, 1]
-                   Channel 0: greyscale intensity (0 if alpha is 0)
-                   Channel 1: alpha channel (1.0 for opaque pixels, original alpha for transparent)
+        np.ndarray: Normalized RGBA image of shape (H, W, 4), dtype np.float32.
+
+    Raises:
+        ValueError: If the file is not a PNG or JPG.
     """
-    # Load grayscale
-    img_gray = Image.open(image_path).convert("L")
-    gray_array = np.asarray(img_gray, dtype=np.float32) / 255.0
+    ext = os.path.splitext(filepath)[-1].lower()
 
-    # Load alpha channel from RGBA
-    img_rgba = Image.open(image_path).convert("RGBA")
-    alpha = img_rgba.getchannel("A")
-    alpha_array = np.asarray(alpha, dtype=np.float32) / 255.0
+    if ext == ".png":
+        return import_png_as_normalized_rgba(filepath)
 
-    # Mask grayscale with alpha
-    gray_array *= alpha_array
+    elif ext in [".jpg", ".jpeg"]:
+        warnings.warn("JPEG does not support alpha. An alpha channel of 1.0 will be added.")
+        with Image.open(filepath) as img:
+            img = img.convert("RGB")
+            rgb = np.array(img).astype(np.float32) / 255.0
+            h, w, _ = rgb.shape
+            alpha = np.ones((h, w, 1), dtype=np.float32)
+            rgba = np.concatenate([rgb, alpha], axis=-1)
+            return rgba
 
-    # Stack grayscale and alpha into final (H, W, 2) array
-    result = np.stack([gray_array, alpha_array], axis=-1)  # shape (H, W, 2)
+    else:
+        raise ValueError("Only PNG and JPG/JPEG files are supported.")
 
-    return result
+def import_png_as_normalized_rgba(filepath: str) -> np.ndarray:
+    """
+    Reads a PNG file and returns a normalized RGBA image as a float32 numpy array.
+
+    Parameters:
+        filepath (str): Path to the PNG file.
+
+    Returns:
+        np.ndarray: Normalized RGBA image of shape (H, W, 4), dtype np.float32.
+
+    Raises:
+        ValueError: If the file is not a PNG.
+    """
+    if not filepath.lower().endswith(".png"):
+        raise ValueError("Only PNG files are supported.")
+
+    with Image.open(filepath) as img:
+        img = img.convert("RGBA")
+        rgba = np.array(img).astype(np.float32) / 255.0
+        return rgba
+
+def composite_over_white(rgba: np.ndarray) -> np.ndarray:
+    """
+    Composites an RGBA image over a white background, ensuring resulting alpha is 1.
+
+    Parameters:
+        rgba (np.ndarray): Normalized RGBA image of shape (H, W, 4), dtype np.float32.
+
+    Returns:
+        np.ndarray: Composited RGBA image over white, with alpha=1 everywhere.
+    """
+    rgb = rgba[..., :3]
+    alpha = rgba[..., 3:4]
+
+    # Composite: result = alpha * fg + (1 - alpha) * white
+    white_rgb = np.ones_like(rgb)
+    composited_rgb = alpha * rgb + (1 - alpha) * white_rgb
+
+    # Set alpha to 1
+    composited_rgba = np.concatenate([composited_rgb, np.ones_like(alpha)], axis=-1)
+    return composited_rgba
+
+def rgba_to_grayscale_alpha(rgba: np.ndarray) -> np.ndarray:
+    """
+    Converts a normalized RGBA image to a (H, W, 2) array of grayscale intensity and alpha.
+
+    Parameters:
+        rgba (np.ndarray): Normalized RGBA image of shape (H, W, 4), dtype np.float32.
+
+    Returns:
+        np.ndarray: Array of shape (H, W, 2) with grayscale and alpha, dtype np.float32.
+
+    Raises:
+        ValueError: If the input is not a float32 RGBA image of shape (H, W, 4).
+    """
+    if rgba.ndim != 3 or rgba.shape[2] != 4:
+        raise ValueError("Input must be an (H, W, 4) RGBA image.")
+    if rgba.dtype != np.float32:
+        raise ValueError("Input array must be of dtype np.float32.")
+
+    r, g, b, a = rgba[..., 0], rgba[..., 1], rgba[..., 2], rgba[..., 3]
+    grayscale = 0.299 * r + 0.587 * g + 0.114 * b
+
+    grayscale_alpha = np.stack([grayscale, a], axis=-1)
+    return grayscale_alpha
+
+def get_target(filepath):
+    """
+    Reads a PNG or JPG file and into a normalized RGBA image as a float32 numpy array, then
+    composes it over white background and return the resulting fully opaque rgba array
+
+    Parameters:
+        filepath (str): Path to the image file (.png or .jpg/.jpeg).
+
+    Returns:
+        np.ndarray: Normalized RGBA image of shape (H, W, 4), dtype np.float32.
+    """
+    return composite_over_white(import_image_as_normalized_rgba(filepath))
+
+def get_texture(filepath):
+    """
+    Reads a PNG file and returns a normalized RGBA image as a float32 numpy array and
+    converts array to a (H, W, 2) array of grayscale intensity and alpha.
+
+    Parameters:
+        filepath (str): Path to the PNG file.
+
+    Returns:
+        np.ndarray: Normalized RGBA image of shape (H, W, 2), dtype np.float32.
+    """
+    return rgba_to_grayscale_alpha(import_png_as_normalized_rgba(filepath))
+
+
 
 
 def print_image_array(image_array, title=None):
@@ -106,7 +189,6 @@ def print_image_array(image_array, title=None):
         plt.title(title)
     plt.axis('off')
     plt.show()
-
 
 def get_height_width_of_array(image_array):
     """
