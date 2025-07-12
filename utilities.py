@@ -26,6 +26,29 @@ def clamp_int(x, low, high):
     else:
         return x
 
+def get_height_width_of_array(image_array):
+    """
+    Returns the height and width of an image array.
+
+    Supports:
+    - (H, W, 2): grayscale + alpha
+    - (H, W, 3): RGB
+    - (H, W, 4): RGBA
+
+    Args:
+        image_array (np.ndarray): Image array with shape (H, W, C)
+
+    Returns:
+        (int, int): height, width
+
+    Raises:
+        ValueError: If array shape is unsupported
+    """
+    if image_array.ndim != 3 or image_array.shape[2] not in [2, 3, 4]:
+        raise ValueError(f"Unsupported array shape: {image_array.shape}")
+
+    height, width = image_array.shape[:2]
+    return int(height), int(width)
 
 
 # Import image functions
@@ -127,7 +150,48 @@ def rgba_to_grayscale_alpha(rgba: np.ndarray) -> np.ndarray:
     grayscale_alpha = np.stack([grayscale, a], axis=-1)
     return grayscale_alpha
 
-def get_target(filepath):
+
+def resize_rgba(rgba_array, resize_shortest_side=200):
+    """
+    Resize an RGBA image array while preserving aspect ratio.
+
+    Parameters:
+        rgba_array (numpy.ndarray): Normalized RGBA image of shape (H, W, 4), dtype np.float32.
+        resize_shortest_side (int):  optional target size for the shortest side of the image (default: 200)
+
+    Returns:
+        numpy.ndarray: Resized RGBA array with preserved aspect ratio
+    """
+    if rgba_array.ndim != 3 or rgba_array.shape[2] != 4:
+        raise ValueError("Input array must have shape (h, w, 4)")
+
+    h, w = rgba_array.shape[:2]
+
+    # Calculate the scale factor based on the shortest side
+    if h < w:
+        scale_factor = resize_shortest_side / h
+    else:
+        scale_factor = resize_shortest_side / w
+
+    # Calculate new dimensions
+    new_h = int(h * scale_factor)
+    new_w = int(w * scale_factor)
+
+    # Convert normalized array to 8-bit for PIL
+    rgba_uint8 = (rgba_array * 255).astype(np.uint8)
+
+    # Create PIL Image from array
+    pil_image = Image.fromarray(rgba_uint8, mode='RGBA')
+
+    # Resize using PIL's high-quality Lanczos resampling
+    resized_pil = pil_image.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+    # Convert back to normalized numpy array
+    resized_array = np.array(resized_pil).astype(np.float32) / 255.0
+
+    return resized_array
+
+def get_target(filepath, resize_shorter_side):
     """
     Reads a PNG or JPG file and into a normalized RGBA image as a float32 numpy array, then
     composes it over white background and return the resulting fully opaque rgba array
@@ -138,7 +202,9 @@ def get_target(filepath):
     Returns:
         np.ndarray: Normalized RGBA image of shape (H, W, 4), dtype np.float32.
     """
-    return composite_over_white(import_image_as_normalized_rgba(filepath))
+    target = composite_over_white(import_image_as_normalized_rgba(filepath))
+    resized_target = resize_rgba(target, resize_shortest_side=resize_shorter_side)
+    return resized_target
 
 def get_texture(filepath):
     """
@@ -152,6 +218,7 @@ def get_texture(filepath):
         np.ndarray: Normalized RGBA image of shape (H, W, 2), dtype np.float32.
     """
     return rgba_to_grayscale_alpha(import_png_as_normalized_rgba(filepath))
+
 
 
 
@@ -190,57 +257,3 @@ def print_image_array(image_array, title=None):
     plt.axis('off')
     plt.show()
 
-def get_height_width_of_array(image_array):
-    """
-    Returns the height and width of an image array.
-
-    Supports:
-    - (H, W, 2): grayscale + alpha
-    - (H, W, 3): RGB
-    - (H, W, 4): RGBA
-
-    Args:
-        image_array (np.ndarray): Image array with shape (H, W, C)
-
-    Returns:
-        (int, int): height, width
-
-    Raises:
-        ValueError: If array shape is unsupported
-    """
-    if image_array.ndim != 3 or image_array.shape[2] not in [2, 3, 4]:
-        raise ValueError(f"Unsupported array shape: {image_array.shape}")
-
-    height, width = image_array.shape[:2]
-    return int(height), int(width)
-
-def create_white_canvas(height, width, shortest_side_px):
-    """
-    Creates a fully opaque white canvas as a normalized float32 RGBA NumPy array.
-
-    The canvas size is scaled so that the shortest side equals shortest_side_px,
-    and the other side is scaled proportionally to maintain aspect ratio.
-
-    Args:
-        height (int): Original height of the image.
-        width (int): Original width of the image.
-        shortest_side_px (int): Target size of the shortest side after scaling.
-
-    Returns:
-        np.ndarray: White canvas of shape (canvas_height, canvas_width, 4), dtype float32,
-                    values in [0,1], fully opaque.
-    """
-    # Determine which side is shorter
-    if height <= width:
-        scale = shortest_side_px / height
-    else:
-        scale = shortest_side_px / width
-
-    # Calculate new dimensions
-    canvas_height = int(round(height * scale))
-    canvas_width = int(round(width * scale))
-
-    # Create white canvas: RGB = 1.0 (white), Alpha = 1.0 (opaque)
-    canvas = np.ones((canvas_height, canvas_width, 4), dtype=np.float32)
-
-    return canvas

@@ -124,6 +124,7 @@ def rectangle_to_polygon(rectangle):
     translated = rotated + np.array([x, y])
 
     return np.round(translated).astype(np.int32)
+
 def display_rectangle_vertices_debug(vertices, title="Rectangle"):
     """
     Displays a rectangle given its 4x2 array of (x, y) vertices.
@@ -158,7 +159,7 @@ def display_rectangle_vertices_debug(vertices, title="Rectangle"):
     plt.show()
 
 
-@nb.njit(cache=True)
+@nb.njit()
 def get_y_index_bounds_and_scanline_x_intersects(vertices, canvas_height, canvas_width):
     """
     Finds pairs of (left, right) x intersects for each scanline passing through 2 edges
@@ -181,17 +182,21 @@ def get_y_index_bounds_and_scanline_x_intersects(vertices, canvas_height, canvas
         y = vertices[i, 1]
         y_min = min(y_min, y)
         y_max = max(y_max, y)
+
+
     # clamp y_min and y_max
     y_min_clamped = clamp_int(y_min, 0, canvas_height - 1)
     y_max_clamped = clamp_int(y_max, 0, canvas_height - 1)
 
+
     # Find the number of scanlines required (same as the number of possible pairs of x_intersects)
     num_scanlines = y_max_clamped - y_min_clamped + 1
+
 
     # Initialize numpy array to hold x intersects pairs for all possible scanlines
     # Note that the scanline algorithm may not detect any intersects in corner cases, so denote missing or out of bounds x intersect left and right as (-1,-1)
     x_intersects = np.full((num_scanlines, 2), -1, dtype=np.int32)
-
+    array_index = 0
     # For each scanline...
     for y_scanline_index in range(y_min_clamped, y_max_clamped + 1):
         # Initialize counter for number of intersections as well as index from 0 to 1
@@ -223,32 +228,149 @@ def get_y_index_bounds_and_scanline_x_intersects(vertices, canvas_height, canvas
                     count_exceed_boundary_x_intersection += 1
 
                 # Store the clamped intersection
-                x_intersects[y_scanline_index, intersect_count] = clamp_int(x_intersect, 0, canvas_width - 1)
+                x_intersects[array_index, intersect_count] = clamp_int(x_intersect, 0, canvas_width - 1)
                 # Increment count of intersections
                 intersect_count += 1
 
             # Exit loop after finding 2 intersections
             if intersect_count == 2:
+
                 break
 
         # If both intersections are out of bounds, denote left and right intersection as (-1,-1)
         if count_negative_x_intersection == 2 or count_exceed_boundary_x_intersection == 2:
-            x_intersects[y_scanline_index, 0] = -1
-            x_intersects[y_scanline_index, 1] = -1
+            x_intersects[array_index, 0] = -1
+            x_intersects[array_index, 1] = -1
+
             continue
 
         # sort the x intersection from left to right
-        if x_intersects[y_scanline_index, 0] > x_intersects[y_scanline_index, 1]:
-            temp = x_intersects[y_scanline_index, 0]
-            x_intersects[y_scanline_index, 0] = x_intersects[y_scanline_index, 1]
-            x_intersects[y_scanline_index, 1] = temp
+        if x_intersects[array_index, 0] > x_intersects[array_index, 1]:
+            temp = x_intersects[array_index, 0]
+            x_intersects[array_index, 0] = x_intersects[array_index, 1]
+            x_intersects[array_index, 1] = temp
+
+        array_index += 1
 
     return y_min_clamped, y_max_clamped, x_intersects
 
+@nb.njit()
+def get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_intersects_array, poly_y_min, rect_x_center, rect_y_center, rect_height, rect_width, rect_theta):
+    """
+    Parameters:
+        target_rgba (np.ndarray):
+            Normalized RGBA image of shape (H, W, 4), dtype np.float32.
+
+        texture_greyscale_alpha (np.ndarray):
+            Array of shape (H, W, 2) representing grayscale and alpha, dtype np.float32.
+
+        scanline_x_intersects_array (np.ndarray):
+            np.int32 NumPy array of size (y_max_clamped - y_min_clamped + 1, 2)
+
+        poly_y_min (int):
+            index of clamped y index of polygon within boundary of canvas
+
+        rect_x_center (int):
+            x coordinate/index of rectangle center
+
+        rect_y_center (int):
+            y coordinate/index of rectangle center
+
+        rect_height (np.float32):
+            height of rectangle in pixels
+
+        rect_width (np.float32):
+            width of rectangle in pixels
+
+        rect_theta (np.float32)
+            radian rotation of rectangle in range [-pi, pi]
+
+    Returns:
+        average_rgb (np.array):
+            Length 3 dtype np.float32 array containing normalized rgb values
+    """
+
+    # Get height and width of texture
+    texture_height, texture_width = texture_greyscale_alpha.shape[0], texture_greyscale_alpha.shape[1]
+
+    # Find scale factor when rectangle is scaled back to texture
+    rect_reverse_scale_x = texture_width / rect_width
+    rect_reverse_scale_y = texture_height / rect_height
+
+    # Define total rgb intensity
+    total_rgb_intensity = np.zeros(3, dtype = np.float32)
+    # Define count of pixels that influence the rgb intensity
+    count_influential_pixels = 0
+
+    for i in range(scanline_x_intersects_array.shape[0]):
+        # Get scanline x intersects
+        x_left = scanline_x_intersects_array[i, 0]
+        x_right = scanline_x_intersects_array[i, 1]
+        # skip out of bounds x intersects
+        if x_left == -1 or x_right == -1:
+            continue
+
+        # Get y index of scanline
+        y = i + poly_y_min
+
+        for x in range(x_left, x_right + 1):
+            # 1) Translate by (-rect_x_center, -rect_y_center) to align rectangle center with origin
+            translated_x = x - rect_x_center
+            translated_y = y - rect_y_center
+
+            # 2) Rotate about origin by -rect_theta radians
+            rotated_x = translated_x * np.cos(-rect_theta) + translated_y * np.sin(-rect_theta)
+            rotated_y = -translated_x * np.sin(-rect_theta) + translated_y * np.cos(-rect_theta)
+
+            # 3) Scale by 1/sh, scale by 1/sw
+            scaled_x = rotated_x * rect_reverse_scale_x
+            scaled_y = rotated_y * rect_reverse_scale_y
+
+            # 4) Translation in the direction (texture_x_center, texture_y_center) from origin
+            new_x = scaled_x + (texture_width / 2)
+            new_y = scaled_y + (texture_height / 2)
+
+            # 5) Skip pixel if its corresponding transformed pixel is out of bounds
+            if new_x < 0 or new_y < 0 or new_x > texture_width - 1 or new_y > texture_height - 1:
+                continue
+
+            # 6) Perform bi linear interpolation to find interpolated alpha in texture:
+            # 6a) Find the (x,y) coordinates of the 4 pixels surrounding the floating point coordinate (new_x, new_y)
+            top_left_x, top_left_y = np.int32(np.floor(new_x)), np.int32(np.floor(new_y))
+            bottom_left_x, bottom_left_y = top_left_x, top_left_y + 1
+            top_right_x, top_right_y = top_left_x + 1, top_left_y
+            bottom_right_x, bottom_right_y = top_left_x + 1, top_left_y + 1
+
+            # i) get alpha intensity of 4 corners
+            top_left_intensity, top_right_intensity = (texture_greyscale_alpha[top_left_y, top_left_x, 1],
+                                                       texture_greyscale_alpha[top_right_y, top_right_x, 1])
+            bottom_left_intensity, bottom_right_intensity = (texture_greyscale_alpha[bottom_left_y, bottom_left_x, 1],
+                                                             texture_greyscale_alpha[bottom_right_y, bottom_right_x, 1])
+
+            # ii) Get weighted intensity for top and bottom pixels along x-axis
+            weight_left, weight_right = new_x - top_left_x, top_right_x - new_x
+            weighted_avg_top = top_left_intensity * weight_left + top_right_intensity * weight_right
+            weighted_avg_bottom = bottom_left_intensity * weight_left + bottom_right_intensity * weight_right
+
+            # iii) Get weighted intensity along y-axis
+            weight_top, weight_bottom = new_y - top_left_y, bottom_left_y - new_y
+            weighted_alpha_intensity = weighted_avg_top * weight_top + weighted_avg_bottom * weight_bottom
+
+            # 7) If the interpolated alpha intensity is greater than 0.5, find the rgb value in target_rgba at (x,y)
+            if weighted_alpha_intensity > 0.1:
+                total_rgb_intensity += target_rgba[y, x, 0:3]
+                count_influential_pixels += 1
+
+    # Find average rgb values
+    average_rgb = total_rgb_intensity / count_influential_pixels
+    return average_rgb
 
 
-@nb.njit(cache=True)
+
+
+# debugging
 def draw_x_intersects_on_bg_debug(background, scanline_x_intersects, poly_y_min, polygon_color, polygon_alpha):
+    background = background.copy()
     for i in range(scanline_x_intersects.shape[0]):
         # Get scanline x intersects
         line_start = scanline_x_intersects[i,0]
@@ -279,5 +401,5 @@ def draw_x_intersects_on_bg_debug(background, scanline_x_intersects, poly_y_min,
             background[y, x ,1] = g
             background[y, x ,2] = b
             background[y, x ,3] = alpha
-
-
+    plt.imshow(background)
+    plt.show()
