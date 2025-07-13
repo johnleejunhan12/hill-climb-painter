@@ -8,8 +8,9 @@ from numba_warmup import warmup_numba
 
 
 resize_target_shorter_side = 200
+initial_random_rectangle_width = 50
 target_image_filepath = "target_image/circles.png"
-texture_image_filepath = "texture_image/stroke1.png"
+texture_image_filepath = "texture_image/what.png"
 
 texture_greyscale_alpha = get_texture(texture_image_filepath)
 
@@ -51,7 +52,7 @@ if __name__ == "__main__":
 
     # Import images as numpy array
     target_rgba = get_target(target_image_filepath, resize_target_shorter_side)
-    ##### print_image_array(target_rgba)
+    #### print_image_array(target_rgba)
     texture_greyscale_alpha = get_texture(texture_image_filepath)
 
     # Get height and width of arrays
@@ -62,7 +63,9 @@ if __name__ == "__main__":
     canvas_height, canvas_width = get_height_width_of_array(current_rgba)
 
     # Create random rectangle
-    random_rect_list = create_random_rectangle(canvas_height, canvas_width, texture_height, texture_width)
+    random_rect_list = create_random_rectangle(canvas_height, canvas_width, texture_height, texture_width, initial_random_rectangle_width)
+
+    #### random_rect_list = [450,250, 200, 300, -0.1]
     # Get its vertices and scanline x intersects
     rect_vertices = rectangle_to_polygon(random_rect_list)
     y_min, y_max, scanline_x_intersects = get_y_index_bounds_and_scanline_x_intersects(rect_vertices, canvas_height, canvas_width)
@@ -70,7 +73,7 @@ if __name__ == "__main__":
     average_rgb = get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_intersects, y_min, *random_rect_list)
 
     ##### draw the rectangle with its average rgba value
-    ##### draw_x_intersects_on_bg_debug(current_rgba, scanline_x_intersects, y_min, average_rgb, 1)
+    draw_x_intersects_on_bg_debug(current_rgba, scanline_x_intersects, y_min, average_rgb, 1)
 
     # Score how well the rectangle fits
     rect_score = get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, scanline_x_intersects, y_min,
@@ -78,6 +81,8 @@ if __name__ == "__main__":
     print(rect_score)
 
     # Draw the best rectangle onto the canvas
+    draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_intersects, y_min, average_rgb,
+                           *random_rect_list)
 
-
+    print_image_array(current_rgba)
 
