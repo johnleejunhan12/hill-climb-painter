@@ -25,8 +25,7 @@ def create_random_rectangle(canvas_height, canvas_width, texture_height, texture
             - theta (float): Rotation angle in radians, uniformly sampled from [-π, π).
     """
     # Fixed rectangle width
-    rect_width = 50.0
-
+    rect_width = 100.0
     # Maintain aspect ratio from texture
     aspect_ratio = texture_height / texture_width
     rect_height = rect_width * aspect_ratio
@@ -159,7 +158,7 @@ def display_rectangle_vertices_debug(vertices, title="Rectangle"):
     plt.show()
 
 
-@nb.njit()
+@nb.njit(cache=True)
 def get_y_index_bounds_and_scanline_x_intersects(vertices, canvas_height, canvas_width):
     """
     Finds pairs of (left, right) x intersects for each scanline passing through 2 edges
@@ -254,7 +253,7 @@ def get_y_index_bounds_and_scanline_x_intersects(vertices, canvas_height, canvas
 
     return y_min_clamped, y_max_clamped, x_intersects
 
-@nb.njit()
+@nb.njit(cache=True)
 def get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_intersects_array, poly_y_min, rect_x_center, rect_y_center, rect_height, rect_width, rect_theta):
     """
     Projects a grayscale-alpha texture onto a specified rotated rectangle region of a target image
@@ -375,14 +374,29 @@ def get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_inter
     return average_rgb
 
 
-
+@nb.njit(cache=True)
 def get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, scanline_x_intersects_array, poly_y_min, rgb,
                           rect_x_center, rect_y_center, rect_height, rect_width, rect_theta):
     """
-    For each pixel in rectangle, perform bi-linear interpolation to get alpha and greyscale of the texture pixel
-    If the interpolated alpha is high enough (>0.2), find the rectangle pixel's new rgb value which is its interpolated greyscale multiplied by rgb.
-    Blend pixel onto current_rgba to find resulting alpha blended pixel.
-    Find cost of pixel ... (complete this)
+    Calculates a fitness score for placing a textured rectangle onto a canvas by comparing
+    the resulting blended image against a target image.
+
+    This function performs geometric transformation, bilinear interpolation, and alpha blending
+    to simulate placing a textured rectangle at a specific position, size, and rotation on the
+    current canvas. It then computes a score based on how much the blended result improves
+    the match with the target image compared to the original canvas.
+
+    Scoring logic:
+    1. For each pixel in the rectangle's scanline intersection area:
+       - Transform canvas coordinates to texture coordinates using inverse geometric transformation
+       - Sample texture values using bilinear interpolation
+       - Perform alpha blending between texture and current canvas
+       - Calculate pixel-wise improvement score (original_error - new_error)
+    2. Sum all pixel scores to get the total rectangle score
+    3. Penalize degenerate rectangles (< 4 pixels) with a score of -1
+
+    Higher scores indicate better fit, where the textured rectangle would improve the canvas
+    to better match the target image.
 
     Parameters:
         target_rgba (np.ndarray):
@@ -419,13 +433,13 @@ def get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, s
             radian rotation of rectangle in range [-pi, pi]
 
     Returns:
-        average_rgb (np.array):
-            Length 3 dtype np.float32 array containing normalized rgb values
+        score (int):
+            Total fitness score for the rectangle placement. Higher values indicate better fit.
+            Returns -1 for degenerate rectangles with fewer than 4 pixels.
     """
 
     total_score = 0
     count_pixels = 0
-
 
     # Get height and width of texture
     texture_height, texture_width = texture_greyscale_alpha.shape[0], texture_greyscale_alpha.shape[1]
@@ -495,7 +509,7 @@ def get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, s
 
                 # iii) Get weighted intensity along y-axis
                 weight_top, weight_bottom = new_y - top_left_y, bottom_left_y - new_y
-                weighted_avg_intensity = weighted_avg_top * weight_top + weighted_avg_bottom * weight_bottom
+                weighted_avg_intensity = np.float32(weighted_avg_top * weight_top + weighted_avg_bottom * weight_bottom)
 
                 if c == 0: # greyscale channel
                     interpolated_greyscale = weighted_avg_intensity
@@ -527,10 +541,10 @@ def get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, s
                 blended_rgb = current_rgba[y,x,0:3]
 
             else:   # find the resulting alpha value and color using straight alpha blending
-                blended_rgb = (foreground_rgb*foreground_alpha + background_rgb*background_alpha*(1-foreground_alpha)) / resultant_alpha
+                blended_rgb = ((foreground_rgb*foreground_alpha + background_rgb*background_alpha*(1-foreground_alpha)) / resultant_alpha).astype(np.float32)
 
             # 5) Find the new sum of squared pixel difference between blended and target
-            new_pixel_difference = np.sum((blended_rgb[y, x, 0:3] - target_rgba[y, x, 0:3]) ** 2)
+            new_pixel_difference = np.sum((blended_rgb - target_rgba[y, x, 0:3]) ** 2)
 
             pixel_score = original_pixel_difference - new_pixel_difference
             total_score += pixel_score
@@ -541,6 +555,42 @@ def get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, s
 
     return total_score
 
+def draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_intersects_array, poly_y_min, rgb,
+                           rect_x_center, rect_y_center, rect_height, rect_width, rect_theta):
+    """
+    Mutates current_rgba by drawing the texture withing specified rectangle. Does not return anything
+
+    Parameters:
+        texture_greyscale_alpha (np.ndarray):
+            Array of shape (H, W, 2) representing grayscale and alpha, dtype np.float32.
+
+        current_rgba (np.ndarray):
+            Normalized RGBA image of shape (H, W, 4), dtype np.float32.
+
+        scanline_x_intersects_array (np.ndarray):
+            np.int32 NumPy array of size (y_max_clamped - y_min_clamped + 1, 2)
+
+        poly_y_min (int):
+            index of clamped y index of polygon within boundary of canvas
+
+        rgb (np.ndarray):
+            np.float32 NumPy array denoting average rgb values for multiplying with greyscale channel
+
+        rect_x_center (int):
+            x coordinate/index of rectangle center
+
+        rect_y_center (int):
+            y coordinate/index of rectangle center
+
+        rect_height (np.float32):
+            height of rectangle in pixels
+
+        rect_width (np.float32):
+            width of rectangle in pixels
+
+        rect_theta (np.float32)
+            radian rotation of rectangle in range [-pi, pi]
+    """
 
 
 

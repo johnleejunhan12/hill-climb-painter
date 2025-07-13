@@ -1,9 +1,10 @@
 import numpy as np
 from PIL import Image
-from matplotlib import pyplot as plt
 import os
 import warnings
 import numba as nb
+from matplotlib import pyplot as plt
+
 
 # helper functions
 @nb.njit(cache=True)

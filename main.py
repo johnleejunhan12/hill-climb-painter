@@ -4,12 +4,12 @@ from numpy.ma.core import ones_like, zeros_like
 
 from utilities import *
 from rectangle import *
-
+from numba_warmup import warmup_numba
 
 
 resize_target_shorter_side = 200
 target_image_filepath = "target_image/circles.png"
-texture_image_filepath = "texture_image/stroke3.png"
+texture_image_filepath = "texture_image/stroke1.png"
 
 texture_greyscale_alpha = get_texture(texture_image_filepath)
 
@@ -47,16 +47,18 @@ def test_texture_coloring(texture_filepath, rgb = (1,0,1)):
 
 
 if __name__ == "__main__":
+    warmup_numba()
+
     # Import images as numpy array
     target_rgba = get_target(target_image_filepath, resize_target_shorter_side)
-    print_image_array(target_rgba)
+    ##### print_image_array(target_rgba)
     texture_greyscale_alpha = get_texture(texture_image_filepath)
 
     # Get height and width of arrays
     texture_height, texture_width = get_height_width_of_array(texture_greyscale_alpha)
 
     # Create current rgba blank canvas that is fully white and opaque with same size as target_rgba
-    current_rgba = ones_like(target_rgba)
+    current_rgba = np.ones(target_rgba.shape, dtype = np.float32)
     canvas_height, canvas_width = get_height_width_of_array(current_rgba)
 
     # Create random rectangle
@@ -66,7 +68,16 @@ if __name__ == "__main__":
     y_min, y_max, scanline_x_intersects = get_y_index_bounds_and_scanline_x_intersects(rect_vertices, canvas_height, canvas_width)
     # Find average rgba value
     average_rgb = get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_intersects, y_min, *random_rect_list)
-    # draw the rectangle with its average rgba value
-    draw_x_intersects_on_bg_debug(current_rgba, scanline_x_intersects, y_min, average_rgb, 1)
+
+    ##### draw the rectangle with its average rgba value
+    ##### draw_x_intersects_on_bg_debug(current_rgba, scanline_x_intersects, y_min, average_rgb, 1)
+
+    # Score how well the rectangle fits
+    rect_score = get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, scanline_x_intersects, y_min,
+                           average_rgb, *random_rect_list)
+    print(rect_score)
+
+    # Draw the best rectangle onto the canvas
+
 
 
