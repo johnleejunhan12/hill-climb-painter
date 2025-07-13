@@ -257,6 +257,15 @@ def get_y_index_bounds_and_scanline_x_intersects(vertices, canvas_height, canvas
 @nb.njit()
 def get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_intersects_array, poly_y_min, rect_x_center, rect_y_center, rect_height, rect_width, rect_theta):
     """
+    Projects a grayscale-alpha texture onto a specified rotated rectangle region of a target image
+    and computes the average RGB color of target pixels where the texture's projected alpha exceeds a threshold.
+
+    The function transforms each pixel within the scanline-filled rectangular region of the target image
+    back into texture space using inverse geometric transformations (translation, rotation, scaling),
+    then samples the alpha value of the corresponding texture pixel via bi-linear interpolation.
+    If the interpolated alpha exceeds 0.2, the corresponding RGB value in the target image is considered
+    significant and accumulated. The function returns the normalized average RGB color over all such pixels.
+
     Parameters:
         target_rgba (np.ndarray):
             Normalized RGBA image of shape (H, W, 4), dtype np.float32.
@@ -356,14 +365,181 @@ def get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_inter
             weight_top, weight_bottom = new_y - top_left_y, bottom_left_y - new_y
             weighted_alpha_intensity = weighted_avg_top * weight_top + weighted_avg_bottom * weight_bottom
 
-            # 7) If the interpolated alpha intensity is greater than 0.5, find the rgb value in target_rgba at (x,y)
-            if weighted_alpha_intensity > 0.1:
+            # 7) If the interpolated alpha intensity is greater than 0.2, find the rgb value in target_rgba at (x,y)
+            if weighted_alpha_intensity > 0.2:
                 total_rgb_intensity += target_rgba[y, x, 0:3]
                 count_influential_pixels += 1
 
     # Find average rgb values
     average_rgb = total_rgb_intensity / count_influential_pixels
     return average_rgb
+
+
+
+def get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, scanline_x_intersects_array, poly_y_min, rgb,
+                          rect_x_center, rect_y_center, rect_height, rect_width, rect_theta):
+    """
+    For each pixel in rectangle, perform bi-linear interpolation to get alpha and greyscale of the texture pixel
+    If the interpolated alpha is high enough (>0.2), find the rectangle pixel's new rgb value which is its interpolated greyscale multiplied by rgb.
+    Blend pixel onto current_rgba to find resulting alpha blended pixel.
+    Find cost of pixel ... (complete this)
+
+    Parameters:
+        target_rgba (np.ndarray):
+            Normalized RGBA image of shape (H, W, 4), dtype np.float32.
+
+        texture_greyscale_alpha (np.ndarray):
+            Array of shape (H, W, 2) representing grayscale and alpha, dtype np.float32.
+
+        current_rgba (np.ndarray):
+            Normalized RGBA image of shape (H, W, 4), dtype np.float32.
+
+        scanline_x_intersects_array (np.ndarray):
+            np.int32 NumPy array of size (y_max_clamped - y_min_clamped + 1, 2)
+
+        poly_y_min (int):
+            index of clamped y index of polygon within boundary of canvas
+
+        rgb (np.ndarray):
+            np.float32 NumPy array denoting average rgb values for multiplying with greyscale channel
+
+        rect_x_center (int):
+            x coordinate/index of rectangle center
+
+        rect_y_center (int):
+            y coordinate/index of rectangle center
+
+        rect_height (np.float32):
+            height of rectangle in pixels
+
+        rect_width (np.float32):
+            width of rectangle in pixels
+
+        rect_theta (np.float32)
+            radian rotation of rectangle in range [-pi, pi]
+
+    Returns:
+        average_rgb (np.array):
+            Length 3 dtype np.float32 array containing normalized rgb values
+    """
+
+    total_score = 0
+    count_pixels = 0
+
+
+    # Get height and width of texture
+    texture_height, texture_width = texture_greyscale_alpha.shape[0], texture_greyscale_alpha.shape[1]
+
+    # Find scale factor when rectangle is scaled back to texture
+    rect_reverse_scale_x = texture_width / rect_width
+    rect_reverse_scale_y = texture_height / rect_height
+
+
+    for i in range(scanline_x_intersects_array.shape[0]):
+        # Get scanline x intersects
+        x_left = scanline_x_intersects_array[i, 0]
+        x_right = scanline_x_intersects_array[i, 1]
+        # skip out of bounds x intersects
+        if x_left == -1 or x_right == -1:
+            continue
+
+        # Get y index of scanline
+        y = i + poly_y_min
+
+        for x in range(x_left, x_right + 1):
+            # 1) Translate by (-rect_x_center, -rect_y_center) to align rectangle center with origin
+            translated_x = x - rect_x_center
+            translated_y = y - rect_y_center
+
+            # 2) Rotate about origin by -rect_theta radians
+            rotated_x = translated_x * np.cos(-rect_theta) + translated_y * np.sin(-rect_theta)
+            rotated_y = -translated_x * np.sin(-rect_theta) + translated_y * np.cos(-rect_theta)
+
+            # 3) Scale by 1/sh, scale by 1/sw
+            scaled_x = rotated_x * rect_reverse_scale_x
+            scaled_y = rotated_y * rect_reverse_scale_y
+
+            # 4) Translation in the direction (texture_x_center, texture_y_center) from origin
+            new_x = scaled_x + (texture_width / 2)
+            new_y = scaled_y + (texture_height / 2)
+
+            # 5) Skip pixel if its corresponding transformed pixel is out of bounds
+            if new_x < 0 or new_y < 0 or new_x > texture_width - 1 or new_y > texture_height - 1:
+                continue
+
+            # 5a) Increment the count of pixels
+            count_pixels += 1
+
+            # 6) Perform bi linear interpolation to find rgba of pixel:
+            # 6a) Find the (x,y) coordinates of the 4 pixels surrounding the floating point coordinate (new_x, new_y)
+            top_left_x, top_left_y = np.int32(np.floor(new_x)), np.int32(np.floor(new_y))
+            bottom_left_x, bottom_left_y = top_left_x, top_left_y + 1
+            top_right_x, top_right_y = top_left_x + 1, top_left_y
+            bottom_right_x, bottom_right_y = top_left_x + 1, top_left_y + 1
+
+            # Find the interpolated alpha and greyscale value
+            interpolated_greyscale = np.float32(0)
+            interpolated_alpha = np.float32(0)
+            for c in range(0,2): # 0:greyscale, 1:alpha
+                # 6b) Find the weighted intensity of the channel
+                # i) get intensity of 4 corners
+                top_left_intensity, top_right_intensity = texture_greyscale_alpha[top_left_y, top_left_x, c], texture_greyscale_alpha[
+                    top_right_y, top_right_x, c]
+                bottom_left_intensity, bottom_right_intensity = texture_greyscale_alpha[bottom_left_y, bottom_left_x, c], texture_greyscale_alpha[
+                    bottom_right_y, bottom_right_x, c]
+
+                # ii) Get weighted intensity for top and bottom pixels along x-axis
+                weight_left, weight_right = new_x - top_left_x, top_right_x - new_x
+                weighted_avg_top = top_left_intensity * weight_left + top_right_intensity * weight_right
+                weighted_avg_bottom = bottom_left_intensity * weight_left + bottom_right_intensity * weight_right
+
+                # iii) Get weighted intensity along y-axis
+                weight_top, weight_bottom = new_y - top_left_y, bottom_left_y - new_y
+                weighted_avg_intensity = weighted_avg_top * weight_top + weighted_avg_bottom * weight_bottom
+
+                if c == 0: # greyscale channel
+                    interpolated_greyscale = weighted_avg_intensity
+                elif c == 1: # alpha channel
+                    interpolated_alpha = weighted_avg_intensity
+
+            # Scoring logic: pixel score = original pixel difference - new pixel difference
+            # original pixel difference is sum of squared difference between current and target
+            # new pixel difference is sum of squared differences between blended and target
+            # score is higher when new pixel difference is lower than original pixel difference
+            # score is lower when new pixel difference is higher than original pixel difference
+
+            # 1) Find original sum of squared differences between current and target rgb
+            original_pixel_difference = np.sum((current_rgba[y,x,0:3] - target_rgba[y,x,0:3]) ** 2)
+            # 2) Find foreground and background rgb pixel color
+            foreground_rgb = rgb * interpolated_greyscale
+            background_rgb = current_rgba[y,x,0:3]
+
+            # Perform alpha blending:
+            # 3)  Find alphas for foreground, background and resultant alpha
+            foreground_alpha = interpolated_alpha
+            background_alpha = target_rgba[y,x,3]
+            resultant_alpha = foreground_alpha + background_alpha * (1 - foreground_alpha)
+
+            # 4) Find blended rgb values, handle case where front and back alpha is both 0 where the resulting alpha is zero
+            blended_rgb = np.zeros(3, dtype = np.float32)
+
+            if resultant_alpha == 0:    # Let resulting rgb be same as original rgb from background
+                blended_rgb = current_rgba[y,x,0:3]
+
+            else:   # find the resulting alpha value and color using straight alpha blending
+                blended_rgb = (foreground_rgb*foreground_alpha + background_rgb*background_alpha*(1-foreground_alpha)) / resultant_alpha
+
+            # 5) Find the new sum of squared pixel difference between blended and target
+            new_pixel_difference = np.sum((blended_rgb[y, x, 0:3] - target_rgba[y, x, 0:3]) ** 2)
+
+            pixel_score = original_pixel_difference - new_pixel_difference
+            total_score += pixel_score
+
+    # penalize degenerate rectangles
+    if count_pixels < 4:
+        return -1
+
+    return total_score
 
 
 
