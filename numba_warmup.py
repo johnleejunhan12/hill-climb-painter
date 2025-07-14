@@ -1,12 +1,7 @@
 import time
-
-import numpy as np
-
 from rectangle import *
 from utilities import *
 
-#         vertices (np.ndarray): A 4x2 array of integer (x, y) coordinates (dtype=np.int32)
-#                                representing the corners of the rotated rectangle.
 def warmup_numba():
     print("Warming up numba functions")
     start = time.time()
@@ -19,5 +14,8 @@ def warmup_numba():
     rgb_avg = get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_intersects_array, poly_y_min, *rectangle)
     get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, scanline_x_intersects_array, poly_y_min,
                            rgb_avg, *rectangle)
+
+    draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_intersects_array, poly_y_min, rgb_avg,
+                           *rectangle)
     end = time.time()
     print(f"Time taken for numba warmup: {end - start:.4f} seconds")

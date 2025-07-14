@@ -352,6 +352,7 @@ def bi_linear_interpolation_in_texture_space(x_floating, y_floating, texture_gre
         weighted_avg_intensity (np.float32):
             Interpolated intensity of 4 surrounding pixels for the specified channel.
     """
+    
     # 1) Find the (x,y) coordinates of the 4 pixels surrounding the floating point coordinate (x_floating, y_floating)
     top_left_x, top_left_y = np.int32(np.floor(x_floating)), np.int32(np.floor(y_floating))
     bottom_left_x, bottom_left_y = top_left_x, top_left_y + 1
@@ -361,11 +362,9 @@ def bi_linear_interpolation_in_texture_space(x_floating, y_floating, texture_gre
     # 2) Find the weighted intensity of the channel
     # i) get intensity of 4 corners
     top_left_intensity, top_right_intensity = texture_greyscale_alpha[top_left_y, top_left_x, channel], \
-        texture_greyscale_alpha[
-            top_right_y, top_right_x, channel]
+        texture_greyscale_alpha[top_right_y, top_right_x, channel]
     bottom_left_intensity, bottom_right_intensity = texture_greyscale_alpha[bottom_left_y, bottom_left_x, channel], \
-        texture_greyscale_alpha[
-            bottom_right_y, bottom_right_x, channel]
+        texture_greyscale_alpha[bottom_right_y, bottom_right_x, channel]
 
     # ii) Get weighted intensity for top and bottom pixels along x-axis
     weight_left, weight_right = x_floating - top_left_x, top_right_x - x_floating
@@ -408,9 +407,9 @@ def alpha_blend(foreground_rgb, foreground_alpha, background_rgb, background_alp
     return resultant_rgb, resultant_alpha
 
 
-
 @nb.njit(cache=True)
-def get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_intersects_array, poly_y_min, rect_x_center, rect_y_center, rect_height, rect_width, rect_theta):
+def get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_intersects_array, poly_y_min,
+                          rect_x_center, rect_y_center, rect_height, rect_width, rect_theta):
     """
     Projects a grayscale-alpha texture onto a specified rotated rectangle region of a target image
     and computes the average RGB color of target pixels where the texture's projected alpha exceeds a threshold.
@@ -479,7 +478,7 @@ def get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_inter
                                                              rect_width, rect_theta, texture_width, texture_height)
 
             # 5) Skip pixel if its corresponding transformed pixel is out of bounds
-            if new_x < 0 or new_y < 0 or new_x > texture_width - 1 or new_y > texture_height - 1:
+            if new_x < 0 or new_y < 0 or new_x > texture_width - 2 or new_y > texture_height - 2:
                 continue
 
             # 6) Perform bi linear interpolation to find interpolated alpha in texture
@@ -581,7 +580,7 @@ def get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, s
                                                              rect_width, rect_theta, texture_width, texture_height)
 
             # 5) Skip pixel if its corresponding transformed pixel is out of bounds, else increment the count of pixels
-            if new_x < 0 or new_y < 0 or new_x > texture_width - 1 or new_y > texture_height - 1:
+            if new_x < 0 or new_y < 0 or new_x > texture_width - 2 or new_y > texture_height - 2:
                 continue
             else:
                 count_pixels += 1
@@ -619,6 +618,7 @@ def get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, s
 
     return total_score
 
+@nb.njit(cache=True)
 def draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_intersects_array, poly_y_min, rgb,
                            rect_x_center, rect_y_center, rect_height, rect_width, rect_theta):
     """
@@ -679,7 +679,7 @@ def draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_int
                                                              rect_width, rect_theta, texture_width, texture_height)
 
             # 5) Skip pixel if its corresponding transformed pixel is out of bounds, else increment the count of pixels
-            if new_x < 0 or new_y < 0 or new_x > texture_width - 1 or new_y > texture_height - 1:
+            if new_x < 0 or new_y < 0 or new_x > texture_width - 2 or new_y > texture_height - 2:
                 continue
             else:
                 count_pixels += 1
@@ -710,7 +710,30 @@ def draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_int
 
 
 
+# Get score of rectangle from rect list
+def find_score_rect_list(rect_list, target_rgba, texture_greyscale_alpha, current_rgba):
+    # 1) Find vertices of rectangle
+    rect_vertices = rectangle_to_polygon(rect_list)
+    # 2) Find x-intersects for every scanline and the miny of rectangle
+    canvas_height, canvas_width = current_rgba.shape[0], current_rgba.shape[1]
+    y_min, y_max, scanline_x_intersects_array = get_y_index_bounds_and_scanline_x_intersects(rect_vertices, canvas_height, canvas_width)
+    # 3) Find the average rgb value
+    average_rgb = get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_intersects_array, y_min, *rect_list)
+    # 4) Score the rectangle
+    score = get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, scanline_x_intersects_array, y_min, average_rgb, *rect_list)
+    return score
 
+# Draws the best rect list onto canvas
+def update_canvas_with_best_rect(rect_list, target_rgba, texture_greyscale_alpha, current_rgba):
+    # 1) Find vertices of rectangle
+    rect_vertices = rectangle_to_polygon(rect_list)
+    # 2) Find x-intersects for every scanline and the miny of rectangle
+    canvas_height, canvas_width = current_rgba.shape[0], current_rgba.shape[1]
+    y_min, y_max, scanline_x_intersects_array = get_y_index_bounds_and_scanline_x_intersects(rect_vertices, canvas_height, canvas_width)
+    # 3) Find the average rgb value
+    average_rgb = get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_intersects_array, y_min, *rect_list)
+    # 4) Draw the texture onto canvas
+    draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_intersects_array, y_min, average_rgb, *rect_list)
 
 # debugging
 def draw_x_intersects_on_bg_debug(background, scanline_x_intersects, poly_y_min, polygon_color, polygon_alpha):
