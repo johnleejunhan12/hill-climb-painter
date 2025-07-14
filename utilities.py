@@ -5,6 +5,9 @@ import warnings
 import numba as nb
 from matplotlib import pyplot as plt
 
+# function to find number of hill climbings steps
+def get_num_hill_climb_steps(iteration_index, num_shapes_to_draw, min_hill_climb_iterations, max_hill_climb_iterations):
+    return max(int((iteration_index + 1)/num_shapes_to_draw * max_hill_climb_iterations), min_hill_climb_iterations)
 
 # helper functions
 @nb.njit(cache=True)

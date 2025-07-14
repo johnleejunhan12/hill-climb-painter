@@ -5,21 +5,24 @@ from utilities import *
 from rectangle import *
 from numba_warmup import warmup_numba
 
+import cProfile
+import pstats
+
 
 # Hill climb parameters:
 num_shapes_to_draw = 1000
 min_hill_climb_iterations = 50
-max_hill_climb_iterations = 175
+max_hill_climb_iterations = 500
 
 # Rectangle parameters:
 initial_random_rectangle_pixel_width = 50
 
 # Parameters for target:
-target_image_filepath = "target_image/mona_lisa.jpg"
-resize_target_shorter_side_of_target = 250
+target_image_filepath = "target_image/rainy_street.jpg"
+resize_target_shorter_side_of_target = 500
 
 # Parameters for texture:
-texture_image_filepath = "texture_image/stroke1.png"
+texture_image_filepath = "texture_image/stroke3.png"
 
 
 # Texture debug functions
@@ -104,8 +107,7 @@ def debugging():
 
 
 
-
-if __name__ == "__main__":
+def main():
     warmup_numba()
 
     # Import texture and target as numpy arrays
@@ -119,30 +121,21 @@ if __name__ == "__main__":
     current_rgba = np.ones(target_rgba.shape, dtype=np.float32)
     canvas_height, canvas_width = get_height_width_of_array(current_rgba)
 
-    # keep track of the best rectangle_list
+    # keep track of all best scoring rectangle_list
     best_rect = []
-    
-    
 
-    # # debug
-    # best_rect_list = [16, 31, 104.29110931696862, 102.79410774782554, -1.4809881326834289]
-    # score = find_score_rect_list(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
-    # print(score)
-    # quit()
-
-
-    for _ in range(num_shapes_to_draw):
+    for shape_index in range(num_shapes_to_draw):
         # Create initial random rectangle
         best_rect_list = create_random_rectangle(canvas_height, canvas_width, texture_height, texture_width,
                                                 initial_random_rectangle_pixel_width)
         # Score the rectangle
         highscore = find_score_rect_list(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
 
-        # Increase the number of hill climbing iterations linearly to the number of shapes created
-        num_hill_climb_iterations = max_hill_climb_iterations
+        # Increase the number of hill climbing iterations linearly as more textures are drawn on current_rgba canvas
+        num_hill_climb_iterations = get_num_hill_climb_steps(shape_index, num_shapes_to_draw, min_hill_climb_iterations, max_hill_climb_iterations)
 
         # Perform hill climbing algorithm
-        print(f"shape {_:<5}  % of max iterations = {(_ + 1) / num_hill_climb_iterations:.2f}  num iterations per shape = {num_hill_climb_iterations}")
+        print(f"shape index: {shape_index:<5}  % of max iterations = {(shape_index + 1) / num_shapes_to_draw:.2f}  num iterations per shape = {num_hill_climb_iterations}")
         for i in range(num_hill_climb_iterations):
             # Mutate the rectangle
             mutated_rect_list = get_mutated_rectangle_copy(best_rect_list, canvas_height, canvas_width)
@@ -158,7 +151,18 @@ if __name__ == "__main__":
         # Update current_rgba with the best rectangle texture
         update_canvas_with_best_rect(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
 
+        # Append the best rectangle to the best_rect_list
+        best_rect.append(best_rect_list)
+
     plt.imshow(current_rgba)
     plt.show()
-        
 
+
+if __name__ == "__main__":
+    with cProfile.Profile() as profile:
+        main()
+
+    with open("profile_stats.txt", "w") as f:
+        stats = pstats.Stats(profile, stream=f)
+        stats.sort_stats(pstats.SortKey.TIME)
+        stats.print_stats("main|rectangle|utilities")

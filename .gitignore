@@ -3,6 +3,10 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# profiling
+profile_stats.txt
+profiling.py
+
 # Work in progress directories
 target_image/
 texture_image/

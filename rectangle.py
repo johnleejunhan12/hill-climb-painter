@@ -1,5 +1,6 @@
 import numpy as np
 import numba as nb
+from numba import prange
 import matplotlib.pyplot as plt
 from utilities import clamp_int
 
@@ -84,45 +85,50 @@ def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width):
 
     return mutated
 
-def rectangle_to_polygon(rectangle):
+
+@nb.njit(fastmath=True, cache=True)
+def rectangle_to_polygon(x, y, h, w, theta):
     """
-    Converts a rectangle specified as [x, y, rect_height, rect_width, theta] into a 4x2 array of (x, y)
+    Converts a rectangle specified by x, y, rect_height, rect_width, theta into a 4x2 array of (x, y)
     polygon vertices, accounting for rotation. Vertices are returned as np.int32.
 
     Parameters:
-        rectangle (list): [x, y, rect_height, rect_width, theta]
+        x (int): x center coordinate of rectangle
+        y (int): y center coordinate of rectangle
+        h (np.float32): height of rectangle
+        w (np.float32): width of rectangle
+        thera (np.float32): Angle of rotation between -pi and pi radians inclusive
 
     Returns:
         vertices (np.ndarray): A 4x2 array of integer (x, y) coordinates (dtype=np.int32)
                                representing the corners of the rotated rectangle.
     """
-    x, y, h, w, theta = rectangle
 
-    # Half-dimensions
-    dx = w / 2
-    dy = h / 2
+    dx = w / 2.0
+    dy = h / 2.0
 
-    # Define rectangle corners centered at origin (before rotation)
-    corners = np.array([
-        [-dx, -dy],
-        [ dx, -dy],
-        [ dx,  dy],
-        [-dx,  dy]
-    ])
+    # Define corners (counter-clockwise from bottom-left)
+    corners = np.empty((4, 2), dtype=np.float32)
+    corners[0, :] = (-dx, -dy)
+    corners[1, :] = ( dx, -dy)
+    corners[2, :] = ( dx,  dy)
+    corners[3, :] = (-dx,  dy)
 
-    # Rotation matrix
+    # Precompute sin and cos
     cos_theta = np.cos(theta)
     sin_theta = np.sin(theta)
-    rotation_matrix = np.array([
-        [cos_theta, -sin_theta],
-        [sin_theta,  cos_theta]
-    ])
 
-    # Rotate and translate corners
-    rotated = corners @ rotation_matrix.T
-    translated = rotated + np.array([x, y])
+    # Rotate and translate
+    result = np.empty((4, 2), dtype=np.int32)
+    for i in range(4):
+        cx, cy = corners[i]
+        rx = cos_theta * cx - sin_theta * cy
+        ry = sin_theta * cx + cos_theta * cy
+        result[i, 0] = int(np.round(rx + x))
+        result[i, 1] = int(np.round(ry + y))
 
-    return np.round(translated).astype(np.int32)
+    return result
+
 
 def display_rectangle_vertices_debug(vertices, title="Rectangle"):
     """
@@ -256,7 +262,7 @@ def get_y_index_bounds_and_scanline_x_intersects(vertices, canvas_height, canvas
 
 
 # Helper functions for larger get_average_rgb_value, get_score_of_rectangle and draw_texture_on_canvas functions
-@nb.njit(cache=True)
+@nb.njit(cache=True, fastmath=True)
 def transform_rect_texture_coordinate(x, y, rect_x_center, rect_y_center, rect_height, rect_width, rect_theta,
                                       texture_width, texture_height):
     """
@@ -713,7 +719,9 @@ def draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_int
 # Get score of rectangle from rect list
 def find_score_rect_list(rect_list, target_rgba, texture_greyscale_alpha, current_rgba):
     # 1) Find vertices of rectangle
-    rect_vertices = rectangle_to_polygon(rect_list)
+    x, y, h, w, theta = rect_list
+    h, w, theta = np.float32(h), np.float32(w), np.float32(theta)
+    rect_vertices = rectangle_to_polygon(x, y, h, w, theta)
     # 2) Find x-intersects for every scanline and the miny of rectangle
     canvas_height, canvas_width = current_rgba.shape[0], current_rgba.shape[1]
     y_min, y_max, scanline_x_intersects_array = get_y_index_bounds_and_scanline_x_intersects(rect_vertices, canvas_height, canvas_width)
@@ -726,7 +734,9 @@ def find_score_rect_list(rect_list, target_rgba, texture_greyscale_alpha, curren
 # Draws the best rect list onto canvas
 def update_canvas_with_best_rect(rect_list, target_rgba, texture_greyscale_alpha, current_rgba):
     # 1) Find vertices of rectangle
-    rect_vertices = rectangle_to_polygon(rect_list)
+    x, y, h, w, theta = rect_list
+    h, w, theta = np.float32(h), np.float32(w), np.float32(theta)
+    rect_vertices = rectangle_to_polygon(x, y, h, w, theta)
     # 2) Find x-intersects for every scanline and the miny of rectangle
     canvas_height, canvas_width = current_rgba.shape[0], current_rgba.shape[1]
     y_min, y_max, scanline_x_intersects_array = get_y_index_bounds_and_scanline_x_intersects(rect_vertices, canvas_height, canvas_width)
