@@ -3,6 +3,8 @@ from matplotlib import pyplot as plt
 from numpy.ma.core import ones_like, zeros_like
 from utilities import *
 from rectangle import *
+from pygame_display import *
+from output_image import create_output_rgba
 from numba_warmup import warmup_numba
 import os
 import random
@@ -12,16 +14,22 @@ import pstats
 
 
 # Hill climb parameters:
-num_shapes_to_draw = 300
-min_hill_climb_iterations = 50
-max_hill_climb_iterations = 200
+num_shapes_to_draw = 1000
+min_hill_climb_iterations = 200
+max_hill_climb_iterations = 500
 
 # Rectangle parameters:
-initial_random_rectangle_pixel_width = 50
+initial_random_rectangle_pixel_width = 100
 
 # Parameters for target:
-resize_target_shorter_side_of_target = 500
+resize_target_shorter_side_of_target = 300
 
+# Image output parameters
+desired_length_of_longer_side_in_output = 4000
+
+# Pygame display parameters
+is_show_pygame = True
+is_display_rectangle_improvement = False
 
 
 
@@ -126,18 +134,23 @@ def main():
     # keep track of all best scoring rectangle_list and corresponding texture
     best_rect_with_texture = []
 
+    
+    # initialize pygame
+    screen_pygame = None
+    if is_show_pygame_display:
+        screen_pygame = initialize_pygame(100, 100)
+
     for shape_index in range(num_shapes_to_draw):
         # select random texture
         texture_key = random.randint(0, num_textures - 1)
         texture_value = texture_dict[texture_key]
         texture_greyscale_alpha, texture_height, texture_width = texture_value['texture_greyscale_alpha'], texture_value['texture_height'], texture_value['texture_width']
 
-
         # Create initial random rectangle
         best_rect_list = create_random_rectangle(canvas_height, canvas_width, texture_height, texture_width,
                                                 initial_random_rectangle_pixel_width)
-        # Score the rectangle
-        highscore = find_score_rect_list(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
+        # Score the rectangle and get the average rgb value
+        highscore, rgb_of_best_rect = find_score_rect_list_with_average_rgb(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
 
         # Increase the number of hill climbing iterations linearly as more textures are drawn on current_rgba canvas
         num_hill_climb_iterations = get_num_hill_climb_steps(shape_index, num_shapes_to_draw, min_hill_climb_iterations, max_hill_climb_iterations)
@@ -148,65 +161,39 @@ def main():
             # Mutate the rectangle
             mutated_rect_list = get_mutated_rectangle_copy(best_rect_list, canvas_height, canvas_width)
             # Score the mutated rectangle
-            new_score = find_score_rect_list(mutated_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
+            new_score, rgb_of_mutated_rect = find_score_rect_list_with_average_rgb(mutated_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
             # update the highscore and best_rect_list if new score is higher
             if new_score > highscore:
                 highscore = new_score
                 best_rect_list = mutated_rect_list
+                rgb_of_best_rect = rgb_of_mutated_rect
+
+                # Update pygame display if there is an improvement
+
         
         # Update current_rgba with the best rectangle texture
         update_canvas_with_best_rect(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
+        # Update pygame display when new rectangle is drawn onto canvas
 
-        # Append the best rectangle with its corresponding texture to the best_textured_rect
-        best_rect_with_texture.append({"best_rect_list":best_rect_list,"texture_key": texture_key})
+        # Append the best rectangle list with its corresponding texture and color to the best_textured_rect
+        best_rect_with_texture.append({"best_rect_list":best_rect_list,"texture_key": texture_key, "rgb": rgb_of_best_rect})
 
     plt.imshow(current_rgba)
     plt.show()
 
+    # Save the output 
+    output_rgba = create_output_rgba(texture_dict, best_rect_with_texture, canvas_height, canvas_width, desired_length_of_longer_side_in_output)
+    save_rgba_png(output_rgba, "output")
 
 if __name__ == "__main__":
-    with cProfile.Profile() as profile:
-        main()
+    # with cProfile.Profile() as profile:
+    #     main()
 
-    with open("profile_stats.txt", "w") as f:
-        stats = pstats.Stats(profile, stream=f)
-        stats.sort_stats(pstats.SortKey.TIME)
-        stats.print_stats("main|rectangle|utilities")
-
-
-# def get_target(resize_target_shorter_side_of_target=200):
-#     """
-#     Uses the first jpg or png file found as target image
-#     Raises a warning if multiple images are in the folder
-#     Stops the script if there is no target image
-
-#     Parameters:
-#         resize_shortest_side (int):  optional target size for the shortest side of the image (default: 200)
-#     Returns:
-#         np.ndarray: Normalized RGBA image of shape (H, W, 4), dtype np.float32.
-        
-#     """
-#     allowed_exts = ('.png', '.jpg')
-#     matches = []
-#     folder_path = "target"
-#     with os.scandir(folder_path) as entries:
-#         for entry in entries:
-#             if entry.is_file() and entry.name.lower().endswith(allowed_exts):
-#                 matches.append(entry.name)
-#                 if len(matches) > 1:
-#                     warnings.warn(f"Multiple PNG or JPG files found in target folder, using {matches[0]}")
-#                     break  # Early exit after second match
-
-#     if not matches:
-#         warnings.warn("No PNG or JPG file found in target folder.")
-#         quit()
-
-#     # Take the first match as filepath
-#     filepath = matches[0]
-#     target = composite_over_white(import_image_as_normalized_rgba(filepath))
-#     resized_target = resize_rgba(target, resize_shortest_side=resize_target_shorter_side_of_target)
-#     return resized_target
+    # with open("profile_stats.txt", "w") as f:
+    #     stats = pstats.Stats(profile, stream=f)
+    #     stats.sort_stats(pstats.SortKey.TIME)
+    #     stats.print_stats("main|rectangle|utilities")
 
 
-
-
+    # Initialize pygame
+    pass

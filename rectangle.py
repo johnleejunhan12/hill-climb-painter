@@ -97,7 +97,7 @@ def rectangle_to_polygon(x, y, h, w, theta):
         y (int): y center coordinate of rectangle
         h (np.float32): height of rectangle
         w (np.float32): width of rectangle
-        thera (np.float32): Angle of rotation between -pi and pi radians inclusive
+        theta (np.float32): Angle of rotation between -pi and pi radians inclusive
 
     Returns:
         vertices (np.ndarray): A 4x2 array of integer (x, y) coordinates (dtype=np.int32)
@@ -263,7 +263,7 @@ def get_y_index_bounds_and_scanline_x_intersects(vertices, canvas_height, canvas
 
 # Helper functions for larger get_average_rgb_value, get_score_of_rectangle and draw_texture_on_canvas functions
 @nb.njit(cache=True, fastmath=True)
-def transform_rect_texture_coordinate(x, y, rect_x_center, rect_y_center, rect_height, rect_width, rect_theta,
+def transform_rect_texture_coordinate(x, y, rect_x_center, rect_y_center, rect_height, rect_width, rect_theta, 
                                       texture_width, texture_height):
     """
     Transforms canvas coordinates to texture coordinates for a rotated, scaled rectangle.
@@ -662,9 +662,6 @@ def draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_int
             radian rotation of rectangle in range [-pi, pi]
     """
 
-    total_score = 0
-    count_pixels = 0
-
     # Get height and width of texture
     texture_height, texture_width = texture_greyscale_alpha.shape[0], texture_greyscale_alpha.shape[1]
 
@@ -684,11 +681,9 @@ def draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_int
             new_x, new_y = transform_rect_texture_coordinate(x, y, rect_x_center, rect_y_center, rect_height,
                                                              rect_width, rect_theta, texture_width, texture_height)
 
-            # 5) Skip pixel if its corresponding transformed pixel is out of bounds, else increment the count of pixels
+            # 5) Skip pixel if its corresponding transformed pixel is out of bounds
             if new_x < 0 or new_y < 0 or new_x > texture_width - 2 or new_y > texture_height - 2:
                 continue
-            else:
-                count_pixels += 1
 
             # 6) Perform bi linear interpolation to find interpolated greyscale and alpha intensity, simulate mapping 4 nearest pixels to a single (x,y) pixel in the target_rgba space
             interpolated_greyscale = bi_linear_interpolation_in_texture_space(new_x, new_y, texture_greyscale_alpha, channel=0)
@@ -707,17 +702,15 @@ def draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_int
             current_rgba[y, x, 3] = resultant_alpha
 
 
-            # resultant_alpha = foreground_alpha + background_alpha * (1 - foreground_alpha)
-            # if resultant_alpha == 0:
-            #     resultant_rgb = background_rgb
-            # else:
-            #     resultant_rgb = ((foreground_rgb * foreground_alpha + background_rgb * background_alpha * (
-            #                 1 - foreground_alpha)) / resultant_alpha).astype(np.float32)
-
-
 
 # Get score of rectangle from rect list
-def find_score_rect_list(rect_list, target_rgba, texture_greyscale_alpha, current_rgba):
+def find_score_rect_list_with_average_rgb(rect_list, target_rgba, texture_greyscale_alpha, current_rgba):
+
+    """
+    (Description here)
+
+    Returns score, average_rgb
+    """
     # 1) Find vertices of rectangle
     x, y, h, w, theta = rect_list
     h, w, theta = np.float32(h), np.float32(w), np.float32(theta)
@@ -729,7 +722,7 @@ def find_score_rect_list(rect_list, target_rgba, texture_greyscale_alpha, curren
     average_rgb = get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_intersects_array, y_min, *rect_list)
     # 4) Score the rectangle
     score = get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, scanline_x_intersects_array, y_min, average_rgb, *rect_list)
-    return score
+    return score, average_rgb
 
 # Draws the best rect list onto canvas
 def update_canvas_with_best_rect(rect_list, target_rgba, texture_greyscale_alpha, current_rgba):
