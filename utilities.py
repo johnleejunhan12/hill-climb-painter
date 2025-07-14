@@ -5,7 +5,7 @@ import warnings
 import numba as nb
 from matplotlib import pyplot as plt
 
-# function to find number of hill climbings steps
+# function to find number of hill climbing steps
 def get_num_hill_climb_steps(iteration_index, num_shapes_to_draw, min_hill_climb_iterations, max_hill_climb_iterations):
     return max(int((iteration_index + 1)/num_shapes_to_draw * max_hill_climb_iterations), min_hill_climb_iterations)
 
@@ -195,20 +195,46 @@ def resize_rgba(rgba_array, resize_shortest_side=200):
 
     return resized_array
 
-def get_target(filepath, resize_shorter_side):
+
+def get_target(resize_target_shorter_side_of_target=200):
     """
-    Reads a PNG or JPG file and into a normalized RGBA image as a float32 numpy array, then
-    composes it over white background and return the resulting fully opaque rgba array
+    Uses the first jpg or png file found as target image
+    Raises a warning if multiple images are in the folder
+    Stops the script if there is no target image
 
     Parameters:
-        filepath (str): Path to the image file (.png or .jpg/.jpeg).
-
+        resize_shortest_side (int):  optional target size for the shortest side of the image (default: 200)
     Returns:
         np.ndarray: Normalized RGBA image of shape (H, W, 4), dtype np.float32.
+        
     """
+    allowed_exts = ('.png', '.jpg')
+    matches = []
+    folder_path = "target"
+    multiple_images_found = False
+    with os.scandir(folder_path) as entries:
+        for entry in entries:
+            if entry.is_file() and entry.name.lower().endswith(allowed_exts):
+                matches.append(entry.name)
+                if len(matches) > 1:
+                    multiple_images_found = True
+                    break  # Early exit after second match
+    
+    if not matches:
+        warnings.warn("No PNG or JPG file found in target folder.")
+        quit()
+
+    # Take the first match as filepath
+    filepath = "target\\" + matches[0]
+
+    if multiple_images_found:
+        warnings.warn(f"Multiple PNG or JPG files found in target folder. Using {filepath} as target image.")
+
+
     target = composite_over_white(import_image_as_normalized_rgba(filepath))
-    resized_target = resize_rgba(target, resize_shortest_side=resize_shorter_side)
+    resized_target = resize_rgba(target, resize_shortest_side=resize_target_shorter_side_of_target)
     return resized_target
+
 
 def get_texture(filepath):
     """
@@ -224,7 +250,32 @@ def get_texture(filepath):
     return rgba_to_grayscale_alpha(import_png_as_normalized_rgba(filepath))
 
 
+def get_texture_dict():
+    """
+    Imports all texture pngs from texture folder into greyscale alpha format and returns a dictionary containing numpy array and dimensions
 
+    Returns:
+        texture_dict (dict): 
+        Example
+        {
+            0: {'texture_greyscale_alpha': texture_greyscale_alpha, 'texture_height': 385, 'texture_width': 1028}, 
+            1: {'texture_greyscale_alpha': texture_greyscale_alpha, 'texture_height': 408, 'texture_width': 933}}
+        }
+        Note that texture_greyscale_alpha (np.ndarray) is Array of shape (H, W, 2) representing normalised grayscale and alpha, dtype np.float32.
+
+        num_textures (int):
+            number of textures in the folder
+    """
+    texture_dict = {}
+    for i, filename in enumerate(os.listdir("texture")):
+        texture_filepath = os.path.join("texture", filename)
+        texture_greyscale_alpha = get_texture(texture_filepath)
+        texture_height, texture_width = texture_greyscale_alpha.shape[0], texture_greyscale_alpha.shape[1]
+        texture_dict[i] = {"texture_greyscale_alpha":texture_greyscale_alpha, 
+                        "texture_height":texture_height, 
+                        "texture_width":texture_width}
+    num_textures = len(texture_dict)
+    return texture_dict, num_textures
 
 
 def print_image_array(image_array, title=None):

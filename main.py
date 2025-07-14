@@ -4,25 +4,25 @@ from numpy.ma.core import ones_like, zeros_like
 from utilities import *
 from rectangle import *
 from numba_warmup import warmup_numba
+import os
+import random
 
 import cProfile
 import pstats
 
 
 # Hill climb parameters:
-num_shapes_to_draw = 1000
+num_shapes_to_draw = 300
 min_hill_climb_iterations = 50
-max_hill_climb_iterations = 500
+max_hill_climb_iterations = 200
 
 # Rectangle parameters:
 initial_random_rectangle_pixel_width = 50
 
 # Parameters for target:
-target_image_filepath = "target_image/rainy_street.jpg"
 resize_target_shorter_side_of_target = 500
 
-# Parameters for texture:
-texture_image_filepath = "texture_image/stroke3.png"
+
 
 
 # Texture debug functions
@@ -56,7 +56,6 @@ def debug_texture_color():
 
     plt.tight_layout()
     plt.show()
-
 
 def debugging():
     resize_target_shorter_side = 200
@@ -110,21 +109,30 @@ def debugging():
 def main():
     warmup_numba()
 
-    # Import texture and target as numpy arrays
-    target_rgba = get_target(target_image_filepath, resize_target_shorter_side_of_target)
-    texture_greyscale_alpha = get_texture(texture_image_filepath)
-
-    # Get height and width of arrays
-    texture_height, texture_width = get_height_width_of_array(texture_greyscale_alpha)
+    # Import target as numpy arrays
+    target_rgba = get_target(resize_target_shorter_side_of_target)
+    
+    # Import multiple texture png from texture folder into dictionary of numpy arrays
+    # {
+    # 0: {'texture_greyscale_alpha': texture_greyscale_alpha, 'texture_height': 385, 'texture_width': 1028}, 
+    # 1: {'texture_greyscale_alpha': texture_greyscale_alpha, 'texture_height': 408, 'texture_width': 933}} 
+    # }
+    texture_dict, num_textures = get_texture_dict()
 
     # Create current rgba blank canvas that is fully white and opaque with same size as target_rgba
     current_rgba = np.ones(target_rgba.shape, dtype=np.float32)
     canvas_height, canvas_width = get_height_width_of_array(current_rgba)
 
-    # keep track of all best scoring rectangle_list
-    best_rect = []
+    # keep track of all best scoring rectangle_list and corresponding texture
+    best_rect_with_texture = []
 
     for shape_index in range(num_shapes_to_draw):
+        # select random texture
+        texture_key = random.randint(0, num_textures - 1)
+        texture_value = texture_dict[texture_key]
+        texture_greyscale_alpha, texture_height, texture_width = texture_value['texture_greyscale_alpha'], texture_value['texture_height'], texture_value['texture_width']
+
+
         # Create initial random rectangle
         best_rect_list = create_random_rectangle(canvas_height, canvas_width, texture_height, texture_width,
                                                 initial_random_rectangle_pixel_width)
@@ -135,14 +143,12 @@ def main():
         num_hill_climb_iterations = get_num_hill_climb_steps(shape_index, num_shapes_to_draw, min_hill_climb_iterations, max_hill_climb_iterations)
 
         # Perform hill climbing algorithm
-        print(f"shape index: {shape_index:<5}  % of max iterations = {(shape_index + 1) / num_shapes_to_draw:.2f}  num iterations per shape = {num_hill_climb_iterations}")
+        print(f"shape index: {shape_index:<5}  % of max iterations = {(shape_index + 1) / num_shapes_to_draw:.2f}  hill climb iterations per shape = {num_hill_climb_iterations}")
         for i in range(num_hill_climb_iterations):
             # Mutate the rectangle
             mutated_rect_list = get_mutated_rectangle_copy(best_rect_list, canvas_height, canvas_width)
-            #### print(mutated_rect_list)
             # Score the mutated rectangle
             new_score = find_score_rect_list(mutated_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
-
             # update the highscore and best_rect_list if new score is higher
             if new_score > highscore:
                 highscore = new_score
@@ -151,8 +157,8 @@ def main():
         # Update current_rgba with the best rectangle texture
         update_canvas_with_best_rect(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
 
-        # Append the best rectangle to the best_rect_list
-        best_rect.append(best_rect_list)
+        # Append the best rectangle with its corresponding texture to the best_textured_rect
+        best_rect_with_texture.append({"best_rect_list":best_rect_list,"texture_key": texture_key})
 
     plt.imshow(current_rgba)
     plt.show()
@@ -166,3 +172,41 @@ if __name__ == "__main__":
         stats = pstats.Stats(profile, stream=f)
         stats.sort_stats(pstats.SortKey.TIME)
         stats.print_stats("main|rectangle|utilities")
+
+
+# def get_target(resize_target_shorter_side_of_target=200):
+#     """
+#     Uses the first jpg or png file found as target image
+#     Raises a warning if multiple images are in the folder
+#     Stops the script if there is no target image
+
+#     Parameters:
+#         resize_shortest_side (int):  optional target size for the shortest side of the image (default: 200)
+#     Returns:
+#         np.ndarray: Normalized RGBA image of shape (H, W, 4), dtype np.float32.
+        
+#     """
+#     allowed_exts = ('.png', '.jpg')
+#     matches = []
+#     folder_path = "target"
+#     with os.scandir(folder_path) as entries:
+#         for entry in entries:
+#             if entry.is_file() and entry.name.lower().endswith(allowed_exts):
+#                 matches.append(entry.name)
+#                 if len(matches) > 1:
+#                     warnings.warn(f"Multiple PNG or JPG files found in target folder, using {matches[0]}")
+#                     break  # Early exit after second match
+
+#     if not matches:
+#         warnings.warn("No PNG or JPG file found in target folder.")
+#         quit()
+
+#     # Take the first match as filepath
+#     filepath = matches[0]
+#     target = composite_over_white(import_image_as_normalized_rgba(filepath))
+#     resized_target = resize_rgba(target, resize_shortest_side=resize_target_shorter_side_of_target)
+#     return resized_target
+
+
+
+
