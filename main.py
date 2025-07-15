@@ -14,8 +14,8 @@ import pstats
 
 
 # Hill climb parameters:
-num_shapes_to_draw = 1000
-min_hill_climb_iterations = 200
+num_shapes_to_draw = 500
+min_hill_climb_iterations = 50
 max_hill_climb_iterations = 500
 
 # Rectangle parameters:
@@ -25,10 +25,10 @@ initial_random_rectangle_pixel_width = 100
 resize_target_shorter_side_of_target = 300
 
 # Image output parameters
-desired_length_of_longer_side_in_output = 4000
+desired_length_of_longer_side_in_output = 3840 
 
 # Pygame display parameters
-is_show_pygame = True
+is_show_pygame_display_window = True
 is_display_rectangle_improvement = False
 
 
@@ -136,9 +136,7 @@ def main():
 
     
     # initialize pygame
-    screen_pygame = None
-    if is_show_pygame_display:
-        screen_pygame = initialize_pygame(100, 100)
+    pygame_display_window = PygameDisplayProcess(canvas_height, canvas_width, is_show_pygame_display_window)
 
     for shape_index in range(num_shapes_to_draw):
         # select random texture
@@ -150,7 +148,7 @@ def main():
         best_rect_list = create_random_rectangle(canvas_height, canvas_width, texture_height, texture_width,
                                                 initial_random_rectangle_pixel_width)
         # Score the rectangle and get the average rgb value
-        highscore, rgb_of_best_rect = find_score_rect_list_with_average_rgb(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
+        highscore, rgb_of_best_rect, y_min_best, scanline_x_intersects_best = get_score_avg_rgb_ymin_and_scanline_xintersect(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
 
         # Increase the number of hill climbing iterations linearly as more textures are drawn on current_rgba canvas
         num_hill_climb_iterations = get_num_hill_climb_steps(shape_index, num_shapes_to_draw, min_hill_climb_iterations, max_hill_climb_iterations)
@@ -161,23 +159,37 @@ def main():
             # Mutate the rectangle
             mutated_rect_list = get_mutated_rectangle_copy(best_rect_list, canvas_height, canvas_width)
             # Score the mutated rectangle
-            new_score, rgb_of_mutated_rect = find_score_rect_list_with_average_rgb(mutated_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
+            new_score, rgb_of_mutated_rect, y_min_mutated, scanline_x_intersects_mutated = get_score_avg_rgb_ymin_and_scanline_xintersect(mutated_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
             # update the highscore and best_rect_list if new score is higher
             if new_score > highscore:
                 highscore = new_score
                 best_rect_list = mutated_rect_list
                 rgb_of_best_rect = rgb_of_mutated_rect
 
-                # Update pygame display if there is an improvement
-
+                # Update pygame display whenever there is an improvement (Optional)
+                if is_display_rectangle_improvement:
+                    copy_of_current_rgba = current_rgba.copy()
+                    draw_on_copy = draw_texture_on_canvas(texture_greyscale_alpha, copy_of_current_rgba, scanline_x_intersects_mutated, y_min_mutated, rgb_of_mutated_rect, *mutated_rect_list)
+                    pygame_display_window.update_display(draw_on_copy)
         
         # Update current_rgba with the best rectangle texture
         update_canvas_with_best_rect(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
-        # Update pygame display when new rectangle is drawn onto canvas
 
         # Append the best rectangle list with its corresponding texture and color to the best_textured_rect
         best_rect_with_texture.append({"best_rect_list":best_rect_list,"texture_key": texture_key, "rgb": rgb_of_best_rect})
 
+        # Update pygame display when new rectangle is drawn onto canvas
+        pygame_display_window.update_display(current_rgba.copy())
+
+        # If pygame window is closed, terminate the outer loop and export the output prematurely
+        if pygame_display_window.was_closed():
+            print("Window was closed. Stopped adding of new rectangles.")
+            break
+    
+    # End pyggame display process
+    pygame_display_window.close()
+
+    # Display the final image
     plt.imshow(current_rgba)
     plt.show()
 
@@ -186,14 +198,10 @@ def main():
     save_rgba_png(output_rgba, "output")
 
 if __name__ == "__main__":
-    # with cProfile.Profile() as profile:
-    #     main()
+    with cProfile.Profile() as profile:
+        main()
 
-    # with open("profile_stats.txt", "w") as f:
-    #     stats = pstats.Stats(profile, stream=f)
-    #     stats.sort_stats(pstats.SortKey.TIME)
-    #     stats.print_stats("main|rectangle|utilities")
-
-
-    # Initialize pygame
-    pass
+    with open("profile_stats.txt", "w") as f:
+        stats = pstats.Stats(profile, stream=f)
+        stats.sort_stats(pstats.SortKey.TIME)
+        stats.print_stats("main|rectangle|utilities")

@@ -703,13 +703,11 @@ def draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_int
 
 
 
-# Get score of rectangle from rect list
-def find_score_rect_list_with_average_rgb(rect_list, target_rgba, texture_greyscale_alpha, current_rgba):
-
+def get_score_avg_rgb_ymin_and_scanline_xintersect(rect_list, target_rgba, texture_greyscale_alpha, current_rgba):
     """
     (Description here)
 
-    Returns score, average_rgb
+    Returns score, average_rgb and scanline_x_intersects of a [x, y, h, w, theta] rect list 
     """
     # 1) Find vertices of rectangle
     x, y, h, w, theta = rect_list
@@ -722,7 +720,7 @@ def find_score_rect_list_with_average_rgb(rect_list, target_rgba, texture_greysc
     average_rgb = get_average_rgb_value(target_rgba, texture_greyscale_alpha, scanline_x_intersects_array, y_min, *rect_list)
     # 4) Score the rectangle
     score = get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, scanline_x_intersects_array, y_min, average_rgb, *rect_list)
-    return score, average_rgb
+    return score, average_rgb, y_min, scanline_x_intersects_array
 
 # Draws the best rect list onto canvas
 def update_canvas_with_best_rect(rect_list, target_rgba, texture_greyscale_alpha, current_rgba):
