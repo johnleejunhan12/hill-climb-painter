@@ -347,7 +347,7 @@ def get_average_rgb_of_rgba_image(rgba_image):
     """
     Compute the average RGB color of an RGBA image.
     
-    Args:
+    Parameters:
         rgba_image (np.ndarray): Normalized RGBA image array of shape (h, w, 4)
                                 with dtype np.float32 and values in [0, 1]
     
@@ -362,3 +362,4 @@ def get_average_rgb_of_rgba_image(rgba_image):
     
     # Ensure output is float32
     return avg_rgb.astype(np.float32)
+

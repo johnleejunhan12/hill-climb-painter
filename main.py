@@ -4,7 +4,7 @@ from numpy.ma.core import ones_like, zeros_like
 from utilities import *
 from rectangle import *
 from pygame_display import *
-from output_image import create_output_rgba, CreateOutput
+from output_image import CreateOutput
 from numba_warmup import warmup_numba
 import random
 
@@ -13,22 +13,22 @@ import pstats
 
 
 # Hill climb parameters:
-num_shapes_to_draw = 500
-min_hill_climb_iterations = 100
+num_shapes_to_draw = 5000
+min_hill_climb_iterations = 50
 max_hill_climb_iterations = 500
 
 # Rectangle parameters:
 initial_random_rectangle_pixel_width = 100
 
 # Parameters for target:
-resize_target_shorter_side_of_target = 100
+resize_target_shorter_side_of_target = 200
 
 # Image output parameters
 desired_length_of_longer_side_in_output = 3840 
 
 # Pygame display parameters
 is_show_pygame_display_window = True
-is_display_rectangle_improvement = True
+is_display_rectangle_improvement = False
 
 
 

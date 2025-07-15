@@ -144,28 +144,28 @@ class PygameDisplayProcess:
 
 
 
-# # Example usage
-if __name__ == "__main__":
-    h, w = 300, 400
-    display = PygameDisplayProcess(h, w, True)
+# Debugging
+# if __name__ == "__main__":
+#     h, w = 300, 400
+#     display = PygameDisplayProcess(h, w, True)
 
-    try:
-        for i in range(500):
-            img = np.zeros((h, w, 4), dtype=np.float32)
-            img[..., 0] = random.random()
-            img[..., 3] = 1.0
-            display.update_display(img)
+#     try:
+#         for i in range(500):
+#             img = np.zeros((h, w, 4), dtype=np.float32)
+#             img[..., 0] = random.random()
+#             img[..., 3] = 1.0
+#             display.update_display(img)
             
-            if i % 100 == 0:
-                print(f"Iteration {i}")
+#             if i % 100 == 0:
+#                 print(f"Iteration {i}")
 
-            if display.was_closed():
-                print("Window was closed. Exiting loop.")
-                break
+#             if display.was_closed():
+#                 print("Window was closed. Exiting loop.")
+#                 break
                 
-    finally:
-        print("hello")
-        display.close()
+#     finally:
+#         print("hello")
+#         display.close()
 
 
 
