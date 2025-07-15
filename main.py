@@ -4,7 +4,7 @@ from numpy.ma.core import ones_like, zeros_like
 from utilities import *
 from rectangle import *
 from pygame_display import *
-from output_image import create_output_rgba
+from output_image import create_output_rgba, CreateOutput
 from numba_warmup import warmup_numba
 import random
 
@@ -57,6 +57,9 @@ def main():
     # initialize pygame
     pygame_display_window = PygameDisplayProcess(canvas_height, canvas_width, is_show_pygame_display_window)
 
+    # initialize asynchronous output generator
+    create_output = CreateOutput(texture_dict, canvas_height, canvas_width, desired_length_of_longer_side_in_output, target_rgba)
+
     for shape_index in range(num_shapes_to_draw):
         # choose a random texture
         texture_key = random.randint(0, num_textures - 1)
@@ -97,6 +100,9 @@ def main():
         # Append the best rectangle list with its corresponding texture and color to the best_textured_rect
         best_rect_with_texture.append({"best_rect_list":best_rect_list,"texture_key": texture_key, "rgb": rgb_of_best_rect})
 
+        # Enqueue job for output image generation
+        create_output.enqueue({"best_rect_list":best_rect_list,"texture_key": texture_key, "rgb": rgb_of_best_rect})
+
         # Update pygame display when new rectangle is drawn onto canvas
         pygame_display_window.update_display(current_rgba)
 
@@ -112,8 +118,8 @@ def main():
     plt.imshow(current_rgba)
     plt.show()
 
-    # Save the output 
-    output_rgba = create_output_rgba(texture_dict, best_rect_with_texture, canvas_height, canvas_width, desired_length_of_longer_side_in_output, target_rgba)
+    # Save the output using the asynchronous output generator
+    output_rgba = create_output.finish()
     save_rgba_png(output_rgba, "output")
 
 if __name__ == "__main__":
@@ -125,3 +131,5 @@ if __name__ == "__main__":
         stats = pstats.Stats(profile, stream=f)
         stats.sort_stats(pstats.SortKey.TIME)
         stats.print_stats("main|rectangle|utilities")
+
+
