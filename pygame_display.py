@@ -24,10 +24,10 @@ class PygameDisplayProcess:
 
     def _run_display(self, queue, closed_flag, width, height):
         if self.is_show_pygame_display:
-            # Initialize pygame display window
+            # Initialize pygame display window with resizable flag
             pygame.display.init()
             pygame.font.init()
-            screen = pygame.display.set_mode((width, height))
+            screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
             pygame.display.set_caption("Pygame Display")
             
             font = pygame.font.Font(None, 24)
@@ -36,6 +36,8 @@ class PygameDisplayProcess:
             last_print_time = time.time()
             
             current_img = None
+            window_width, window_height = width, height  # Track current window size
+            img_shape = None  # Will be set when first image arrives
 
             while running:
                 # Handle events
@@ -43,6 +45,9 @@ class PygameDisplayProcess:
                     if event.type == pygame.QUIT:
                         running = False
                         closed_flag.value = True
+                    elif event.type == pygame.VIDEORESIZE:
+                        window_width, window_height = event.w, event.h
+                        screen = pygame.display.set_mode((window_width, window_height), pygame.RESIZABLE)
 
                 # Method 1: Drain queue and keep only the latest image
                 latest_img = None
@@ -58,27 +63,28 @@ class PygameDisplayProcess:
                 # Update current image if we got a new one
                 if latest_img is not None:
                     current_img = latest_img
+                    img_shape = current_img.shape if current_img is not None else None
                     # if items_processed > 1:
                     #     print(f"Skipped {items_processed - 1} frames to stay current")
                 
-                # Display the current image
-                if current_img is not None:
+                # Display the current image, scaling to fit window while preserving aspect ratio
+                if current_img is not None and img_shape is not None:
                     img = (current_img * 255).astype(np.uint8)
-                    surface = pygame.image.frombuffer(img.tobytes(), (width, height), 'RGBA')
-                    screen.blit(surface, (0, 0))
-                
-                # # Create FPS text
-                # fps = clock.get_fps()
-                # fps_text = font.render(f"FPS: {fps:.1f}", True, (255, 255, 255))
-                
-                # # Create semi-transparent background for FPS text
-                # fps_bg = pygame.Surface((fps_text.get_width() + 10, fps_text.get_height() + 5))
-                # fps_bg.set_alpha(int(255 * 0.2))  # set alpha
-                # fps_bg.fill((0, 0, 0))
-                
-                # # Blit FPS background and text
-                # screen.blit(fps_bg, (5, 5))
-                # screen.blit(fps_text, (10, 7))
+                    img_h, img_w = img_shape[0], img_shape[1]
+                    img_surface = pygame.image.frombuffer(img.tobytes(), (img_w, img_h), 'RGBA')
+
+                    # Calculate scale factor and position for aspect ratio preservation
+                    scale = min(window_width / img_w, window_height / img_h)
+                    scaled_w, scaled_h = int(img_w * scale), int(img_h * scale)
+                    scaled_surface = pygame.transform.smoothscale(img_surface, (scaled_w, scaled_h))
+
+                    # Center the image
+                    x = (window_width - scaled_w) // 2
+                    y = (window_height - scaled_h) // 2
+                    screen.fill((0, 0, 0))  # Fill background with black
+                    screen.blit(scaled_surface, (x, y))
+                else:
+                    screen.fill((0, 0, 0))
                 
                 pygame.display.flip()
                 
@@ -145,27 +151,27 @@ class PygameDisplayProcess:
 
 
 # Debugging
-# if __name__ == "__main__":
-#     h, w = 300, 400
-#     display = PygameDisplayProcess(h, w, True)
+if __name__ == "__main__":
+    h, w = 300, 400
+    display = PygameDisplayProcess(h, w, True)
 
-#     try:
-#         for i in range(500):
-#             img = np.zeros((h, w, 4), dtype=np.float32)
-#             img[..., 0] = random.random()
-#             img[..., 3] = 1.0
-#             display.update_display(img)
+    try:
+        for i in range(500):
+            img = np.zeros((h, w, 4), dtype=np.float32)
+            img[..., 0] = random.random()
+            img[..., 3] = 1.0
+            display.update_display(img)
             
-#             if i % 100 == 0:
-#                 print(f"Iteration {i}")
+            if i % 100 == 0:
+                print(f"Iteration {i}")
 
-#             if display.was_closed():
-#                 print("Window was closed. Exiting loop.")
-#                 break
+            if display.was_closed():
+                print("Window was closed. Exiting loop.")
+                break
                 
-#     finally:
-#         print("hello")
-#         display.close()
+    finally:
+        print("hello")
+        display.close()
 
 
 

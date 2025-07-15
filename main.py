@@ -13,22 +13,22 @@ import pstats
 
 
 # Hill climb parameters:
-num_shapes_to_draw = 5000
+num_shapes_to_draw = 500
 min_hill_climb_iterations = 50
-max_hill_climb_iterations = 500
+max_hill_climb_iterations = 1000
 
 # Rectangle parameters:
-initial_random_rectangle_pixel_width = 100
+initial_random_rectangle_pixel_width = 50
 
 # Parameters for target:
-resize_target_shorter_side_of_target = 200
+resize_target_shorter_side_of_target = 300
 
 # Image output parameters
 desired_length_of_longer_side_in_output = 3840 
 
 # Pygame display parameters
 is_show_pygame_display_window = True
-is_display_rectangle_improvement = False
+is_display_rectangle_improvement = True
 
 
 
