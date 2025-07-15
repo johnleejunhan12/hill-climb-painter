@@ -82,7 +82,7 @@ def polygon_to_rect(vertices):
 
 
 
-def create_output_rgba(texture_dict, best_rect_list_of_dict, original_height, original_width, desired_length_of_longer_side):
+def create_output_rgba(texture_dict, best_rect_list_of_dict, original_height, original_width, desired_length_of_longer_side, target_rgba):
     """
     Using the optimal rectangle and their corresponding texture and rgb, recreate the canvas in a better quality than the scoring canvas
     
@@ -98,8 +98,10 @@ def create_output_rgba(texture_dict, best_rect_list_of_dict, original_height, or
     # 1) Find the height and width of output canvas and corresponding scale factor from original to output image
     output_height, output_width, scale_factor = find_output_height_width_scale(original_height, original_width, desired_length_of_longer_side)
 
-    # 2) Create normalized rgba blank canvas that is fully white and opaque of size (output_height, output_width, 4)
+    # 2) Create normalized rgba blank canvas that is fully opaque of size (output_height, output_width, 4). All rgb values of blank canvas is the average rgb color of the target image
     output_rgba = np.ones((output_height, output_width, 4), dtype=np.float32)
+    average_rgb = get_average_rgb_of_rgba_image(target_rgba)
+    output_rgba[:,:,0:3] *= average_rgb
 
     # 3) Loop through each rect and texture in best_rect_with_texture
     for rect_texture_rgb_dict in best_rect_list_of_dict:

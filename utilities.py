@@ -341,3 +341,24 @@ def print_image_array(image_array, title=None):
     plt.axis('off')
     plt.show()
 
+
+
+def get_average_rgb_of_rgba_image(rgba_image):
+    """
+    Compute the average RGB color of an RGBA image.
+    
+    Args:
+        rgba_image (np.ndarray): Normalized RGBA image array of shape (h, w, 4)
+                                with dtype np.float32 and values in [0, 1]
+    
+    Returns:
+        np.ndarray: Average RGB color as a float32 array of length 3
+    """
+    # Extract RGB channels (ignore alpha channel)
+    rgb_image = rgba_image[:, :, :3]
+    
+    # Compute mean across height and width dimensions
+    avg_rgb = np.mean(rgb_image, axis=(0, 1))
+    
+    # Ensure output is float32
+    return avg_rgb.astype(np.float32)

@@ -64,20 +64,20 @@ def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width):
 
     if case == 1:
         # Case 1: Mutate x and y
-        dx = np.random.randint(-15, 16)
-        dy = np.random.randint(-15, 16)
+        dx = np.random.randint(-50, 50)
+        dy = np.random.randint(-50, 50)
         mutated[0] = clamp_int(x + dx, 0, canvas_width - 1)
         mutated[1] = clamp_int(y + dy, 0, canvas_height - 1)
 
     elif case == 2:
         # Case 2: Scale height and width
-        scale = np.random.uniform(0.8, 1.2)
+        scale = np.random.uniform(0.5, 1.5)
         mutated[2] = rect_height * scale
         mutated[3] = rect_width * scale
 
     else:
         # Case 3: Adjust theta
-        dtheta = np.random.uniform(-0.8, 0.8)
+        dtheta = np.random.uniform(-np.pi, np.pi)
         new_theta = theta + dtheta
         # Wrap angle to [-π, π]
         new_theta = (new_theta + np.pi) % (2 * np.pi) - np.pi
@@ -628,7 +628,7 @@ def get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, s
 def draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_intersects_array, poly_y_min, rgb,
                            rect_x_center, rect_y_center, rect_height, rect_width, rect_theta):
     """
-    Mutates current_rgba by drawing the texture within specified rectangle. Does not return anything
+    Mutates current_rgba by drawing the texture within specified rectangle.
 
     Parameters:
         texture_greyscale_alpha (np.ndarray):
@@ -660,6 +660,10 @@ def draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_int
 
         rect_theta (np.float32)
             radian rotation of rectangle in range [-pi, pi]
+
+    Returns:
+        current_rgba (np.ndarray):
+            Normalized RGBA image of shape (H, W, 4), dtype np.float32. this array has been mutated and also returned
     """
 
     # Get height and width of texture
@@ -700,6 +704,9 @@ def draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_int
             # Mutate current_rgba pixel to new alpha blended pixel value
             current_rgba[y,x,0:3] = blended_rgb
             current_rgba[y, x, 3] = resultant_alpha
+    
+    # current_rgba is mutated but returned also
+    return current_rgba
 
 
 
