@@ -4,6 +4,8 @@ import time
 from PIL import Image
 from utilities import *
 from rectangle import *
+import multiprocessing as mp
+from multiprocessing import shared_memory
 
 def find_output_height_width_scale(height, width, desired_length_of_longer_side):
     """
@@ -129,3 +131,60 @@ def create_output_rgba(texture_dict, best_rect_list_of_dict, original_height, or
     elapsed_time = end_time - start_time
     print(f"Time taken to create output image: {elapsed_time:.6f} seconds")
     return output_rgba
+
+class CreateOutput:
+    def __init__(self, texture_dict, original_height, original_width, desired_length_of_longer_side, target_rgba):
+        self.texture_dict = texture_dict
+        self.target_rgba = target_rgba
+        self.output_height, self.output_width, self.scale_factor = find_output_height_width_scale(
+            original_height, original_width, desired_length_of_longer_side)
+        self.average_rgb = get_average_rgb_of_rgba_image(target_rgba)
+        self.queue = mp.Queue()
+        self.sentinel = "__DONE__"
+        # Shared memory for output_rgba
+        self.shm = shared_memory.SharedMemory(create=True, size=self.output_height * self.output_width * 4 * np.float32().nbytes)
+        self.output_rgba = np.ndarray((self.output_height, self.output_width, 4), dtype=np.float32, buffer=self.shm.buf)
+        self.output_rgba[:] = 1.0
+        self.output_rgba[:, :, 0:3] *= self.average_rgb
+        self.output_rgba[:, :, 3] = 1.0
+        self.worker_process = mp.Process(target=self.worker, args=(self.queue, self.shm.name, self.output_rgba.shape, self.output_rgba.dtype, self.texture_dict, self.scale_factor, self.target_rgba, self.sentinel))
+        self.worker_process.start()
+
+    def enqueue(self, rect_texture_rgb_dict):
+        self.queue.put(rect_texture_rgb_dict)
+
+    def finish(self):
+        self.queue.put(self.sentinel)
+        self.worker_process.join()
+        # Copy the result out of shared memory before closing
+        result = np.copy(self.output_rgba)
+        self.shm.close()
+        self.shm.unlink()
+        return result
+
+    @staticmethod
+    def worker(queue, shm_name, shape, dtype, texture_dict, scale_factor, target_rgba, sentinel):
+        # Attach to shared memory
+        shm = shared_memory.SharedMemory(name=shm_name)
+        output_rgba = np.ndarray(shape, dtype=dtype, buffer=shm.buf)
+        while True:
+            
+            job = queue.get()
+            if job == sentinel:
+                break
+            # Unpack job
+            best_rect_list = job["best_rect_list"]
+            rgb = job["rgb"]
+            texture_key = job["texture_key"]
+            texture_greyscale_alpha = texture_dict[texture_key]["texture_greyscale_alpha"]
+            # Transform rectangle to output space
+            original_vertices = rectangle_to_polygon(*best_rect_list)
+            output_rect_vertices = (original_vertices * scale_factor).astype(np.int32)
+            output_rect_list = polygon_to_rect(output_rect_vertices)
+            y_min, y_max, scanline_x_intersects_array = get_y_index_bounds_and_scanline_x_intersects(
+                output_rect_vertices, shape[0], shape[1])
+            # Draw onto shared output_rgba
+            draw_texture_on_canvas(texture_greyscale_alpha, output_rgba, scanline_x_intersects_array, y_min, rgb, *output_rect_list)
+        shm.close()
+
+
