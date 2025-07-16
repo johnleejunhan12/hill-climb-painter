@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from utilities import clamp_int
 
 
-def create_random_rectangle(canvas_height, canvas_width, texture_height, texture_width, custom_rectangle_width=200):
+def create_random_rectangle(canvas_height, canvas_width, texture_height, texture_width, vector_field, custom_rectangle_width=200):
     """
     Creates a random rectangle with its center located at a random integer pixel index within the canvas.
     The rectangle maintains the same aspect ratio as the given texture, with its width fixed at 20 pixels.
@@ -16,6 +16,8 @@ def create_random_rectangle(canvas_height, canvas_width, texture_height, texture
         canvas_width (int): Width of the canvas in pixels.
         texture_height (int): Height of the reference texture in pixels.
         texture_width (int): Width of the reference texture in pixels.
+        vector_field (VectorField): A vector field that maps (x,y) coordinate to theta radians in range [-pi,pi]
+        custom_rectangle_width (int): Optional parameter to specify the width of randomly generated rectangle
 
     Returns:
         rectangle (list): A list containing:
@@ -35,12 +37,16 @@ def create_random_rectangle(canvas_height, canvas_width, texture_height, texture
     x = np.random.randint(0, canvas_width)
     y = np.random.randint(0, canvas_height)
 
-    # Random angle in radians between -π and π
-    theta = np.random.uniform(-np.pi, np.pi)
+    if vector_field.is_enabled:
+        # Get theta from vector field
+        theta = vector_field.get_vector_field_theta(x, y)
+    else:
+        # Random angle in radians between -π and π
+        theta = np.random.uniform(-np.pi, np.pi)
 
     return [x, y, rect_height, rect_width, theta]
 
-def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width):
+def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width, vector_field):
     """
     Takes in a rectangle and returns a mutated copy of it.
     One of three mutation cases is randomly applied with equal probability:
@@ -53,6 +59,8 @@ def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width):
         rectangle (list): [x(int), y(int), rect_height(float), rect_width(float), theta(float)]
         canvas_height (int): Height of the canvas in pixels.
         canvas_width (int): Width of the canvas in pixels.
+        vector_field (VectorField): A vector field that maps (x,y) coordinate to theta radians in range [-pi,pi]
+
 
     Returns:
         mutated_rectangle (list): A mutated copy of the input rectangle.
@@ -60,14 +68,23 @@ def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width):
     x, y, rect_height, rect_width, theta = rectangle
     mutated = [x, y, rect_height, rect_width, theta]  # copy
 
-    case = np.random.choice([1, 2, 3])
+    is_vector_field_enabled = vector_field.is_enabled
 
+    if is_vector_field_enabled: # Dont need to rotate randomly as the vector field outputs theta given (x,y)
+        case = np.random.choice([1, 2])
+    else:
+        case = np.random.choice([1, 2, 3])
+        
     if case == 1:
         # Case 1: Mutate x and y
-        dx = np.random.randint(-50, 50)
-        dy = np.random.randint(-50, 50)
+        dx = np.random.randint(-100, 100)
+        dy = np.random.randint(-100, 100)
         mutated[0] = clamp_int(x + dx, 0, canvas_width - 1)
         mutated[1] = clamp_int(y + dy, 0, canvas_height - 1)
+
+        # if vector field is enabled, need to find the new theta after doing the random translation
+        if is_vector_field_enabled:
+            mutated[4] = vector_field.get_vector_field_theta(mutated[0], mutated[1])
 
     elif case == 2:
         # Case 2: Scale height and width
@@ -75,8 +92,7 @@ def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width):
         mutated[2] = rect_height * scale
         mutated[3] = rect_width * scale
 
-    else:
-        # Case 3: Adjust theta
+    elif case == 3: # Case 3: Do rotation
         dtheta = np.random.uniform(-np.pi, np.pi)
         new_theta = theta + dtheta
         # Wrap angle to [-π, π]

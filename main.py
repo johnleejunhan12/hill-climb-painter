@@ -4,6 +4,7 @@ from numpy.ma.core import ones_like, zeros_like
 from utilities import *
 from rectangle import *
 from pygame_display import *
+from vector_field import VectorField
 from output_image import CreateOutput
 from numba_warmup import warmup_numba
 import random
@@ -12,16 +13,17 @@ import cProfile
 import pstats
 
 
+
 # Hill climb parameters:
-num_shapes_to_draw = 500
-min_hill_climb_iterations = 50
+num_shapes_to_draw = 3000
+min_hill_climb_iterations = 5
 max_hill_climb_iterations = 1000
 
 # Rectangle parameters:
-initial_random_rectangle_pixel_width = 50
+initial_random_rectangle_pixel_width = 20
 
 # Parameters for target:
-resize_target_shorter_side_of_target = 300
+resize_target_shorter_side_of_target = 250
 
 # Image output parameters
 desired_length_of_longer_side_in_output = 3840 
@@ -30,6 +32,38 @@ desired_length_of_longer_side_in_output = 3840
 is_show_pygame_display_window = True
 is_display_rectangle_improvement = True
 
+# vector field parameters
+is_display_target_image_to_find_coords = False
+
+is_enable_vector_field = True
+
+is_enable_custom_vector_field_center = True
+field_center_x, field_center_y = 157, 168
+
+is_translate_vector_field_origin_to_canvas_center = False
+
+def vector_field_function(x,y):
+    # Returns a vector given an x and y coordinate
+    # (p, q) = (f(x,y), g(x,y))
+
+    # Radial sink with rotational twist:
+
+    # Set radial convergence
+    a = 2
+    # a<0: converge inwards
+    # a=0: no convergence/divergence
+    # a>0: diverge outwards
+
+    # Set rotational behavior
+    b = 0
+    # b<0: clockwise
+    # b=0: no rotation
+    # b>0: anticlockwise
+
+    p = a*x - b*y
+    q = b*x + a*y
+
+    return (p,q)
 
 
 def main():
@@ -37,6 +71,11 @@ def main():
 
     # Import target as numpy arrays
     target_rgba = get_target(resize_target_shorter_side_of_target)
+
+    if is_display_target_image_to_find_coords:
+        plt.imshow(target_rgba)
+        plt.show()
+
     
     # Import multiple texture png from texture folder into dictionary of numpy arrays in the form of
     # {
@@ -45,11 +84,16 @@ def main():
     # }
     texture_dict, num_textures = get_texture_dict()
 
-    # Create current rgba blank canvas opaque with same size as target_rgba. All rgb values of blank canvas is the average rgb color of the target image
+    # Create opaque rggba canvas of same size as target_rgba. All rgb values of blank canvas is the average rgb color of the target image
     current_rgba = np.ones(target_rgba.shape, dtype=np.float32)
     canvas_height, canvas_width = get_height_width_of_array(target_rgba)
     average_rgb = get_average_rgb_of_rgba_image(target_rgba)
     current_rgba[:,:,0:3] *= average_rgb
+
+    # Instantiate vector field
+    vector_field = VectorField(is_enable_vector_field, vector_field_function, canvas_height, canvas_width, 
+                 is_enable_custom_vector_field_center, is_translate_vector_field_origin_to_canvas_center, field_center_x, field_center_y)
+
 
     # keep track of all best scoring rectangle_list and corresponding texture
     best_rect_with_texture = []
@@ -67,8 +111,7 @@ def main():
         texture_greyscale_alpha, texture_height, texture_width = texture_value['texture_greyscale_alpha'], texture_value['texture_height'], texture_value['texture_width']
 
         # Create initial random rectangle
-        best_rect_list = create_random_rectangle(canvas_height, canvas_width, texture_height, texture_width,
-                                                initial_random_rectangle_pixel_width)
+        best_rect_list = create_random_rectangle(canvas_height, canvas_width, texture_height, texture_width,vector_field, initial_random_rectangle_pixel_width)
         
         # Score the rectangle and get the average rgb value
         highscore, rgb_of_best_rect, y_min_best, scanline_x_intersects_best = get_score_avg_rgb_ymin_and_scanline_xintersect(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
@@ -80,7 +123,7 @@ def main():
         print(f"shape index: {shape_index:<5}  % of max iterations = {(shape_index + 1) / num_shapes_to_draw:.2f}  hill climb iterations per shape = {num_hill_climb_iterations}")
         for _ in range(num_hill_climb_iterations):
             # Mutate the rectangle
-            mutated_rect_list = get_mutated_rectangle_copy(best_rect_list, canvas_height, canvas_width)
+            mutated_rect_list = get_mutated_rectangle_copy(best_rect_list, canvas_height, canvas_width, vector_field)
             # Score the mutated rectangle
             new_score, rgb_of_mutated_rect, y_min_mutated, scanline_x_intersects_mutated = get_score_avg_rgb_ymin_and_scanline_xintersect(mutated_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
             # update the highscore and best_rect_list if new score is higher
