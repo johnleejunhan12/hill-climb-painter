@@ -5,7 +5,8 @@ from utilities import *
 from rectangle import *
 from pygame_display import *
 from vector_field import VectorField
-from output_image import CreateOutput
+from output_image import CreateOutputImage
+from output_gif import CreateOutputGIF
 from numba_warmup import warmup_numba
 import random
 
@@ -16,25 +17,32 @@ import pstats
 
 # Hill climb parameters:
 num_shapes_to_draw = 5000
-min_hill_climb_iterations = 5
-max_hill_climb_iterations = 1000
+min_hill_climb_iterations = 1
+max_hill_climb_iterations = 50
 
 # Rectangle parameters:
 initial_random_rectangle_pixel_width = 30
 is_scaling_allowed_during_mutation= True
 
 # Parameters for target:
-resize_target_shorter_side_of_target = 250
+resize_target_shorter_side_of_target = 400
 
-# Image output parameters
-desired_length_of_longer_side_in_output = 3840 
+# Image output parameters:
+desired_length_of_longer_side_in_output = 3840
+image_name = "image_output"
+
+# GIF output parameters:
+is_create_gif = False
+frames_per_second = 120
+gif_name = "gif_output"
+
 
 # Pygame display parameters
 is_show_pygame_display_window = True
-is_display_rectangle_improvement = True
+is_display_rectangle_improvement = False
 
 # vector field parameters
-is_display_target_image_to_find_coords = False
+is_display_target_image_to_help_find_coords = False
 
 is_enable_vector_field = True
 
@@ -56,7 +64,7 @@ def vector_field_function(x,y):
     # a>0: diverge outwards
 
     # Set rotational behavior
-    b = 10
+    b = 5
     # b<0: clockwise
     # b=0: no rotation
     # b>0: anticlockwise
@@ -70,11 +78,13 @@ def vector_field_function(x,y):
 
 def main():
     warmup_numba()
+    # initialize gif_creator
+    gif_creator = CreateOutputGIF(fps=frames_per_second, is_create_gif=is_create_gif, gif_file_name=gif_name)
 
     # Import target as numpy arrays
     target_rgba = get_target(resize_target_shorter_side_of_target)
 
-    if is_display_target_image_to_find_coords:
+    if is_display_target_image_to_help_find_coords:
         plt.imshow(target_rgba)
         plt.show()
 
@@ -104,7 +114,7 @@ def main():
     pygame_display_window = PygameDisplayProcess(canvas_height, canvas_width, is_show_pygame_display_window)
 
     # initialize asynchronous output generator
-    create_output = CreateOutput(texture_dict, canvas_height, canvas_width, desired_length_of_longer_side_in_output, target_rgba)
+    create_output = CreateOutputImage(texture_dict, canvas_height, canvas_width, desired_length_of_longer_side_in_output, target_rgba)
 
     for shape_index in range(num_shapes_to_draw):
         # choose a random texture
@@ -134,13 +144,21 @@ def main():
                 best_rect_list = mutated_rect_list
                 rgb_of_best_rect = rgb_of_mutated_rect
 
-                # Update pygame display whenever there is an improvement (Optional)
+                # Update pygame display and the gif whenever there is an improvement (Optional)
                 if is_display_rectangle_improvement :
                     intermediate_canvas = draw_texture_on_canvas(texture_greyscale_alpha, current_rgba.copy(), scanline_x_intersects_mutated, y_min_mutated, rgb_of_mutated_rect, *mutated_rect_list)
                     pygame_display_window.update_display(intermediate_canvas)
+
+                    # Dont record all intermediate frames produced so that gif will not be too large
+                    if _ % 4 == 0:
+                        gif_creator.enqueue_frame(intermediate_canvas)
+
         
         # Update current_rgba with the best rectangle texture
         update_canvas_with_best_rect(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
+
+        # Enqueue to gif creator 
+        gif_creator.enqueue_frame(current_rgba)
 
         # # Append the best rectangle list with its corresponding texture and color to the best_textured_rect
         # best_rect_with_texture.append({"best_rect_list":best_rect_list,"texture_key": texture_key, "rgb": rgb_of_best_rect})
@@ -165,7 +183,10 @@ def main():
 
     # Save the output using the asynchronous output generator
     output_rgba = create_output.finish()
-    save_rgba_png(output_rgba, "output")
+    save_rgba_png(output_rgba, image_name)
+
+    # Safely end process of gif_creator
+    gif_creator.end_process()
 
 if __name__ == "__main__":
     with cProfile.Profile() as profile:
@@ -175,6 +196,6 @@ if __name__ == "__main__":
         print("Logged runtime stats")
         stats = pstats.Stats(profile, stream=f)
         stats.sort_stats(pstats.SortKey.TIME)
-        stats.print_stats("main|rectangle|utilities")
+        stats.print_stats("main|rectangle|utilities|output_gif|output_image")
 
 

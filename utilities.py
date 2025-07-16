@@ -65,24 +65,24 @@ def save_rgba_png(rgba_array, filename):
         filename (str): Name of the output PNG file (with or without .png extension)
     """
     # Create output folder if it doesn't exist
-    output_dir = "output"
+    output_dir = os.path.join(os.getcwd(), "output")
     os.makedirs(output_dir, exist_ok=True)
     
     # Add .png extension if not present
     if not filename.endswith('.png'):
         filename += '.png'
     
-    # Full path to save the file
-    filepath = os.path.join(output_dir, filename)
+    # # Construct full output path
+    full_output_path = os.path.join(output_dir, filename)
     
     # Convert normalized float32 array to uint8 (0-255 range)
     rgba_uint8 = (rgba_array * 255).astype(np.uint8)
     
     # Create PIL Image from array and save
     image = Image.fromarray(rgba_uint8, mode='RGBA')
-    image.save(filepath)
+    image.save(full_output_path)
     
-    print(f"Image saved to: {filepath}")
+    print(f"Image saved to: {full_output_path}")
 
 # Import image functions
 def import_image_as_normalized_rgba(filepath: str) -> np.ndarray:
