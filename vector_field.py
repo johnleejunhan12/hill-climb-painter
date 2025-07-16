@@ -29,10 +29,13 @@ class VectorField():
         # translate (x,y) to position relative to (0,0)
         x -= self.center_x
         y -= self.center_y
+
+        x, y = self.vector_field_function(x,y)
+
         # Handle zero vector case
         if x == 0 and y == 0:
             return 0
-        # Use np.arctan2 which returns the angle in range [-π, π]
+        # Use np.arctan2 which returns the angle of vector in range [-π, π]
         # with the correct sign based on the quadrant
         return np.arctan2(y, x)
     

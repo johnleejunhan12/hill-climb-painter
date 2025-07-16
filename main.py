@@ -15,12 +15,13 @@ import pstats
 
 
 # Hill climb parameters:
-num_shapes_to_draw = 3000
+num_shapes_to_draw = 5000
 min_hill_climb_iterations = 5
 max_hill_climb_iterations = 1000
 
 # Rectangle parameters:
-initial_random_rectangle_pixel_width = 20
+initial_random_rectangle_pixel_width = 30
+is_scaling_allowed_during_mutation= True
 
 # Parameters for target:
 resize_target_shorter_side_of_target = 250
@@ -37,10 +38,10 @@ is_display_target_image_to_find_coords = False
 
 is_enable_vector_field = True
 
-is_enable_custom_vector_field_center = True
+is_enable_custom_vector_field_center = False
 field_center_x, field_center_y = 157, 168
 
-is_translate_vector_field_origin_to_canvas_center = False
+is_translate_vector_field_origin_to_canvas_center = True
 
 def vector_field_function(x,y):
     # Returns a vector given an x and y coordinate
@@ -49,13 +50,13 @@ def vector_field_function(x,y):
     # Radial sink with rotational twist:
 
     # Set radial convergence
-    a = 2
+    a = 1
     # a<0: converge inwards
     # a=0: no convergence/divergence
     # a>0: diverge outwards
 
     # Set rotational behavior
-    b = 0
+    b = 10
     # b<0: clockwise
     # b=0: no rotation
     # b>0: anticlockwise
@@ -64,6 +65,7 @@ def vector_field_function(x,y):
     q = b*x + a*y
 
     return (p,q)
+
 
 
 def main():
@@ -96,7 +98,7 @@ def main():
 
 
     # keep track of all best scoring rectangle_list and corresponding texture
-    best_rect_with_texture = []
+    # best_rect_with_texture = []
 
     # initialize pygame
     pygame_display_window = PygameDisplayProcess(canvas_height, canvas_width, is_show_pygame_display_window)
@@ -123,7 +125,7 @@ def main():
         print(f"shape index: {shape_index:<5}  % of max iterations = {(shape_index + 1) / num_shapes_to_draw:.2f}  hill climb iterations per shape = {num_hill_climb_iterations}")
         for _ in range(num_hill_climb_iterations):
             # Mutate the rectangle
-            mutated_rect_list = get_mutated_rectangle_copy(best_rect_list, canvas_height, canvas_width, vector_field)
+            mutated_rect_list = get_mutated_rectangle_copy(best_rect_list, canvas_height, canvas_width, vector_field, is_scaling_allowed_during_mutation)
             # Score the mutated rectangle
             new_score, rgb_of_mutated_rect, y_min_mutated, scanline_x_intersects_mutated = get_score_avg_rgb_ymin_and_scanline_xintersect(mutated_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
             # update the highscore and best_rect_list if new score is higher
@@ -140,8 +142,8 @@ def main():
         # Update current_rgba with the best rectangle texture
         update_canvas_with_best_rect(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
 
-        # Append the best rectangle list with its corresponding texture and color to the best_textured_rect
-        best_rect_with_texture.append({"best_rect_list":best_rect_list,"texture_key": texture_key, "rgb": rgb_of_best_rect})
+        # # Append the best rectangle list with its corresponding texture and color to the best_textured_rect
+        # best_rect_with_texture.append({"best_rect_list":best_rect_list,"texture_key": texture_key, "rgb": rgb_of_best_rect})
 
         # Enqueue job for output image generation
         create_output.enqueue({"best_rect_list":best_rect_list,"texture_key": texture_key, "rgb": rgb_of_best_rect})

@@ -46,21 +46,21 @@ def create_random_rectangle(canvas_height, canvas_width, texture_height, texture
 
     return [x, y, rect_height, rect_width, theta]
 
-def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width, vector_field):
+def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width, vector_field, is_scaling_allowed):
     """
     Takes in a rectangle and returns a mutated copy of it.
     One of three mutation cases is randomly applied with equal probability:
 
-    Case 1: Mutate center x and y by a small integer amount in [-15, 15], clamped to canvas bounds.
-    Case 2: Scale both rect_height and rect_width by the same factor in [0.8, 1.2].
-    Case 3: Adjust theta by a small radian in [-0.8, 0.8], clamped to [-pi, pi].
+    Case 1: Mutate center x and y by a small integer amount, clamped to canvas bounds.
+    Case 2: Scale both rect_height and rect_width by the same factor.
+    Case 3: Adjust theta by a random radian between -pi and pi, clamped to [-pi, pi].
 
     Parameters:
         rectangle (list): [x(int), y(int), rect_height(float), rect_width(float), theta(float)]
         canvas_height (int): Height of the canvas in pixels.
         canvas_width (int): Width of the canvas in pixels.
         vector_field (VectorField): A vector field that maps (x,y) coordinate to theta radians in range [-pi,pi]
-
+        is_scaling_allowed (Boolean): Flag to determine if the height and width should be mutated
 
     Returns:
         mutated_rectangle (list): A mutated copy of the input rectangle.
@@ -71,9 +71,14 @@ def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width, vector_fi
     is_vector_field_enabled = vector_field.is_enabled
 
     if is_vector_field_enabled: # Dont need to rotate randomly as the vector field outputs theta given (x,y)
-        case = np.random.choice([1, 2])
+        mutation_operation_case = [1]
     else:
-        case = np.random.choice([1, 2, 3])
+        mutation_operation_case = [1,3]
+
+    if is_scaling_allowed:
+        mutation_operation_case.append(2)
+
+    case = np.random.choice(mutation_operation_case)
         
     if case == 1:
         # Case 1: Mutate x and y
