@@ -10,6 +10,10 @@ profiling.py
 # Work in progress directories
 target_image/
 texture_image/
+original_gif_frames/
+painted_gif_frames
+
+
 
 # pycharrm ide stuff
 *.idea/

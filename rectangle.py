@@ -8,7 +8,7 @@ from utilities import clamp_int
 def create_random_rectangle(canvas_height, canvas_width, texture_height, texture_width, vector_field, custom_rectangle_width=200):
     """
     Creates a random rectangle with its center located at a random integer pixel index within the canvas.
-    The rectangle maintains the same aspect ratio as the given texture, with its width fixed at 20 pixels.
+    The rectangle maintains the same aspect ratio as the given texture, with its width fixed at custom_rectangle_width pixels.
     The rectangle is also randomly rotated by an angle theta in radians, uniformly sampled from [-π, π).
 
     Parameters:
@@ -733,7 +733,7 @@ def draw_texture_on_canvas(texture_greyscale_alpha, current_rgba, scanline_x_int
 
 def get_score_avg_rgb_ymin_and_scanline_xintersect(rect_list, target_rgba, texture_greyscale_alpha, current_rgba):
     """
-    (Description here)
+    Function is called in main loop to reduce clutter
 
     Returns score, average_rgb and scanline_x_intersects of a [x, y, h, w, theta] rect list 
     """
@@ -752,6 +752,9 @@ def get_score_avg_rgb_ymin_and_scanline_xintersect(rect_list, target_rgba, textu
 
 # Draws the best rect list onto canvas
 def update_canvas_with_best_rect(rect_list, target_rgba, texture_greyscale_alpha, current_rgba):
+    """
+    Mutates target_rgba by drawing the textured rectangle.
+    """
     # 1) Find vertices of rectangle
     x, y, h, w, theta = rect_list
     h, w, theta = np.float32(h), np.float32(w), np.float32(theta)

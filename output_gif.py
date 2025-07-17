@@ -115,8 +115,10 @@ class CreateOutputGIF:
             # print("GIF creation process ended cleanly")
 
 
+
+# Debug
 if __name__ == "__main__":
-    # Example usage (run in main process)
+    # In main process:
     gif_creator = CreateOutputGIF(fps=24, is_create_gif=True, gif_file_name="myoutput")
     
     # Simulate enqueuing some frames (e.g., from a rendering loop)
@@ -124,7 +126,6 @@ if __name__ == "__main__":
         random_frame = np.random.rand(200, 200, 4).astype(np.float32)  # Example RGBA frame
         gif_creator.enqueue_frame(random_frame)
         
-        # Optional: Add some delay to simulate real rendering
         if i % 100 == 0:
             print(f"Enqueued frame {i}")
     
