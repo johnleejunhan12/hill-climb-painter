@@ -5,6 +5,7 @@ from utilities import *
 from rectangle import *
 from pygame_display import *
 from file_operations import *
+from select_coordinate_ui import *
 from vector_field import VectorField
 from output_image import CreateOutputImage
 from output_gif import CreateOutputGIF
@@ -16,9 +17,10 @@ import pstats
 
 
 # Hill climb parameters:
-num_shapes_to_draw = 3000
+is_print_hill_climb_progress = False
+num_shapes_to_draw = 500
 min_hill_climb_iterations = 1
-max_hill_climb_iterations = 50
+max_hill_climb_iterations = 20
 
 is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True
 fail_threshold_before_terminating_hill_climb = 100
@@ -28,32 +30,32 @@ initial_random_rectangle_pixel_width = 30
 is_scaling_allowed_during_mutation= True
 
 # Parameters for target:
-resize_target_shorter_side_of_target = 200
+resize_target_shorter_side_of_target = 150
 
 # Image output parameters:
-desired_length_of_longer_side_in_output = 1500
+desired_length_of_longer_side_in_output = 400
 image_name = "image_output"
 is_display_final_image = False
 is_append_datetime = True # add date and time at the end of image_name
 
-# GIF output parameters (Save painting progress to a gif)
+
+# There are two methods of creating gif:
+# 1) Create gif as more shapes are drawn to canvas
 is_create_painting_progress_gif = False
-frames_per_second = 120
+frames_per_second = 200
 gif_name = "gif_output"
+# 2) Create gif of a series of completed paintings
+recreate_number_of_frames_in_original_gif = 100
 
 # Pygame display parameters
 is_show_pygame_display_window = True
 is_display_rectangle_improvement = False
 
 # vector field parameters
-is_display_target_image_to_help_find_coords = False
+is_enable_vector_field = True
+field_center_x, field_center_y = 0,0
 
-is_enable_vector_field = False
 
-is_enable_custom_vector_field_center = False
-field_center_x, field_center_y = 157, 168
-
-is_translate_vector_field_origin_to_canvas_center = True
 
 def vector_field_function(x,y):
     # Returns a vector given an x and y coordinate
@@ -62,13 +64,13 @@ def vector_field_function(x,y):
     # Radial sink with rotational twist:
 
     # Set radial convergence
-    a = 1
+    a = -3
     # a<0: converge inwards
     # a=0: no convergence/divergence
     # a>0: diverge outwards
 
     # Set rotational behavior
-    b = 5
+    b = 0
     # b<0: clockwise
     # b=0: no rotation
     # b>0: anticlockwise
@@ -76,7 +78,7 @@ def vector_field_function(x,y):
     p = a*x - b*y
     q = b*x + a*y
 
-    return (-2, 10)
+
     return (p,q)
 
 
@@ -108,10 +110,6 @@ def main(target_image_full_filepath, png_output_folder_full_path, filename_of_ex
     # Import target as numpy arrays
     target_rgba = get_target_image_as_rgba(target_image_full_filepath, resize_target_shorter_side_of_target)
 
-    if is_display_target_image_to_help_find_coords:
-        plt.imshow(target_rgba)
-        plt.show()
-
     
     # Import multiple texture png from texture folder into dictionary of numpy arrays in the form of
     # {
@@ -120,15 +118,14 @@ def main(target_image_full_filepath, png_output_folder_full_path, filename_of_ex
     # }
     texture_dict, num_textures = get_texture_dict()
 
-    # Create opaque rggba canvas of same size as target_rgba. All rgb values of blank canvas is the average rgb color of the target image
+    # Create opaque rgba canvas of same size as target_rgba. All rgb values of blank canvas is the average rgb color of the target image
     current_rgba = np.ones(target_rgba.shape, dtype=np.float32)
     canvas_height, canvas_width = get_height_width_of_array(target_rgba)
     average_rgb = get_average_rgb_of_rgba_image(target_rgba)
     current_rgba[:,:,0:3] *= average_rgb
 
     # Instantiate vector field
-    vector_field = VectorField(is_enable_vector_field, vector_field_function, canvas_height, canvas_width, 
-                 is_enable_custom_vector_field_center, is_translate_vector_field_origin_to_canvas_center, field_center_x, field_center_y)
+    vector_field = VectorField(is_enable_vector_field, vector_field_function, canvas_height, canvas_width, field_center_x, field_center_y)
 
 
     # keep track of all best scoring rectangle_list and corresponding texture
@@ -162,7 +159,8 @@ def main(target_image_full_filepath, png_output_folder_full_path, filename_of_ex
         fail_count = 0
 
         # Perform hill climbing algorithm
-        print(f"shape index: {shape_index:<5}  % of max iterations = {(shape_index + 1) / num_shapes_to_draw:.2f}  hill climb iterations per shape = {num_hill_climb_iterations}")
+        if is_print_hill_climb_progress:
+            print(f"shape index: {shape_index:<5}  % of max iterations = {(shape_index + 1) / num_shapes_to_draw:.2f}  hill climb iterations per shape = {num_hill_climb_iterations}")
         for _ in range(num_hill_climb_iterations):
             # Stop prematurely after n failed iterations
             if fail_count > fail_threshold_before_terminating_hill_climb:
@@ -232,7 +230,7 @@ def main(target_image_full_filepath, png_output_folder_full_path, filename_of_ex
 
 
 if __name__ == "__main__":
-    # warmup_numba()
+    warmup_numba()
 
     # Get full filepath of target, which could have '.png', .jpg', '.jpeg', '.gif' extension
     full_target_filepath, is_target_gif = get_target_full_filepath()
@@ -257,16 +255,29 @@ if __name__ == "__main__":
         # If max_number_of_extracted_frames is lesser than number of frames in the gif, approx_fps will be smaller than the number of frames in gif to keep total duration roughly the same
         approx_fps = extract_gif_frames_to_output_folder_and_get_approx_fps(
             full_path_to_gif=full_target_filepath,
-            max_number_of_extracted_frames=20,
+            max_number_of_extracted_frames=recreate_number_of_frames_in_original_gif,
             output_folder=original_gif_frames_full_folder_path
         )
 
-        # For each png file in original_gif_frames folder, create a painted png and export them to painted_gif_frames folder
-        for i, item in enumerate(os.listdir(original_gif_frames_full_folder_path)):
-            # Check if the item has a .png extension (case-insensitive)
+        # Create a list of full filepath to pngs inside the original_gif_frames
+        list_of_png_full_file_path = []
+
+        for item in sorted(os.listdir(original_gif_frames_full_folder_path), key=lambda x: x.lower()):
             if item.lower().endswith('.png'):
-                png_full_path = os.path.join(original_gif_frames_full_folder_path, item)
-                main(png_full_path, painted_gif_frames_full_folder_path, filename_of_exported_png=str(i))
+                full_path = os.path.join(original_gif_frames_full_folder_path, item)
+                list_of_png_full_file_path.append(full_path) 
+                
+        if is_enable_vector_field:
+            coordinates = choose_coordinate_from_image_user_interface(list_of_png_full_file_path, resize_target_shorter_side_of_target)
+
+        # For each png file in original_gif_frames folder, create a painted png and export them to painted_gif_frames folder
+        for i, png_full_file_path in enumerate(list_of_png_full_file_path):
+
+            # Translate origin of vector field to the selected coordinates
+            if is_enable_vector_field:
+                field_center_x, field_center_y = coordinates[i]
+
+            main(png_full_file_path, painted_gif_frames_full_folder_path, filename_of_exported_png=str(i))
         
         # Read the painted pngs from painted_gif_frames folder and create the final gif in output folder
         create_gif_from_pngs(painted_gif_frames_full_folder_path, output_folder_full_filepath, approx_fps, file_name="animation.gif")

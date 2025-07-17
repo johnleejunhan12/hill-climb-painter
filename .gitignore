@@ -9,6 +9,7 @@ profiling.py
 
 # Work in progress directories
 target_image/
+target_gif/
 texture_image/
 original_gif_frames/
 painted_gif_frames

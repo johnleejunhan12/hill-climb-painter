@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image
 import glob
 import os
+import re
 import warnings
 import numba as nb
 from matplotlib import pyplot as plt
@@ -395,7 +396,14 @@ def create_gif_from_pngs(png_filepath: str, export_gif_full_file_path: str, fram
         ValueError: If no PNG files are found in the directory, or if export directory doesn't exist or is invalid
         Exception: If there's an error creating the GIF
     """
-    
+
+    def natural_sort_key(s):
+        """
+        Key function for natural sorting (alphanumeric order).
+        """
+        return [int(text) if text.isdigit() else text.lower() 
+                for text in re.split('([0-9]+)', s)]
+        
     # Validate input directory containing PNG files
     if not os.path.exists(png_filepath):
         raise FileNotFoundError(f"PNG directory '{png_filepath}' does not exist")
@@ -410,8 +418,8 @@ def create_gif_from_pngs(png_filepath: str, export_gif_full_file_path: str, fram
     if not png_files:
         raise ValueError(f"No PNG files found in directory '{png_filepath}'")
     
-    # Sort files to ensure consistent order (natural sort for numbered files)
-    png_files.sort()
+    # Sort files using natural (alphanumeric) sorting
+    png_files.sort(key=natural_sort_key)
     
     # Ensure file_name has .gif extension
     if not file_name.lower().endswith('.gif'):
