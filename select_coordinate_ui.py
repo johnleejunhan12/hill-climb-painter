@@ -10,20 +10,22 @@ class UserClosedGUIWindow(Exception):
     pass
 
 class CoordinateSelectorUI:
-    def __init__(self, image_filepath: Union[str, List[str]], resize_shorter_side_of_image: int):
+    def __init__(self, image_filepath: Union[str, List[str]], resize_shorter_side_of_image: int, replay_fps: int = 10):
         """
         Initialize the CoordinateSelectorUI class.
     
     Args:
             image_filepath: Path to a single image or list of paths to multiple images
             resize_shorter_side_of_image: Target size in pixels for the shorter side of each image
+            replay_fps: Frames per second for the replay slideshow (if multiple images)
         """
         # Convert single filepath to list for uniform handling
         self.image_paths = [image_filepath] if isinstance(image_filepath, str) else image_filepath
         self.target_size = resize_shorter_side_of_image
+        self.replay_fps = replay_fps
         self.selected_coordinates = []
         self.current_image_index = 0
-        self.long_hold_selection_delay = 200  # Default value before slider sets it
+        self.long_hold_selection_delay = 50  # Default value before slider sets it
         self.right_click_press_time = 0
         self.last_long_hold_selection_time = 0
         
@@ -38,8 +40,8 @@ class CoordinateSelectorUI:
         
         # Initialize Tkinter root window
         self.root = tk.Tk()
-        self.root.title("Select coordinates to translate origin of vector field")
-        
+        self.root.title("Select coordinates")
+                    
         # Setup the UI components
         self._setup_ui()
         
@@ -48,6 +50,11 @@ class CoordinateSelectorUI:
         
         # Track if window was closed properly
         self.window_closed_properly = False
+
+        # For replay window
+        self.replay_window = None
+        self.replay_running = False
+        self.replay_after_id = None
     
     def _validate_image_paths(self):
         """Check that all image paths exist and are valid PNG files"""
@@ -108,75 +115,110 @@ class CoordinateSelectorUI:
         self.main_frame = tk.Frame(self.root)
         self.main_frame.pack(padx=10, pady=10)
 
-        # Instruction label above the image
-        self.instruction_label = tk.Label(
+        # Set background color for main frame
+        self.root.configure(bg="#f7f7fa")
+        self.main_frame.configure(bg="#f7f7fa")
+
+        # Title label
+        self.title_label = ttk.Label(
             self.main_frame,
-            text="Left Click: Select a coordinate before confirming.\nRight click: Hold to select points quickly.\n Use 'Clear all previous selections' to start over.",
-            font=('Arial', 11, 'italic'),
-            fg='black'
+            text="Shift vector field origin to (?, ?)",
+            font=('Arial', 15, 'bold'),
+            background="#f7f7fa"
         )
-        self.instruction_label.pack(pady=(0, 8))
+        self.title_label.pack(pady=(0, 6))
+
+        # Instruction label above the image
+        self.instruction_label = ttk.Label(
+            self.main_frame,
+            text="Hold right click for faster selection. Press 'Clear all previous selections' to start over.",
+            font=('Arial', 11, 'italic'),
+            foreground='blue',
+            background="#f7f7fa"
+        )
+        self.instruction_label.pack(pady=(0, 10))
         
         # Create canvas for image display
         self.canvas = tk.Canvas(
-            self.main_frame, 
-            width=self.max_width, 
+            self.main_frame,
+            width=self.max_width,
             height=self.max_height,
-            bg='white'
+            bg='white',
+            highlightthickness=2,
+            highlightbackground="#b0b0b0",
+            relief=tk.RIDGE,
+            bd=2
         )
-        self.canvas.pack()
+        self.canvas.pack(pady=(0, 10))
         
         # Label for instructions and coordinate display
-        self.coord_label = tk.Label(
-            self.main_frame, 
+        self.coord_label = ttk.Label(
+            self.main_frame,
             text="Select (x,y) coordinate",
-            font=('Arial', 12)
+            font=('Arial', 12),
+            background="#f7f7fa"
         )
-        self.coord_label.pack(pady=(10, 5))
+        self.coord_label.pack(pady=(0, 8))
         
-        # Confirm button (initially disabled/grey)
+        button_frame = tk.Frame(self.main_frame, bg="#f7f7fa")
+        button_frame.pack(pady=(0, 12))
         self.confirm_button = tk.Button(
-            self.main_frame, 
-            text="Confirm Selection", 
+            button_frame,
+            text="Confirm Selection",
             command=self._confirm_selection,
             state=tk.DISABLED,
-            bg='light grey'
+            bg='green',
+            fg='white',
+            font=('Arial', 12, 'bold'),
+            activebackground='#2ecc40',
+            activeforeground='white',
+            width=16,
+            height=2,
+            bd=0,
+            relief=tk.FLAT
         )
-        self.confirm_button.pack(pady=5, side=tk.LEFT, padx=(0, 8))  # Add spacing to the right
-
-        # Clear all selections button
+        self.confirm_button.pack(side=tk.LEFT, padx=(0, 12))
         self.clear_button = tk.Button(
-            self.main_frame,
+            button_frame,
             text="Clear all previous selections",
             command=self._clear_all_selections,
-            bg='blue',
-            fg='white'
+            bg='red',
+            fg='white',
+            font=('Arial', 12, 'bold'),
+            activebackground='#e74c3c',
+            activeforeground='white',
+            width=22,
+            height=2,
+            bd=0,
+            relief=tk.FLAT
         )
-        self.clear_button.pack(pady=5, side=tk.LEFT)
+        self.clear_button.pack(side=tk.LEFT)
         
         # Slider for long hold selection delay
-        self.slider_frame = tk.Frame(self.main_frame)
-        self.slider_frame.pack(pady=10)
-        
-        tk.Label(
-            self.slider_frame, 
-            text="Selection delay of right click (ms):"
+        self.slider_frame = tk.Frame(self.main_frame, bg="#f7f7fa")
+        self.slider_frame.pack(pady=(0, 10))
+        ttk.Label(
+            self.slider_frame,
+            text="Long hold selection delay (ms):",
+            font=('Arial', 10),
+            background="#f7f7fa"
         ).pack(side=tk.LEFT)
-        
         self.delay_slider = ttk.Scale(
             self.slider_frame,
-            from_=50,
+            from_=20,
             to=500,
-            value=200,
-            command=self._update_long_hold_delay
+            value=50,
+            command=self._update_long_hold_delay,
+            length=180
         )
         self.delay_slider.pack(side=tk.LEFT, padx=5)
-        
-        self.delay_value_label = tk.Label(
+        self.delay_value_label = ttk.Label(
             self.slider_frame,
-            text="200"
+            text="50",
+            font=('Arial', 10, 'bold'),
+            background="#f7f7fa"
         )
-        self.delay_value_label.pack(side=tk.LEFT)
+        self.delay_value_label.pack(side=tk.LEFT, padx=(5, 0))
         
         # Bind mouse events
         self.canvas.bind("<Button-1>", self._on_left_click)  # Left click press
@@ -224,10 +266,13 @@ class CoordinateSelectorUI:
         # Reset selection state
         self.selected_x = None
         self.selected_y = None
-        self.confirm_button.config(state=tk.DISABLED, bg='light grey')
+        self.confirm_button.config(state=tk.DISABLED, bg='green')
         
         # Update status label
-        self.coord_label.config(text=f"Image {self.current_image_index + 1}/{len(self.image_paths)}: Select (x,y) coordinate")
+        self.coord_label.config(text=f"Image {self.current_image_index + 1}/{len(self.image_paths)}")
+        # Reset title label
+        if hasattr(self, 'title_label'):
+            self.title_label.config(text="Shift vector field origin to (?,?)")
     
     def _get_image_coordinates(self, event):
         """
@@ -284,11 +329,13 @@ class CoordinateSelectorUI:
             fill="red", tags="crosshair", width=2
         )
         
-        # Update label
-        self.coord_label.config(text=f"Coordinate ({x}, {y}) selected")
+
+        # Update title label
+        if hasattr(self, 'title_label'):
+            self.title_label.config(text=f"Shift vector field origin to ({x}, {y})")
         
         # Enable confirm button and change color to green
-        self.confirm_button.config(state=tk.NORMAL, bg='light green')
+        self.confirm_button.config(state=tk.NORMAL, bg='green')
     
     def _on_left_click(self, event):
         """Handle left mouse button click (initial press)"""
@@ -352,10 +399,16 @@ class CoordinateSelectorUI:
             self.selected_coordinates.append((self.selected_x, self.selected_y))
             
             if self.current_image_index == len(self.image_paths) - 1:
-                # Last image - close the window
-                self.window_closed_properly = True
-                self.root.quit()
-                self.root.destroy()
+                # Last image - show replay window if multiple images
+                if len(self.image_paths) > 1:
+                    self._show_replay_window()
+                    # Reset right click state
+                    self.right_click_press_time = 0
+                    self._long_hold_active = False
+                else:
+                    self.window_closed_properly = True
+                    self.root.quit()
+                    self.root.destroy()
             else:
                 # Move to next image
                 self.current_image_index += 1
@@ -367,10 +420,16 @@ class CoordinateSelectorUI:
             self.selected_coordinates.append((self.selected_x, self.selected_y))
             
             if self.current_image_index == len(self.image_paths) - 1:
-                # Last image - close the window
-                self.window_closed_properly = True
-                self.root.quit()
-                self.root.destroy()
+                # Last image - show replay window if multiple images
+                if len(self.image_paths) > 1:
+                    self._show_replay_window()
+                    # Reset right click state
+                    self.right_click_press_time = 0
+                    self._long_hold_active = False
+                else:
+                    self.window_closed_properly = True
+                    self.root.quit()
+                    self.root.destroy()
             else:
                 # Move to next image
                 self.current_image_index += 1
@@ -383,6 +442,9 @@ class CoordinateSelectorUI:
         self.selected_x = None
         self.selected_y = None
         self._display_current_image()
+        # Reset title label
+        if hasattr(self, 'title_label'):
+            self.title_label.config(text="Shift vector field origin to (?,?)")
     
     def _on_window_close(self):
         """Handle window close event before all selections are made"""
@@ -411,6 +473,203 @@ class CoordinateSelectorUI:
             self.root.after(10, loop)
         self.root.after(10, loop)
     
+    def _set_selection_window_state(self, enabled: bool):
+        """Enable or disable all controls in the selection window."""
+        state = tk.NORMAL if enabled else tk.DISABLED
+        # Disable/enable buttons
+        self.confirm_button.config(state=state)
+        self.clear_button.config(state=state)
+        # Disable/enable slider
+        self.delay_slider.config(state=state)
+        # Disable/enable canvas events
+        if not enabled:
+            self.canvas.unbind("<Button-1>")
+            self.canvas.unbind("<B1-Motion>")
+            self.canvas.unbind("<ButtonRelease-1>")
+            self.canvas.unbind("<Button-3>")
+            self.canvas.unbind("<B3-Motion>")
+            self.canvas.unbind("<ButtonRelease-3>")
+        else:
+            self.canvas.bind("<Button-1>", self._on_left_click)
+            self.canvas.bind("<B1-Motion>", self._on_left_drag)
+            self.canvas.bind("<ButtonRelease-1>", self._on_left_release)
+            self.canvas.bind("<Button-3>", self._on_right_click)
+            self.canvas.bind("<B3-Motion>", self._on_right_drag)
+            self.canvas.bind("<ButtonRelease-3>", self._on_right_release)
+    
+    def _show_replay_window(self):
+        """Show a replay window with a slideshow of images and overlays of selected coordinates."""
+        if self.replay_window is not None:
+            return
+        # Disable selection window controls
+        self._set_selection_window_state(False)
+        self.replay_window = tk.Toplevel(self.root)
+        self.replay_window.title("Replay")
+        self.replay_window.protocol("WM_DELETE_WINDOW", self._on_replay_close)
+
+        # --- Replay window UI polish ---
+        if self.replay_window is not None:
+            self.replay_window.configure(bg="#f7f7fa")
+        # Title label
+        title_label = ttk.Label(
+            self.replay_window,
+            text="Replay",
+            font=('Arial', 15, 'bold'),
+            background="#f7f7fa"
+        )
+        title_label.pack(pady=(10, 6))
+
+        # Canvas for replay
+        self.replay_canvas = tk.Canvas(
+            self.replay_window,
+            width=self.max_width,
+            height=self.max_height,
+            bg='white',
+            highlightthickness=2,
+            highlightbackground="#b0b0b0",
+            relief=tk.RIDGE,
+            bd=2
+        )
+        self.replay_canvas.pack(padx=10, pady=10)
+        
+        # Button frame
+        button_frame = tk.Frame(self.replay_window, bg="#f7f7fa")
+        button_frame.pack(pady=10)
+        
+        # Confirm all button (green)
+        confirm_all_btn = tk.Button(
+            button_frame,
+            text="Confirm all",
+            bg="green",
+            fg="white",
+            font=("Arial", 11, "bold"),
+            command=self._on_replay_confirm_all
+        )
+        confirm_all_btn.pack(side=tk.LEFT, padx=10)
+
+        # Reset all button (red)
+        reset_all_btn = tk.Button(
+            button_frame,
+            text="Reset all",
+            bg="red",
+            fg="white",
+            font=("Arial", 11, "bold"),
+            command=self._on_replay_reset_all
+        )
+        reset_all_btn.pack(side=tk.LEFT, padx=10)
+
+        # Slider for adjusting replay FPS
+        slider_frame = tk.Frame(self.replay_window, bg="#f7f7fa")
+        slider_frame.pack(pady=(0, 10))
+        ttk.Label(slider_frame, text="Replay FPS:").pack(side=tk.LEFT)
+        self.replay_fps_var = tk.DoubleVar(value=self.replay_fps)
+        self.replay_fps_slider = tk.Scale(
+            slider_frame,
+            from_=0.5,
+            to=100,
+            orient=tk.HORIZONTAL,
+            resolution=0.5,
+            variable=self.replay_fps_var,
+            command=self._on_replay_fps_change,
+            length=200
+        )
+        self.replay_fps_slider.pack(side=tk.LEFT, padx=5)
+        self.replay_fps_value_label = tk.Label(slider_frame, text=f"{self.replay_fps:.1f} FPS")
+        self.replay_fps_value_label.pack(side=tk.LEFT)
+
+        self.replay_running = True
+        self._replay_index = 0
+        self._start_replay_loop()
+
+    def _start_replay_loop(self):
+        """Start the replay slideshow loop."""
+        if not self.replay_running or self.replay_window is None:
+            return
+        self._draw_replay_frame(self._replay_index)
+        self._replay_index = (self._replay_index + 1) % len(self.resized_images)
+        delay = int(1000 / max(self.replay_fps, 0.5))
+        if self.replay_window is not None:
+            self.replay_after_id = self.replay_window.after(delay, self._start_replay_loop)
+
+    def _draw_replay_frame(self, idx):
+        """Draw a single frame in the replay window with overlayed coordinate."""
+        if self.replay_canvas is None:
+            return
+        self.replay_canvas.delete("all")
+        img = self.resized_images[idx]
+        photo_img = ImageTk.PhotoImage(img)
+        # Store PhotoImage in an instance variable to prevent GC
+        self._replay_photo_img = photo_img
+        x_pos = (self.max_width - img.width) // 2
+        y_pos = (self.max_height - img.height) // 2
+        self.replay_canvas.create_image(x_pos, y_pos, anchor=tk.NW, image=photo_img)
+        # Draw overlayed coordinate if available
+        if idx < len(self.selected_coordinates):
+            x, y = self.selected_coordinates[idx]
+            # The coordinates were selected on the resized image, so use them directly
+            rx = x + x_pos
+            ry = y + y_pos
+            cross_size = 10
+            self.replay_canvas.create_line(rx - cross_size, ry, rx + cross_size, ry, fill="red", width=2)
+            self.replay_canvas.create_line(rx, ry - cross_size, rx, ry + cross_size, fill="red", width=2)
+
+    def _on_replay_confirm_all(self):
+        """User confirms all selections in replay window."""
+        self.replay_running = False
+        if self.replay_after_id and self.replay_window is not None:
+            self.replay_window.after_cancel(self.replay_after_id)
+        if self.replay_window is not None:
+            self.replay_window.destroy()
+        self.window_closed_properly = True
+        self.root.quit()
+        self.root.destroy()
+        # Reset right click state
+        self.right_click_press_time = 0
+        self._long_hold_active = False
+
+    def _on_replay_reset_all(self):
+        """User resets all selections in replay window."""
+        self.replay_running = False
+        if self.replay_after_id and self.replay_window is not None:
+            self.replay_window.after_cancel(self.replay_after_id)
+        if self.replay_window is not None:
+            self.replay_window.destroy()
+        self.selected_coordinates = []
+        self.current_image_index = 0
+        self.selected_x = None
+        self.selected_y = None
+        self.window_closed_properly = False
+        self.replay_window = None
+        self.replay_after_id = None
+        self._replay_index = 0
+        self._display_current_image()
+        # Re-enable selection window controls
+        self._set_selection_window_state(True)
+        # Reset right click state
+        self.right_click_press_time = 0
+        self._long_hold_active = False
+
+    def _on_replay_close(self):
+        """Handle close event for the replay window."""
+        self.replay_running = False
+        if self.replay_after_id and self.replay_window is not None:
+            self.replay_window.after_cancel(self.replay_after_id)
+        if self.replay_window is not None:
+            self.replay_window.destroy()
+        self.root.quit()
+        self.root.destroy()
+    
+    def _on_replay_fps_change(self, val):
+        """Update the replay FPS from the slider."""
+        try:
+            fps = float(val)
+            if fps < 0.5:
+                fps = 0.5
+            self.replay_fps = fps
+            self.replay_fps_value_label.config(text=f"{fps:.1f} FPS")
+        except Exception:
+            pass
+
     def run(self) -> Union[Tuple[int, int], List[Tuple[int, int]]]:
         """
         Run the GUI and return the selected coordinates.
@@ -423,10 +682,8 @@ class CoordinateSelectorUI:
             UserClosedGUIWindow: If user closed the window before completing all selections
         """
         self.root.mainloop()
-        
         if not self.window_closed_properly:
             raise UserClosedGUIWindow("User closed GUI window before completing all selections")
-        
         # Return appropriate format based on input
         if len(self.image_paths) == 1:
             return self.selected_coordinates[0]

@@ -30,7 +30,7 @@ initial_random_rectangle_pixel_width = 20
 is_scaling_allowed_during_mutation= True
 
 # Parameters for target:
-resize_target_shorter_side_of_target = 300
+resize_target_shorter_side_of_target = 500
 
 # Image output parameters:
 desired_length_of_longer_side_in_output = 1200
@@ -42,13 +42,6 @@ is_append_datetime = False # add date and time at the end of image_name
 default_is_enable_multiprocessing = True
 is_enable_multiprocessing_for_batch_frame_processing = default_is_enable_multiprocessing
 
-# Top-level worker function for multiprocessing (must be at module scope for Windows compatibility)
-def paint_worker(args):
-    idx, png_full_file_path, painted_gif_frames_full_folder_path, coordinates = args
-    if is_enable_vector_field and coordinates is not None:
-        global field_center_x, field_center_y
-        field_center_x, field_center_y = coordinates[idx]
-    paint_target_image(png_full_file_path, painted_gif_frames_full_folder_path, filename_of_exported_png=str(idx))
 
 
 # There are two methods of creating gif:
@@ -98,6 +91,13 @@ def vector_field_function(x,y):
     return (p,q)
 
 
+# Top-level worker function for multiprocessing (must be at module scope for Windows compatibility)
+def paint_worker(args):
+    idx, png_full_file_path, painted_gif_frames_full_folder_path, coordinates = args
+    if is_enable_vector_field and coordinates is not None:
+        global field_center_x, field_center_y
+        field_center_x, field_center_y = coordinates[idx]
+    paint_target_image(png_full_file_path, painted_gif_frames_full_folder_path, filename_of_exported_png=str(idx))
 
 
 
