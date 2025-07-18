@@ -133,34 +133,60 @@ def polygon_to_rect(vertices):
 #     return output_rgba
 
 class CreateOutputImage:
-    def __init__(self, texture_dict, original_height, original_width, desired_length_of_longer_side, target_rgba):
+    def __init__(self, texture_dict, original_height, original_width, desired_length_of_longer_side, target_rgba, use_worker_process=True):
         self.texture_dict = texture_dict
         self.target_rgba = target_rgba
         self.output_height, self.output_width, self.scale_factor = find_output_height_width_scale(
             original_height, original_width, desired_length_of_longer_side)
         self.average_rgb = get_average_rgb_of_rgba_image(target_rgba)
-        self.queue = mp.Queue()
-        self.sentinel = "__DONE__"
-        # Shared memory for output_rgba
-        self.shm = shared_memory.SharedMemory(create=True, size=self.output_height * self.output_width * 4 * np.float32().nbytes)
-        self.output_rgba = np.ndarray((self.output_height, self.output_width, 4), dtype=np.float32, buffer=self.shm.buf)
-        self.output_rgba[:] = 1.0
-        self.output_rgba[:, :, 0:3] *= self.average_rgb
-        self.output_rgba[:, :, 3] = 1.0
-        self.worker_process = mp.Process(target=self.worker, args=(self.queue, self.shm.name, self.output_rgba.shape, self.output_rgba.dtype, self.texture_dict, self.scale_factor, self.sentinel))
-        self.worker_process.start()
+        self.use_worker_process = use_worker_process
+        if use_worker_process:
+            self.queue = mp.Queue()
+            self.sentinel = "__DONE__"
+            # Shared memory for output_rgba
+            self.shm = shared_memory.SharedMemory(create=True, size=self.output_height * self.output_width * 4 * np.float32().nbytes)
+            self.output_rgba = np.ndarray((self.output_height, self.output_width, 4), dtype=np.float32, buffer=self.shm.buf)
+            self.output_rgba[:] = 1.0
+            self.output_rgba[:, :, 0:3] *= self.average_rgb
+            self.output_rgba[:, :, 3] = 1.0
+            self.worker_process = mp.Process(target=self.worker, args=(self.queue, self.shm.name, self.output_rgba.shape, self.output_rgba.dtype, self.texture_dict, self.scale_factor, self.sentinel))
+            self.worker_process.start()
+        else:
+            # Synchronous mode: accumulate jobs in a list
+            self.jobs = []
+            self.output_rgba = np.ones((self.output_height, self.output_width, 4), dtype=np.float32)
+            self.output_rgba[:, :, 0:3] *= self.average_rgb
+            self.output_rgba[:, :, 3] = 1.0
 
     def enqueue(self, rect_texture_rgb_dict):
-        self.queue.put(rect_texture_rgb_dict)
+        if self.use_worker_process:
+            self.queue.put(rect_texture_rgb_dict)
+        else:
+            self.jobs.append(rect_texture_rgb_dict)
 
     def finish(self):
-        self.queue.put(self.sentinel)
-        self.worker_process.join()
-        # Copy the result out of shared memory before closing
-        result = np.copy(self.output_rgba)
-        self.shm.close()
-        self.shm.unlink()
-        return result
+        if self.use_worker_process:
+            self.queue.put(self.sentinel)
+            self.worker_process.join()
+            # Copy the result out of shared memory before closing
+            result = np.copy(self.output_rgba)
+            self.shm.close()
+            self.shm.unlink()
+            return result
+        else:
+            # Synchronous: process all jobs in this process
+            for job in self.jobs:
+                best_rect_list = job["best_rect_list"]
+                rgb = job["rgb"]
+                texture_key = job["texture_key"]
+                texture_greyscale_alpha = self.texture_dict[texture_key]["texture_greyscale_alpha"]
+                original_vertices = rectangle_to_polygon(*best_rect_list)
+                output_rect_vertices = (original_vertices * self.scale_factor).astype(np.int32)
+                output_rect_list = polygon_to_rect(output_rect_vertices)
+                y_min, y_max, scanline_x_intersects_array = get_y_index_bounds_and_scanline_x_intersects(
+                    output_rect_vertices, self.output_height, self.output_width)
+                draw_texture_on_canvas(texture_greyscale_alpha, self.output_rgba, scanline_x_intersects_array, y_min, rgb, *output_rect_list)
+            return self.output_rgba
 
     @staticmethod
     def worker(queue, shm_name, shape, dtype, texture_dict, scale_factor, sentinel):

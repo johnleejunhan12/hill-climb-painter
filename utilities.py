@@ -127,7 +127,7 @@ def import_image_as_normalized_rgba(filepath: str) -> np.ndarray:
 
     elif ext in [".jpg", ".jpeg"]:
         # warnings.warn("JPEG does not support alpha. An alpha channel of 1.0 will be added.")
-        print(f"{filepath} does not support alpha. An alpha channel of 1.0 will be added.")
+        print(f"JPG does not support alpha. An alpha channel of 1.0 will be added.")
         with Image.open(filepath) as img:
             img = img.convert("RGB")
             rgb = np.array(img).astype(np.float32) / 255.0
