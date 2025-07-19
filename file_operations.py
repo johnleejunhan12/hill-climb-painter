@@ -71,5 +71,69 @@ def clear_folder_contents(folder_path: str) -> str:
     return folder_path
 
 
+def copy_and_paste_file(source_file_path: str, destination_folder_full_path: str, overwrite_existing: bool = True) -> str:
+    """
+    Copy a file to a destination folder with configurable overwrite behavior.
+    
+    Args:
+        source_file_path (str): Full path to the source file to copy
+        destination_folder_full_path (str): Full path to the destination folder
+        overwrite_existing (bool, optional): Whether to overwrite existing files. 
+                                           Defaults to True. If False, appends "copy1", "copy2", etc.
+    
+    Returns:
+        str: Full path to the copied file
+    
+    Raises:
+        FileNotFoundError: If the source file doesn't exist
+        NotADirectoryError: If the destination path exists but is not a directory
+        OSError: If there's an error during the copy operation
+    """
+    # Check if source file exists
+    if not os.path.exists(source_file_path):
+        raise FileNotFoundError(f"Source file does not exist: {source_file_path}")
+    
+    # Check if source is a file (not a directory)
+    if not os.path.isfile(source_file_path):
+        raise OSError(f"Source path is not a file: {source_file_path}")
+    
+    # Check if destination folder exists
+    if not os.path.exists(destination_folder_full_path):
+        raise FileNotFoundError(f"Destination folder does not exist: {destination_folder_full_path}")
+    
+    # Check if destination is a directory
+    if not os.path.isdir(destination_folder_full_path):
+        raise NotADirectoryError(f"Destination path is not a directory: {destination_folder_full_path}")
+    
+    # Get the filename from the source path
+    filename = os.path.basename(source_file_path)
+    name, extension = os.path.splitext(filename)
+    
+    # Determine the destination file path
+    if overwrite_existing:
+        destination_file_path = os.path.join(destination_folder_full_path, filename)
+    else:
+        # Find the next available copy number
+        copy_number = 1
+        while True:
+            if copy_number == 1:
+                new_filename = f"{name}_copy1{extension}"
+            else:
+                new_filename = f"{name}_copy{copy_number}{extension}"
+            
+            test_path = os.path.join(destination_folder_full_path, new_filename)
+            if not os.path.exists(test_path):
+                destination_file_path = test_path
+                break
+            copy_number += 1
+    
+    try:
+        shutil.copy2(source_file_path, destination_file_path)
+        print(f"Copied file to: {destination_file_path}")
+        return destination_file_path
+    except OSError as e:
+        raise OSError(f"Failed to copy file from {source_file_path} to {destination_file_path}. Reason: {e}")
+
+
 
 

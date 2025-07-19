@@ -15,17 +15,19 @@ import random
 import cProfile
 import pstats
 
+# Print to console parameters
+is_print_hill_climb_progress_in_console = False
+
 
 # Hill climb parameters:
-is_print_hill_climb_progress = False
 num_shapes_to_draw = 1000
 min_hill_climb_iterations = 1
 max_hill_climb_iterations = 50
-
 is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True
 fail_threshold_before_terminating_hill_climb = 100
 
-# Rectangle parameters:
+# Draw texture parameters:
+texture_opacity = 0.99 # between 0 and 1
 initial_random_rectangle_pixel_width = 20
 is_scaling_allowed_during_mutation= True
 
@@ -38,11 +40,9 @@ image_name = "image_output"
 is_display_final_image = False
 is_append_datetime = False # add date and time at the end of image_name
 
-# Multiprocessing flag for batch frame processing
-default_is_enable_multiprocessing = True
+# Multiprocessing flag for batch frame processing, ensures pygame display is not shown if set to true
+default_is_enable_multiprocessing = False
 is_enable_multiprocessing_for_batch_frame_processing = default_is_enable_multiprocessing
-
-
 
 # There are two methods of creating gif:
 # 1) Create gif as more shapes are drawn to canvas (single painting)
@@ -141,7 +141,7 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
     # 0: {'texture_greyscale_alpha': texture_greyscale_alpha, 'texture_height': 385, 'texture_width': 1028}, 
     # 1: {'texture_greyscale_alpha': texture_greyscale_alpha, 'texture_height': 408, 'texture_width': 933}} 
     # }
-    texture_dict, num_textures = get_texture_dict()
+    texture_dict, num_textures = get_texture_dict(texture_opacity)
 
     if num_textures == 0:
         raise ValueError("No texture pngs found in texture folder.")
@@ -191,7 +191,7 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
         fail_count = 0
 
         # Perform hill climbing algorithm
-        if is_print_hill_climb_progress:
+        if is_print_hill_climb_progress_in_console:
             print(f"shape index: {shape_index:<5}  % of max iterations = {(shape_index + 1) / num_shapes_to_draw:.2f}  hill climb iterations per shape = {num_hill_climb_iterations}")
         for _ in range(num_hill_climb_iterations):
             # Stop prematurely after n failed iterations
