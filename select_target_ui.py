@@ -15,7 +15,7 @@ class FileSelectorUI:
     Supports both single file selection and multiple file selection modes.
     """
     
-    def __init__(self, allowed_extensions, is_select_multiple_files=False, window_title=None, window_position=None):
+    def __init__(self, allowed_extensions, is_select_multiple_files=False, window_title=None, window_position=None, custom_filepath=None):
         """
         Initialize the FileSelectorUI.
         
@@ -31,11 +31,13 @@ class FileSelectorUI:
             window_position (tuple, optional): Position for the file dialog window as (x, y) coordinates.
                                             If None, uses system default position.
                                             Defaults to None.
+            custom_filepath (str, optional): If provided, the file dialog will open at this path. If the path is invalid or inaccessible, a warning is printed and the default Downloads folder is used. If None, the dialog opens in the Downloads folder. Defaults to None.
         """
         self.root = None
         self.is_select_multiple_files = is_select_multiple_files
         self.window_title = window_title
         self.window_position = window_position
+        self.custom_filepath = custom_filepath
         
         # Convert single extension to list for consistent handling
         if isinstance(allowed_extensions, str):
@@ -117,6 +119,7 @@ class FileSelectorUI:
         """
         Open a file dialog to select file(s) with allowed extensions.
         Keeps prompting until valid file(s) are selected or user cancels.
+        If custom_filepath is provided and valid, the dialog opens there. Otherwise, it opens in the Downloads folder. If neither is accessible, prints a warning and uses the current working directory.
         
         Returns:
             str or list: Single file path (str) if is_select_multiple_files=False,
@@ -132,8 +135,22 @@ class FileSelectorUI:
             x, y = self.window_position
             self.root.geometry(f"+{x}+{y}")
         
-        # Get the default directory (Downloads folder or current working directory)
-        default_dir = self.get_downloads_folder()
+        # Determine the initial directory
+        initial_dir = None
+        if self.custom_filepath is not None:
+            try:
+                if os.path.exists(self.custom_filepath) and os.path.isdir(self.custom_filepath):
+                    initial_dir = self.custom_filepath
+                else:
+                    print(f"[Warning] Provided custom_filepath '{self.custom_filepath}' is not a valid directory. Falling back to Downloads folder.")
+            except Exception as e:
+                print(f"[Warning] Error accessing custom_filepath '{self.custom_filepath}': {e}. Falling back to Downloads folder.")
+        if initial_dir is None:
+            try:
+                initial_dir = self.get_downloads_folder()
+            except Exception as e:
+                print(f"[Warning] Error accessing Downloads folder: {e}. Using current working directory.")
+                initial_dir = os.getcwd()
         
         # Create file type filters for the dialog
         file_types = []
@@ -167,13 +184,13 @@ class FileSelectorUI:
                 file_paths = filedialog.askopenfilenames(
                     title=title,
                     filetypes=file_types,
-                    initialdir=default_dir
+                    initialdir=initial_dir
                 )
             else:
                 file_path = filedialog.askopenfilename(
                     title=title,
                     filetypes=file_types,
-                    initialdir=default_dir
+                    initialdir=initial_dir
                 )
                 file_paths = [file_path] if file_path else []
             
@@ -235,4 +252,21 @@ if __name__ == "__main__":
             print(f"  {i}. {file_path}")
     else:
         print("❌ No files selected.")
+
+    print("\n=== Custom Filepath Test Case ===")
+    # Test case using custom_filepath
+    selector_custom = FileSelectorUI(
+        ['.png', '.jpg', '.jpeg', '.gif'],
+        is_select_multiple_files=True,
+        window_title="Choose from custom filepath (texture_presets)",
+        window_position=(300, 300),
+        custom_filepath="C:/Git Repos/hill-climb-painter/texture_presets"
+    )
+    selected_custom_files = selector_custom.select_file()
+    if selected_custom_files:
+        print(f"✅ Successfully selected {len(selected_custom_files)} files from custom filepath:")
+        for i, file_path in enumerate(selected_custom_files, 1):
+            print(f"  {i}. {file_path}")
+    else:
+        print("❌ No files selected from custom filepath.")
 

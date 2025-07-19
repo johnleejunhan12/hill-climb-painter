@@ -65,37 +65,32 @@ class TargetTextureSelectorUI(tk.Tk):
         self.right_container.grid_rowconfigure(0, weight=1, minsize=300)
         self.right_container.grid_columnconfigure(0, weight=1)
         self.right_container.grid_propagate(False)
-        # Right container: debugging red box
-        for widget in self.right_container.winfo_children():
-            widget.destroy()
-        self.right_debug_box = tk.Frame(self.right_container, bg="red")
-        self.right_debug_box.grid(row=0, column=0, sticky="nsew")
 
         # --- Left: Image/GIF display ---
         self.image_display = tk.Label(self.left_container, bg="#eaeaea", bd=0, relief='flat', font=("Segoe UI", 16), anchor='center', justify='center')
-        self.image_display.grid(row=0, column=0, sticky="nsew")
-        self.image_display.configure(image='', text='No target selected')
+        self.image_display.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        self.image_display.configure(image='', text='No target selected\nAllowed: png, jpeg, jpg, gif')
 
         # --- Left: Select Target Button ---
         self.select_target_btn = ttk.Button(
             self.left_container, text="Select target", command=self._on_select_target, takefocus=0
         )
-        self.select_target_btn.grid(row=1, column=0, sticky="ew", ipady=10)
+        self.select_target_btn.grid(row=1, column=0, sticky="ew", ipady=10, padx=5, pady=5)
         self.left_container.update_idletasks()
         self.select_target_btn.configure(width=1)
         self.left_container.grid_propagate(False)
 
         # Add display to right (red) debug box
         self.right_debug_display = tk.Label(self.right_container, text="No textures selected", font=("Segoe UI", 16), bg="#eaeaea", bd=0, relief='flat', anchor='center', justify='center')
-        self.right_debug_display.grid(row=0, column=0, sticky="nsew")
+        self.right_debug_display.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
         # Add button to right (red) debug box
         self.right_debug_btn = ttk.Button(self.right_container, text="Select texture(s)")
-        self.right_debug_btn.grid(row=1, column=0, sticky="ew", ipady=10)
+        self.right_debug_btn.grid(row=1, column=0, sticky="ew", ipady=10, padx=5, pady=5)
 
         # --- Right: Texture display and button ---
         self.texture_display_frame = tk.Frame(self.right_container, bg="#eaeaea", bd=0, relief='flat')
-        self.texture_display_frame.grid(row=0, column=0, sticky="nsew")
+        self.texture_display_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
         self.right_container.grid_rowconfigure(0, weight=1)
         self.right_container.grid_columnconfigure(0, weight=1)
 
@@ -103,7 +98,8 @@ class TargetTextureSelectorUI(tk.Tk):
             selector_single = FileSelectorUI(
                 '.png',
                 is_select_multiple_files=True,
-                window_title="Select texture",
+                window_title="Select texture(s)",
+                custom_filepath=os.path.join(os.path.dirname(__file__), 'texture_presets')
             )
             paths = selector_single.select_file()
             if isinstance(paths, str):
@@ -115,12 +111,25 @@ class TargetTextureSelectorUI(tk.Tk):
                 update_right_clear_btn()
                 return
             self.selected_texture_paths = paths
-            self.selected_texture_images = [Image.open(p) for p in paths]
+            def greyscale_with_alpha(p):
+                img = Image.open(p)
+                if img.mode in ("RGBA", "LA") or (img.mode == "P" and 'transparency' in img.info):
+                    img = img.convert("RGBA")
+                    # Split channels
+                    r, g, b, a = img.split()
+                    # Convert RGB to greyscale
+                    grey = Image.merge("RGB", (r, g, b)).convert("L")
+                    # Merge greyscale with alpha
+                    img = Image.merge("RGBA", (grey, grey, grey, a))
+                else:
+                    img = img.convert("L").convert("RGB")
+                return img
+            self.selected_texture_images = [greyscale_with_alpha(p) for p in paths]
             self._update_texture_display()
             update_right_clear_btn()
 
         self.select_texture_btn = ttk.Button(self.right_container, text="Select texture(s)", command=on_select_textures, takefocus=0)
-        self.select_texture_btn.grid(row=1, column=0, sticky="ew", ipady=10)
+        self.select_texture_btn.grid(row=1, column=0, sticky="ew", ipady=10, padx=5, pady=5)
         self.right_container.update_idletasks()
         self.select_texture_btn.configure(width=1)
         self.right_container.grid_propagate(False)
@@ -135,7 +144,7 @@ class TargetTextureSelectorUI(tk.Tk):
                 widget.destroy()
             n = len(self.selected_texture_images)
             if n == 0:
-                label = tk.Label(frame, text="No textures selected", font=("Segoe UI", 16), bg="#eaeaea", bd=0, relief='flat', anchor='center', justify='center')
+                label = tk.Label(frame, text="No textures selected\nAllowed: png", font=("Segoe UI", 16), bg="#eaeaea", bd=0, relief='flat', anchor='center', justify='center')
                 label.place(relx=0.5, rely=0.5, anchor='center')
                 self.texture_grid_labels = [label]
                 return
@@ -160,7 +169,7 @@ class TargetTextureSelectorUI(tk.Tk):
                 tk_img = ImageTk.PhotoImage(img_copy)
                 label = tk.Label(frame, image=tk_img, bg="#eaeaea")
                 setattr(label, 'image', tk_img)  # Prevent GC
-                label.grid(row=row, column=col, sticky="nsew")
+                label.grid(row=row, column=col, sticky="nsew", padx=5, pady=5)
                 self.texture_grid_labels.append(label)
             for i in range(grid_size):
                 frame.grid_rowconfigure(i, weight=1)
@@ -188,9 +197,9 @@ class TargetTextureSelectorUI(tk.Tk):
             update_left_clear_btn()
 
         self.clear_target_btn = ttk.Button(
-            self.left_container, text="Clear selection", command=on_clear_left
+            self.left_container, text="Clear selected target", command=on_clear_left
         )
-        self.clear_target_btn.grid(row=2, column=0, sticky="ew", ipady=10, pady=0)
+        self.clear_target_btn.grid(row=2, column=0, sticky="ew", ipady=10, padx=5, pady=0)
 
         # Attach update_left_clear_btn to self so it can be called as a method
         self.update_left_clear_btn = update_left_clear_btn
@@ -204,9 +213,9 @@ class TargetTextureSelectorUI(tk.Tk):
             update_right_clear_btn()
 
         self.clear_texture_btn = ttk.Button(
-            self.right_container, text="Clear selection", command=on_clear_right
+            self.right_container, text="Clear selected texture(s)", command=on_clear_right
         )
-        self.clear_texture_btn.grid(row=2, column=0, sticky="ew", ipady=10, pady=0)
+        self.clear_texture_btn.grid(row=2, column=0, sticky="ew", ipady=10, padx=5, pady=0)
 
         def update_right_clear_btn():
             if not self.selected_texture_paths:
@@ -237,7 +246,7 @@ class TargetTextureSelectorUI(tk.Tk):
                 self.confirm_btn.state(["disabled"])
 
         self.confirm_btn = ttk.Button(self, text="Confirm")
-        self.confirm_btn.grid(row=1, column=0, columnspan=2, sticky="ew", ipady=10, pady=0)
+        self.confirm_btn.grid(row=1, column=0, columnspan=2, sticky="ew", ipady=10, padx=5, pady=5)
         self.confirm_btn.configure(command=self._on_confirm)
 
         # Add custom style for green button
@@ -338,7 +347,7 @@ class TargetTextureSelectorUI(tk.Tk):
 
     def _update_image_display(self):
         if self.selected_image_path is None:
-            self.image_display.configure(image='', text='No target selected')
+            self.image_display.configure(image='', text='No target selected\nAllowed: png, jpeg, jpg, gif')
             self.update_left_clear_btn()
             return
         ext = os.path.splitext(self.selected_image_path)[1].lower()
