@@ -1,0 +1,150 @@
+{
+  "general_parameters": {
+    "hill_climb_settings": {
+      "min_hill_climb_iterations" : {
+        "widget_type": "slider",
+        "current_value": 50,
+        "min_value": 0,
+        "max_value": 500,
+        "label": "minimum hill climb iterations:"
+      }
+
+    },
+    "target_settings": {
+      "resize_target_shorter_side_of_target": {
+        "widget_type": "slider",
+        "current_value": 200,
+        "min_value": 100,
+        "max_value": 400,
+        "label": "Computation size (smaller is faster):",
+        "unit": "px"
+      }
+    },
+    "texture_settings": {
+      "texture_opacity": {
+        "widget_type": "slider",
+        "current_value": 0.99,
+        "min_value": 0.00,
+        "max_value": 1.00,
+        "label": "Texture opacity:",
+        "unit": "",
+        "decimal_place": 2
+      },
+      "num_shapes_to_draw": {
+        "widget_type": "slider",
+        "current_value": 20,
+        "min_value": 50,
+        "max_value": 2000,
+        "label": "Number of textures to draw:",
+        "unit": ""
+      },
+      "initial_random_rectangle_pixel_width": {
+        "widget_type": "slider",
+        "current_value": 20,
+        "min_value": 10,
+        "max_value": 200,
+        "label": "Initial random rectangle pixel width:",
+        "unit": "px"
+      },
+      "is_scaling_allowed_during_mutation": {
+        "widget_type": "checkbox",
+        "current_value": true,
+        "label": "Allow scaling during mutation"
+      }
+    },
+    "pygame_display_settings": {
+      "is_show_pygame_display_window": {
+        "widget_type": "checkbox",
+        "current_value": true,
+        "label": "Show progress"
+      },
+      "is_display_rectangle_improvement": {
+        "widget_type": "checkbox",
+        "current_value": false,
+        "label": "Display rectangle improvement in progress"
+      }
+    },
+    "vector_field_settings": {
+      "is_enable_vector_field": {
+        "widget_type": "checkbox",
+        "current_value": true,
+        "label": "Enable vector field"
+      }
+    }
+  },
+  "advanced_parameters": {
+    "debug_settings": {
+      "is_print_hill_climb_progress_in_console": {
+        "widget_type": "checkbox",
+        "current_value": false,
+        "label": "Print hill climb progress in console"
+      }
+    }
+  },
+  "target_is_image_parameters": {
+    "image_output_settings": {
+      "desired_length_of_longer_side_in_painted_image": {
+        "widget_type": "slider",
+        "current_value": 1200,
+        "min_value": 800,
+        "max_value": 4000,
+        "label": "Desired length of longer side in painted image"
+      },
+      "image_name": {
+        "widget_type": "textbox",
+        "current_value": "image_output",
+        "label": "Name of output image"
+      },
+      "is_append_datetime": {
+        "widget_type": "checkbox",
+        "current_value": false,
+        "label": "Add date and time at the end of image_name"
+      },
+      "is_display_final_image": {
+        "widget_type": "checkbox",
+        "current_value": false,
+        "label": "Display the final painted image"
+      }
+    },
+    "painting_progress_gif_settings": {
+      "is_create_painting_progress_gif": {
+        "widget_type": "checkbox",
+        "current_value": false,
+        "label": "Creates gif of painting progress"
+      },
+      "frames_per_second": {
+        "widget_type": "slider",
+        "current_value": 100,
+        "min_value": 1,
+        "max_value": 100,
+        "label": "FPS of painting progress gif"
+      },
+      "gif_name": {
+        "widget_type": "textbox",
+        "current_value": "gif_output",
+        "label": "Filename of created gif"
+      }
+    }
+  },
+  "target_is_gif_parameters": {
+    "make_gif_from_gif_settings": {
+      "recreate_number_of_frames_in_original_gif": {
+        "widget_type": "slider",
+        "current_value": 200,
+        "min_value": 2,
+        "max_value": 200,
+        "label": "Upper limit of frames to paint in original gif"
+      },
+      "gif_painting_of_target_gif": {
+        "widget_type": "textbox",
+        "current_value": "painted_gif_output",
+        "label": "Filename of the painted gif"
+      },
+      "is_enable_multiprocessing_for_batch_frame_processing": {
+        "widget_type": "checkbox",
+        "current_value": false,
+        "label": "Multiprocessing flag for batch frame processing, ensures pygame display is not shown if set to true"
+      }
+    }
+  }
+}

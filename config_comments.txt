@@ -1,0 +1,45 @@
+# Configuration Comments and Notes
+
+## Debug Section
+is_print_hill_climb_progress_in_console = False
+
+## Target Section
+resize_target_shorter_side_of_target = 500 # slider ranging between 100 and 500
+
+## Hill Climb Section
+num_shapes_to_draw = 1000 # range between 100 and 5000 in slider widget
+min_hill_climb_iterations = 1 # range from 1 to max_hill_climb_iterations in slider widget
+max_hill_climb_iterations = 50 # range from min_hill_climb_iterations to 300 in slider widget
+is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True # Boolean checkbox, default is true
+fail_threshold_before_terminating_hill_climb = 100 # Numerical value entry box that conditionally shows if Boolean checkbox is ticked, min value is 50, max value is 200
+
+## Texture Section
+texture_opacity = 0.99 # slider between 0 and 1
+initial_random_rectangle_pixel_width = 20 # slider ranging between 10 and 200
+is_scaling_allowed_during_mutation= True # Boolean checkbox
+
+## Pygame Display Section
+is_show_pygame_display_window = True # Boolean checkbox
+is_display_rectangle_improvement = False # Boolean checkbox that conditionally shows if is_show_pygame_display_window = True
+
+## Vector Field Section
+is_enable_vector_field = True # boolean check box that conditionally shows button called "edit vector field"
+
+
+
+
+## Image Output Parameters (target is image)
+desired_length_of_longer_side_in_painted_image = 1200 # slider between 800 and 4000
+image_name = "image_output" # text box 
+is_display_final_image = False
+is_append_datetime = False # add date and time at the end of image_name
+
+## Create gif from painting progress for target image (target is gif)
+is_create_painting_progress_gif = False
+frames_per_second = 100
+gif_name = "gif_output"
+
+## Create gif from painted frames of target gif (target is gif)
+recreate_number_of_frames_in_original_gif = 200
+gif_painting_of_target_gif = "sunset_paintstrokes"
+is_enable_multiprocessing_for_batch_frame_processing = False # Multiprocessing flag for batch frame processing, ensures pygame display is not shown if set to true 

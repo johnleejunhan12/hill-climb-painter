@@ -7,62 +7,57 @@ from pygame_display import *
 from file_operations import *
 from select_coordinate_ui import CoordinateSelectorUI
 from vector_field import VectorField
-from output_image import CreateOutputImage
-from output_gif import CreateOutputGIF
+from create_painted_png import CreateOutputImage
+from create_paint_progress_gif import CreateOutputGIF
 from numba_warmup import warmup_numba
 import random
 
 import cProfile
 import pstats
 
-# Print to console parameters
+# Print to console parameters (debug)
 is_print_hill_climb_progress_in_console = False
 
+# Parameters for target:
+resize_target_shorter_side_of_target = 500 # slider ranging between 100 and 500
 
 # Hill climb parameters:
-num_shapes_to_draw = 1000
-min_hill_climb_iterations = 1
-max_hill_climb_iterations = 50
-is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True
-fail_threshold_before_terminating_hill_climb = 100
+num_shapes_to_draw = 1000 # range between 100 and 5000 in slider widget
+min_hill_climb_iterations = 1 # range from 1 to max_hill_climb_iterations in slider widget
+max_hill_climb_iterations = 50 # range from min_hill_climb_iterations to 300 in slider widget
+is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True # Boolean checkbox
+fail_threshold_before_terminating_hill_climb = 100 # Numerical value entry box that conditionally shows if Boolean checkbox is ticked, min value is 50, max value is 200
 
 # Draw texture parameters:
-texture_opacity = 0.99 # between 0 and 1
-initial_random_rectangle_pixel_width = 20
-is_scaling_allowed_during_mutation= True
-
-# Parameters for target:
-resize_target_shorter_side_of_target = 500
-
-# Image output parameters:
-desired_length_of_longer_side_in_output = 1200
-image_name = "image_output"
-is_display_final_image = False
-is_append_datetime = False # add date and time at the end of image_name
-
-# Multiprocessing flag for batch frame processing, ensures pygame display is not shown if set to true
-default_is_enable_multiprocessing = False
-is_enable_multiprocessing_for_batch_frame_processing = default_is_enable_multiprocessing
-
-# There are two methods of creating gif:
-# 1) Create gif as more shapes are drawn to canvas (single painting)
-is_create_painting_progress_gif = False
-frames_per_second = 200
-gif_name = "gif_output"
-
-# OR...
-
-# 2) Create gif from series of completed paintings
-recreate_number_of_frames_in_original_gif = 200
-gif_painting_of_gif_name = "sunset_paintstrokes"
+texture_opacity = 0.99 # slider between 0 and 1
+initial_random_rectangle_pixel_width = 20 # slider ranging between 10 and 200
+is_scaling_allowed_during_mutation= True # Boolean checkbox
 
 # Pygame display parameters
-is_show_pygame_display_window = True
-is_display_rectangle_improvement = False
+is_show_pygame_display_window = True # Boolean checkbox
+is_display_rectangle_improvement = False # Boolean checkbox that conditionally shows if is_show_pygame_display_window = True
 
 # vector field parameters
-is_enable_vector_field = True
-field_center_x, field_center_y = 0,0
+is_enable_vector_field = True # boolean check box that conditionally shows button called "edit vector field"
+
+
+
+# image_output_settings (target is image parameters)
+desired_length_of_longer_side_in_painted_image = 1200 # slider between 800 and 4000
+image_name = "image_output" # Text box that allows user to specify name of output image
+is_append_datetime = False # boolean checkbox# add date and time at the end of image_name
+is_display_final_image = False # boolean checkbox that indicates if painted image should be displayed
+
+
+# painting_progress_gif_settings (target is image parameters)
+is_create_painting_progress_gif = False # checkbox, description is "creates gif of painting progress"
+frames_per_second = 100 # slider between 1 and 100 description is "FPS of painting progress gif"
+gif_name = "gif_output" # text box widget. description is "filename of created gif"
+
+# make_gif_from_gif_settings (target is gif parameters)
+recreate_number_of_frames_in_original_gif = 200 # slider between 2 and 200 description is "upper limit of frames to paint in original gif"
+gif_painting_of_target_gif = "painted_gif_output" # textbox. description is "filename of the painted gif"
+is_enable_multiprocessing_for_batch_frame_processing = False # checkbox # Description: Multiprocessing flag for batch frame processing, ensures pygame display is not shown if set to true
 
 
 
@@ -170,7 +165,7 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
 
     # Use synchronous mode if in a multiprocessing worker
     use_worker_process = not is_enable_multiprocessing_for_batch_frame_processing if 'is_enable_multiprocessing_for_batch_frame_processing' in globals() else True
-    create_image_output = CreateOutputImage(texture_dict, canvas_height, canvas_width, desired_length_of_longer_side_in_output, target_rgba, use_worker_process=use_worker_process)
+    create_image_output = CreateOutputImage(texture_dict, canvas_height, canvas_width, desired_length_of_longer_side_in_painted_image, target_rgba, use_worker_process=use_worker_process)
 
     for shape_index in range(num_shapes_to_draw):
         # choose a random texture
@@ -265,6 +260,9 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
 
 if __name__ == "__main__":
     warmup_numba()
+    
+    field_center_x, field_center_y = 0,0
+
 
     # Get full filepath of target, which could have '.png', .jpg', '.jpeg', '.gif' extension
     full_target_filepath, is_target_gif = get_target_full_filepath()
@@ -327,7 +325,7 @@ if __name__ == "__main__":
                 paint_target_image(png_full_file_path, painted_gif_frames_full_folder_path, filename_of_exported_png=str(i))
 
         # Read the painted pngs from painted_gif_frames folder and create the final gif in output folder
-        create_gif_from_pngs(painted_gif_frames_full_folder_path, output_folder_full_filepath, approx_fps, file_name=gif_painting_of_gif_name)
+        create_gif_from_pngs(painted_gif_frames_full_folder_path, output_folder_full_filepath, approx_fps, file_name=gif_painting_of_target_gif)
 
     else:
         # Allow user to select center of vector field

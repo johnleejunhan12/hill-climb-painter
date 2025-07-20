@@ -8,9 +8,14 @@ if __name__ == "__main__":
 
     target_folder_fullpath = create_folder("target")
     clear_folder_contents(target_folder_fullpath)
-    copy_and_paste_file(target_image_full_filepath, target_folder_fullpath)
+    target = copy_and_paste_file(target_image_full_filepath, target_folder_fullpath)
 
     texture_folder_fullpath = create_folder("texture")
+    textures = []
     clear_folder_contents(texture_folder_fullpath)
     for texture_path in list_of_texture_images_full_path:
-        copy_and_paste_file(texture_path, texture_folder_fullpath)
+        textures.append(copy_and_paste_file(texture_path, texture_folder_fullpath))
+
+
+    # get full filepath of target
+    print(target, textures)

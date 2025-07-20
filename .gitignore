@@ -14,6 +14,8 @@ texture_image/
 original_gif_frames/
 painted_gif_frames
 texture_presets/
+target/
+texture/
 
 
 # pycharrm ide stuff
