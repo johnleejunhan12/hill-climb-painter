@@ -267,12 +267,43 @@ class RangeSlider(tk.Canvas):
         x = event.x
         x1 = self._value_to_pos(self.val_min)
         x2 = self._value_to_pos(self.val_max)
-        if abs(x - x1) < abs(x - x2):
-            if abs(x - x1) <= self.thumb_radius * 2:
-                self.active_thumb = 'min'
-        else:
-            if abs(x - x2) <= self.thumb_radius * 2:
-                self.active_thumb = 'max'
+        
+        # Check if click is within the slider track bounds
+        if x < self.pad or x > self.width - self.pad:
+            return
+        
+        # First check if clicking directly on a thumb (within thumb radius)
+        thumb_hit = False
+        if abs(x - x1) <= self.thumb_radius:
+            self.active_thumb = 'min'
+            thumb_hit = True
+        elif abs(x - x2) <= self.thumb_radius:
+            self.active_thumb = 'max'
+            thumb_hit = True
+        
+        # If not clicking on a thumb, move the nearest thumb to the click position
+        if not thumb_hit:
+            click_value = self._pos_to_value(x)
+            
+            # Determine which thumb is closer to the click
+            dist_to_min = abs(click_value - self.val_min)
+            dist_to_max = abs(click_value - self.val_max)
+            
+            if dist_to_min <= dist_to_max:
+                # Move min thumb, but ensure it doesn't go beyond max
+                if click_value <= self.val_max:
+                    self.val_min = max(click_value, self.min_val)
+                    self.active_thumb = 'min'
+            else:
+                # Move max thumb, but ensure it doesn't go below min
+                if click_value >= self.val_min:
+                    self.val_max = min(click_value, self.max_val)
+                    self.active_thumb = 'max'
+            
+            # Redraw and trigger callback
+            self._draw_slider()
+            if self.command:
+                self.command(self.val_min, self.val_max)
 
     def _on_drag(self, event):
         if not self.active_thumb:
@@ -431,9 +462,12 @@ class SingleSlider(tk.Canvas):
 
     def _on_click(self, event):
         x = event.x
-        y = 0
+        # Check if click is within the slider track bounds
+        if x < self.pad or x > self.width - self.pad:
+            return
         
         # Calculate slider_y using the same logic as _draw_slider
+        y = 0
         if self.title:
             y += self.title_size
             if self.subtitle:
@@ -451,9 +485,18 @@ class SingleSlider(tk.Canvas):
         thumb_right = thumb_x + rect_w // 2
         thumb_top = slider_y - rect_h // 2
         thumb_bottom = slider_y + rect_h // 2
+        
         # Check if click is inside the thumb rectangle
         if thumb_left <= x <= thumb_right and thumb_top <= event.y <= thumb_bottom:
             self.active_thumb = True
+        else:
+            # Move thumb to click position
+            value = self._pos_to_value(x)
+            self.value = max(self.min_val, min(self.max_val, value))
+            self.active_thumb = True
+            self._draw_slider()
+            if self.command:
+                self.command(self.value)
 
     def _on_drag(self, event):
         if not self.active_thumb:

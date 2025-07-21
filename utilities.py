@@ -589,6 +589,26 @@ def extract_gif_frames_to_output_folder_and_get_approx_fps(full_path_to_gif, max
     return fps_to_return
 
 
+def count_frames_in_gif(filepath):
+    """
+    Returns the number of frames in a GIF file.
+    Args:
+        filepath (str): Full path to the GIF file.
+    Returns:
+        int: Number of frames in the GIF.
+    """
+    from PIL import Image
+    with Image.open(filepath) as img:
+        count = 0
+        try:
+            while True:
+                img.seek(count)
+                count += 1
+        except EOFError:
+            pass
+    return count
+
+
 def get_target_full_filepath():
     """
     Returns the full filepath of the item in target folder and a boolean flag to determine if item has a .gif extension

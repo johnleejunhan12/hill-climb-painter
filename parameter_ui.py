@@ -3,6 +3,8 @@ import tkinter as tk
 from tkinter_components import *
 import random
 import os
+from utilities import count_frames_in_gif
+from vector_field_equation_ui import create_vector_field_visualizer
 
 
 class ParameterUI:
@@ -11,10 +13,12 @@ class ParameterUI:
         Initialize the Parameter UI with an optional target file path.
         
         Args:
-            target_filepath (str, optional): Path to target file for processing
+            target_filepath (str, optional): Path to target file to get its extention
         """
         self.target_filepath = target_filepath
-        
+        self.file_ext = os.path.splitext(self.target_filepath)[1].lower() if self.target_filepath else None # Gets the file extention
+        if self.file_ext == ".gif":
+            self.num_frames_in_original_gif = count_frames_in_gif(self.target_filepath)
         # Abstracted dimensions for first tab components
         self.PARAM_COMPONENT_WIDTH = 500
         self.PARAM_SLIDER_HEIGHT = 100
@@ -38,12 +42,51 @@ class ParameterUI:
         self.widget_color_idx = 0
         self.prev_color_idx = None
         
+        # Vector field function attribute
+        self.vector_field_function = lambda x, y: (-x,-y)
+
+
         # Initialize the UI
         self._create_ui()
     
     def on_dummy(self, *args, **kwargs):
         pass
-    
+    def apply_modern_notebook_style(self):
+        """Apply modern styling to the ttk.Notebook and remove dotted focus line from tabs"""
+        style = ttk.Style()
+        
+        # Configure modern tab appearance
+        style.configure("Modern.TNotebook", 
+                    background="#f8f9fa",
+                    borderwidth=0)
+        
+        style.configure("Modern.TNotebook.Tab",
+                    padding=[10, 10],  # More spacious padding
+                    background="#e9ecef",
+                    foreground="black",  # Always black text
+                    font=("Segoe UI", 11, "normal"),
+                    borderwidth=0,
+                    focuscolor="",      # Disable focus highlight
+                    lightcolor="",      # Remove light border effect
+                    darkcolor="")       # Remove dark border effect (optional)
+        
+        # Active tab styling (background only, text remains black)
+        style.map("Modern.TNotebook.Tab",
+                background=[("selected", "#007bff"),
+                            ("active", "#6c757d")],
+                focuscolor=[("!focus", "#e9ecef"), ("focus", "#e9ecef")])
+
+        # Remove the focus element from the tab layout to fully eliminate the dotted line
+        style.layout("Modern.TNotebook.Tab",
+            [('Notebook.tab', {'sticky': 'nswe', 'children':
+                [('Notebook.padding', {'side': 'top', 'sticky': 'nswe', 'children':
+                    [('Notebook.label', {'side': 'top', 'sticky': ''})]
+                })]
+            })]
+        )
+        
+        # Apply the style to your notebook
+        self.notebook.configure(style="Modern.TNotebook")
     # Helper for scrollable frame
     class ScrollableFrame(tk.Frame):
         def __init__(self, master, **kwargs):
@@ -82,6 +125,7 @@ class ParameterUI:
         self.root.resizable(True, True)
 
         self.notebook = ttk.Notebook(self.root)
+        self.apply_modern_notebook_style()
         self.notebook.pack(fill='both', expand=True)
 
         # Tab 1: Parameters
@@ -103,7 +147,7 @@ class ParameterUI:
         # Check file extension
         if not self.target_filepath:
             return
-        file_ext = os.path.splitext(self.target_filepath)[1].lower()
+        file_ext = self.file_ext
 
         """Create all parameter widgets for the first tab"""
         # 1) Computation size
@@ -225,21 +269,26 @@ class ParameterUI:
         self.vector_field_chk = CustomToggleVisibilityCheckbox(self.param_frame, text="9) Enable vector field", checked=False, visibility_manager=self.param_vis_manager, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, is_set_width_to_parent=True, bg_color=color)
         self.vector_field_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.vector_field_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
-        # 9.i) Enable vector field
+        # 9.i) Edit vector field
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.edit_vector_btn = tk.Button(self.param_frame, text="9.i) Edit vector field", font=("Arial", 11), bg='#007fff', fg='white', relief='flat')
+        self.edit_vector_btn = tk.Button(self.param_frame, text="9.i) Edit vector field", font=("Arial", 11), bg='#007fff', fg='white', relief='flat', command=self.on_edit_vector_field)
         self.edit_vector_btn.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.edit_vector_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
-        # Set up dependency: edit_vector_btn only shows if vector_field_chk is checked
-        self.vector_field_chk.set_controlled_widgets([self.edit_vector_btn])
-
-
-        # 10) Display final image checkbox
-        if file_ext in ['.png', '.jpg', '.jpeg']:
-            # (Removed: now handled as 7.ii)
-            pass # This block is now redundant as the checkbox is moved
-
+        # 9.iii) Debug vector field function
+        color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
+        self.prev_color_idx = self.widget_color_idx
+        self.debug_vector_btn = tk.Button(self.param_frame, text="9.iii) Debug vector field function", font=("Arial", 11), bg='#007fff', fg='white', relief='flat', command=self.on_debug_vector_field)
+        self.debug_vector_btn.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
+        self.param_vis_manager.register_widget(self.debug_vector_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
+        # 9.ii) Shift vector field origin
+        color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
+        self.prev_color_idx = self.widget_color_idx
+        self.shift_vector_origin_btn = tk.Button(self.param_frame, text="9.ii) Shift vector field origin", font=("Arial", 11), bg='#007fff', fg='white', relief='flat')
+        self.shift_vector_origin_btn.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
+        self.param_vis_manager.register_widget(self.shift_vector_origin_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
+        # Set up dependency: 9.i, 9.ii, 9.iii only show if vector_field_chk is checked
+        self.vector_field_chk.set_controlled_widgets([self.edit_vector_btn, self.shift_vector_origin_btn, self.debug_vector_btn])
 
         
     def _create_parameter_widgets_tab_2(self):
@@ -247,7 +296,7 @@ class ParameterUI:
         # Check file extension
         if not self.target_filepath:
             return
-        file_ext = os.path.splitext(self.target_filepath)[1].lower()
+        file_ext = self.file_ext
 
         # Section 6: Image Output Settings (for .png, .jpg, .jpeg)
         if file_ext in ['.png', '.jpg', '.jpeg']:
@@ -307,14 +356,15 @@ class ParameterUI:
 
         # Sections 8: GIF Settings (for .gif)
         elif file_ext == '.gif':
-            # Section 8: Make GIF from GIF Settings
-            # Frames in GIF Slider
+            # 1) Limit number of frames painted in original GIF.
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx + 1, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
             self.frames_in_gif_slider = SingleSlider(
-                self.output_frame, min_val=2, max_val=200, init_val=200,
-                width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_SLIDER_HEIGHT,
-                title="Frames in original GIF", subtitle=None, is_set_width_to_parent=True, bg_color=color
+                self.output_frame, min_val=2, max_val=self.num_frames_in_original_gif, init_val=self.num_frames_in_original_gif,
+                width=self.PARAM_COMPONENT_WIDTH,
+                title=f"1) Paint <current_value> out of {self.num_frames_in_original_gif} frames from target GIF", 
+                subtitle=f"- Optionally reduce number of frames painted to speed up computation. \
+                \n- FPS of frames will be adjusted accordingly to keep total duration unchanged", is_set_width_to_parent=True, bg_color=color
             )
             self.frames_in_gif_slider.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
             self.output_vis_manager.register_widget(self.frames_in_gif_slider, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
@@ -324,8 +374,8 @@ class ParameterUI:
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx + 1, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
             self.painted_gif_name_input = CustomTextInput(
-                self.output_frame, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_TEXT_INPUT_HEIGHT,
-                title="Painted GIF filename", subtitle=None, is_set_width_to_parent=True, bg_color=color
+                self.output_frame, width=self.PARAM_COMPONENT_WIDTH,
+                title="2) Painted GIF filename", subtitle=None, is_set_width_to_parent=True, bg_color=color
             )
             self.painted_gif_name_input.set("painted_gif_output")
             self.painted_gif_name_input.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
@@ -336,7 +386,7 @@ class ParameterUI:
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx + 1, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
             self.multiprocessing_chk = CustomCheckbox(
-                self.output_frame, text="Enable multiprocessing for batch frame processing", checked=False,
+                self.output_frame, text="3) Enable multiprocessing for batch frame processing", checked=False,
                 width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT,
                 is_set_width_to_parent=True, bg_color=color
             )
@@ -344,58 +394,43 @@ class ParameterUI:
             self.output_vis_manager.register_widget(self.multiprocessing_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
             self.add_between_padding(self.output_frame, self.output_vis_manager)
 
-    # def get_parameters(self):
-    #     """Get all current parameter values as a dictionary"""
-    #     params = {
-    #         'resize_size': self.resize_slider.get(),
-    #         'num_textures': self.num_shapes_slider.get(),
-    #         'hill_climb_min': self.hill_climb_range.get_min(),
-    #         'hill_climb_max': self.hill_climb_range.get_max(),
-    #         'texture_opacity': self.texture_opacity_slider.get(),
-    #         'initial_width': self.rect_width_slider.get(),
-    #         'allow_scaling': self.scaling_chk.get(),
-    #         'show_progress': self.show_pygame_chk.get(),
-    #         'show_improvement': self.rect_improve_chk.get(),
-    #         'early_termination': self.premature_chk.get(),
-    #         'fail_threshold': self.fail_threshold_slider.get(),
-    #         'vector_field_enabled': self.vector_field_chk.get(),
-    #         'target_filepath': self.target_filepath
-    #     }
-
-    #     # Add Section 6 parameters if they exist (for .png, .jpg, .jpeg)
-    #     if hasattr(self, 'output_size_slider'):
-    #         params.update({
-    #             'output_image_size': self.output_size_slider.get(),
-    #             'image_name': self.image_name_input.get(),
-    #             'append_datetime': self.append_datetime_chk.get(),
-    #             'display_final_image': self.display_final_chk.get()
-    #         })
-
-    #     # Add Sections 7 and 8 parameters if they exist (for .gif)
-    #     if hasattr(self, 'create_gif_chk'):
-    #         params.update({
-    #             'create_gif': self.create_gif_chk.get(),
-    #             'gif_fps': self.gif_fps_slider.get(),
-    #             'gif_filename': self.gif_name_input.get(),
-    #             'frames_in_gif': self.frames_in_gif_slider.get(),
-    #             'painted_gif_filename': self.painted_gif_name_input.get(),
-    #             'enable_multiprocessing': self.multiprocessing_chk.get()
-    #         })
-
-    #     return params
 
     def run(self):
         """Start the UI main loop"""
         self.root.mainloop()
 
+    def on_edit_vector_field(self):
+
+        custom_presets = {
+            "Radial Sink": ("-x", "-y"),
+            "Radial Source": ("x", "y"),
+            "Spiral Sink Clockwise": ("-x + y", "-y - x"),
+            "Spiral Sink Anticlockwise": ("-x - y", "x - y"),
+            "Spiral Source Clockwise": ("x - y", "y + x"),
+            "Spiral Source Anticlockwise": ("x + y", "-x + y"),
+            "Rotation Clockwise": ("y", "-x"),
+            "Rotation Anticlockwise": ("-y", "x")
+        }
+        custom_grid_sizes = [10, 20, 30]
+        self.root.update()
+        func = create_vector_field_visualizer(custom_presets, custom_grid_sizes, master=self.root)
+        if func is not None:
+            self.vector_field_function = func
+
+    def on_debug_vector_field(self):
+        print(f"[DEBUG] vector_field_function id: {id(self.vector_field_function)}")
+        try:
+            print(f"[DEBUG] vector_field_function(1, 1): {self.vector_field_function(1, 1)}")
+        except Exception as e:
+            print(f"[DEBUG] Error calling vector_field_function: {e}")
+
 # Example usage:
 if __name__ == "__main__":
+    # path_of_target = "asd.png"
+    path_of_target = "C:\\Git Repos\\hill-climb-painter\\target_gif\\galix"
     # Create an instance of ParameterUI with a target file path
-    ui = ParameterUI(target_filepath="path/to/target/image.gif")
+    ui = ParameterUI(target_filepath=path_of_target)
     
     # Start the UI
     ui.run()
     
-    # # After the UI is closed, you can get the parameter values
-    # parameters = ui.get_parameters()
-    # print("Selected parameters:", parameters)

@@ -52,7 +52,10 @@ fail_threshold_before_terminating_hill_climb = 100
 
 # 9) Enable vector field (toggle visibility checkbox)
 is_enable_vector_field = True
-
+# 9i) Edit vector field equation (button)
+vector_field_function = lambda x,y: (x+y, x-y)
+# 9ii) Shift vector field origin (button)
+vector_field_center = None
 
 
 # Output tab (For png, jpg, jpeg case)
@@ -70,17 +73,17 @@ painting_proress_gif_name = "gif_output"
 
 
 # Output tab (For gif case)
+# 1) Paint N out of total number frames from target GIF
+N = 100 # placeholder for testing, this is upper limit, can exceed number of frames in original GIF
+recreate_number_of_frames_in_original_gif = N
+
+# 2) Painted GIF filename
+gif_painting_of_target_gif = "painted_gif_output"
+
+# 3) Enable multiprocessing for batch frame processing 
+is_enable_multiprocessing_for_batch_frame_processing = False # ensures pygame display is not shown if set to true
 
 
-# 8) make_gif_from_gif_settings (target is gif parameters)
-recreate_number_of_frames_in_original_gif = 200 # slider between 2 and max number of gif frames in original description is "upper limit of frames to paint in original gif"
-gif_painting_of_target_gif = "painted_gif_output" # textbox. description is "filename of the painted gif"
-is_enable_multiprocessing_for_batch_frame_processing = False # checkbox # Description: Multiprocessing flag for batch frame processing, ensures pygame display is not shown if set to true
-
-
-# Other parameters not prt of UI:
-is_append_datetime = False # Adds date time to image output
-frames_per_second_of_painting_progress_gif = 100 # This is not part of the UI.
 
 
 def vector_field_function(x,y):
@@ -106,6 +109,13 @@ def vector_field_function(x,y):
 
 
     return (p,q)
+
+
+
+
+# Other parameters not part of UI:
+is_append_datetime = False # Adds date time to image output
+frames_per_second_of_painting_progress_gif = 100 # This is not part of the UI.
 
 
 # Top-level worker function for multiprocessing (must be at module scope for Windows compatibility)
