@@ -292,7 +292,7 @@ def get_texture(filepath):
     return rgba_to_grayscale_alpha(import_png_as_normalized_rgba(filepath))
 
 
-def get_texture_dict(texture_opacity = 1.0):
+def get_texture_dict(texture_opacity_percentage = 100):
     """
     Imports all texture pngs from texture folder into greyscale alpha format and returns a dictionary containing numpy array and dimensions
 
@@ -311,7 +311,7 @@ def get_texture_dict(texture_opacity = 1.0):
     texture_dict = {}
     for i, filename in enumerate(os.listdir("texture")):
         texture_filepath = os.path.join("texture", filename)
-        texture_greyscale_alpha = get_texture(texture_filepath) * texture_opacity
+        texture_greyscale_alpha = get_texture(texture_filepath) * texture_opacity_percentage/100
         texture_height, texture_width = texture_greyscale_alpha.shape[0], texture_greyscale_alpha.shape[1]
         texture_dict[i] = {"texture_greyscale_alpha":texture_greyscale_alpha, 
                         "texture_height":texture_height, 

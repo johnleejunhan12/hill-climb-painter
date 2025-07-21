@@ -18,47 +18,69 @@ import pstats
 # Print to console parameters (debug)
 is_print_hill_climb_progress_in_console = False
 
-# Parameters for target:
-resize_target_shorter_side_of_target = 500 # slider ranging between 100 and 500
+# Parameter tab:
+# 1) Computation size (single slider)
+resize_target_shorter_side_of_target = 500
 
-# Hill climb parameters:
+# 2) Add N textures (single slider)
 num_shapes_to_draw = 1000 # range between 100 and 5000 in slider widget
-min_hill_climb_iterations = 1 # range from 1 to max_hill_climb_iterations in slider widget
-max_hill_climb_iterations = 50 # range from min_hill_climb_iterations to 300 in slider widget
-is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True # Boolean checkbox
-fail_threshold_before_terminating_hill_climb = 100 # Numerical value entry box that conditionally shows if Boolean checkbox is ticked, min value is 50, max value is 200
 
-# Draw texture parameters:
-texture_opacity = 0.99 # slider between 0 and 1
-initial_random_rectangle_pixel_width = 20 # slider ranging between 10 and 200
-is_scaling_allowed_during_mutation= True # Boolean checkbox
+# 3) Num of hill climb iterations (dual slider)
+min_hill_climb_iterations = 20 
+max_hill_climb_iterations = 50
 
-# Pygame display parameters
-is_show_pygame_display_window = True # Boolean checkbox
-is_display_rectangle_improvement = False # Boolean checkbox that conditionally shows if is_show_pygame_display_window = True
+# 4) Texture opacity percentage (single slider)
+texture_opacity_percentage = 0.99 
 
-# vector field parameters
-is_enable_vector_field = True # boolean check box that conditionally shows button called "edit vector field"
+# 5) Initial texture width to ? pixels (single slider)
+initial_random_rectangle_pixel_width = 20
+
+# 6) Allow size of texture to vary during optimization (checkbox)
+is_scaling_allowed_during_mutation = True
+
+# 7) Display painting progress (toggle visibility checkbox)
+is_show_pygame_display_window = True
+# 7.i) Show improvement of individual textures (checkbox)
+is_display_rectangle_improvement = False
+# 7.ii) Display final image after painting (checkbox initialized only if the target is not a gif)
+is_display_final_image = False
+
+# 8) Allow early termination of hill climbing (toggle visibility checkbox)
+is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True 
+# 8.i) Terminate after N failed iterations where there is no improvement (single slider)
+fail_threshold_before_terminating_hill_climb = 100 
+
+# 9) Enable vector field (toggle visibility checkbox)
+is_enable_vector_field = True
 
 
 
-# image_output_settings (target is image parameters)
+# Output tab (For png, jpg, jpeg case)
+# 1) Output image size ? px (single slider)
 desired_length_of_longer_side_in_painted_image = 1200 # slider between 800 and 4000
-image_name = "image_output" # Text box that allows user to specify name of output image
-is_append_datetime = False # boolean checkbox# add date and time at the end of image_name
-is_display_final_image = False # boolean checkbox that indicates if painted image should be displayed
+
+# 2) Name of output image (text box input)
+image_name = "image_output" 
+
+# 3) Create GIF of painting progress (toggle visibility checkbox)
+is_create_painting_progress_gif = True # checkbox, description is "creates gif of painting progress"
+# 3.i) GIF filename
+painting_proress_gif_name = "gif_output"
 
 
-# painting_progress_gif_settings (target is image parameters)
-is_create_painting_progress_gif = False # checkbox, description is "creates gif of painting progress"
-frames_per_second = 100 # slider between 1 and 100 description is "FPS of painting progress gif"
-gif_name = "gif_output" # text box widget. description is "filename of created gif"
 
-# make_gif_from_gif_settings (target is gif parameters)
-recreate_number_of_frames_in_original_gif = 200 # slider between 2 and 200 description is "upper limit of frames to paint in original gif"
+# Output tab (For gif case)
+
+
+# 8) make_gif_from_gif_settings (target is gif parameters)
+recreate_number_of_frames_in_original_gif = 200 # slider between 2 and max number of gif frames in original description is "upper limit of frames to paint in original gif"
 gif_painting_of_target_gif = "painted_gif_output" # textbox. description is "filename of the painted gif"
 is_enable_multiprocessing_for_batch_frame_processing = False # checkbox # Description: Multiprocessing flag for batch frame processing, ensures pygame display is not shown if set to true
 
+
+# Other parameters not prt of UI:
+is_append_datetime = False # Adds date time to image output
+frames_per_second_of_painting_progress_gif = 100 # This is not part of the UI.
 
 
 def vector_field_function(x,y):
@@ -136,7 +158,7 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
     # 0: {'texture_greyscale_alpha': texture_greyscale_alpha, 'texture_height': 385, 'texture_width': 1028}, 
     # 1: {'texture_greyscale_alpha': texture_greyscale_alpha, 'texture_height': 408, 'texture_width': 933}} 
     # }
-    texture_dict, num_textures = get_texture_dict(texture_opacity)
+    texture_dict, num_textures = get_texture_dict(texture_opacity_percentage)
 
     if num_textures == 0:
         raise ValueError("No texture pngs found in texture folder.")
@@ -161,7 +183,7 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
         pygame_display_window = PygameDisplayProcess(canvas_height, canvas_width, is_show_pygame_display_window)
 
     # initialize gif generator
-    gif_creator = CreateOutputGIF(fps=frames_per_second, is_create_gif=is_create_painting_progress_gif, gif_file_name=gif_name)
+    gif_creator = CreateOutputGIF(fps=frames_per_second_of_painting_progress_gif, is_create_gif=is_create_painting_progress_gif, gif_file_name=painting_proress_gif_name)
 
     # Use synchronous mode if in a multiprocessing worker
     use_worker_process = not is_enable_multiprocessing_for_batch_frame_processing if 'is_enable_multiprocessing_for_batch_frame_processing' in globals() else True
