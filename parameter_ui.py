@@ -2,10 +2,10 @@ import tkinter.ttk as ttk
 import tkinter as tk
 from select_coordinate_ui import *
 from tkinter_components import *
-import random
-import os
+
 from utilities import count_frames_in_gif
 from vector_field_equation_ui import create_vector_field_visualizer
+
 
 
 class ParameterUI:
@@ -26,13 +26,13 @@ class ParameterUI:
             if gif_frames_full_filepath_list is None:
                 raise AssertionError("Extention is gif but no gif frames are provided for ParameterUI")
         # Abstracted dimensions for first tab components
-        self.PARAM_COMPONENT_WIDTH = 600
+        self.PARAM_COMPONENT_WIDTH = 500
         self.PARAM_SLIDER_HEIGHT = 100
         self.PARAM_DUAL_SLIDER_HEIGHT = 115
         self.PARAM_CHECKBOX_HEIGHT = 25
         self.PARAM_TEXT_INPUT_HEIGHT = 100
-        self.PAD_BETWEEN_ALL_COMPONENTS = 0
-        self.CUSTOM_PADDING_HEIGHT = 15
+        self.PAD_BETWEEN_ALL_COMPONENTS = 1
+        self.CUSTOM_PADDING_HEIGHT = 20
         self.CUSTOM_PADDING_BG = "white"
         
         # Define a palette of visually distinct pastel colors
@@ -52,7 +52,7 @@ class ParameterUI:
         self.prev_color_idx = None
         
 
-        self.initial_choose_vector_eqn_btn_label = "Shift vector field origin to (?, ?)" if self.file_ext != ".gif" else "Shift vector field origin to (?, ?), (?,?), ..."
+        self.initial_choose_vector_eqn_btn_label = "Shift vector field origin to (?, ?)" if self.file_ext != ".gif" else "Shift vector field origin to (?, ?), (?, ?), ..."
 
         # Vector field function attribute
         self.vector_field_function = lambda x, y: (-x,-y)
@@ -138,9 +138,27 @@ class ParameterUI:
         """Create the main UI elements"""
         self.root = tk.Tk()
         self.root.title("Hill Climb Painter UI")
-        self.root.geometry('1000x1000')
+
+
+        def center_window(root, width, height):
+            # Get screen dimensions
+            screen_width = root.winfo_screenwidth()
+            screen_height = root.winfo_screenheight()
+            
+            # Calculate position to center the window
+            x = (screen_width // 2) - (width // 2)
+            y = (screen_height // 2) - (height // 2)
+            
+            # Set window geometry
+            root.geometry(f"{width}x{height}+{x}+{y}")
+
+        # Set window size and center it
+        window_width = 540
+        window_height = 800
+        center_window(self.root, window_width, window_height)
+        self.root.minsize(window_width, window_height)   # Set minimum window size (width=300, height=200)
         self.root.configure(bg='white')
-        self.root.resizable(True, True)
+        self.root.resizable(False, False)
 
         self.notebook = ttk.Notebook(self.root)
         self.apply_modern_notebook_style()
@@ -161,7 +179,7 @@ class ParameterUI:
         self.notebook.add(self.param_scroll, text="Parameters")
         self.notebook.add(self.output_scroll, text="Output Settings")
     
-
+    # Tab 1
     def _create_parameter_widgets_tab_1(self):
         # Check file extension
         if not self.target_filepath:
@@ -170,6 +188,7 @@ class ParameterUI:
 
         """Create all parameter widgets for the first tab"""
         # 1) Computation size
+        self.add_between_padding(self.param_frame, self.param_vis_manager)
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
         self.computation_size_slider = SingleSlider(self.param_frame, min_val=100, max_val=500, init_val=500, width=self.PARAM_COMPONENT_WIDTH, 
@@ -295,29 +314,31 @@ class ParameterUI:
         # 9.i) Edit vector field
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.edit_vector_btn = tk.Button(self.param_frame, text="9.i) Edit vector field: (f(x,y), g(x,y)) = (-x, -y)", font=("Arial", 11), bg='#007fff', fg='white', relief='flat', command=self.on_edit_vector_field)
+        self.edit_vector_btn = tk.Button(self.param_frame, text="9.i) Edit vector field: (f(x,y), g(x,y)) = (-x, -y)", font=("Arial", 11), bg='#007fff', fg='white', command=self.on_edit_vector_field)
         self.edit_vector_btn.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.edit_vector_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
 
-        # 9.iii) Debug vector field function
-        color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
-        self.prev_color_idx = self.widget_color_idx
-        self.debug_vector_btn = tk.Button(self.param_frame, text="9.iii) Debug vector field function", font=("Arial", 11), bg='#007fff', fg='white', relief='flat', command=self.on_debug_vector_field)
-        self.debug_vector_btn.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
-        self.param_vis_manager.register_widget(self.debug_vector_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
+        # # 9.iii) Debug vector field function
+        # color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
+        # self.prev_color_idx = self.widget_color_idx
+        # self.debug_vector_btn = tk.Button(self.param_frame, text="9.iii) Debug vector field function", font=("Arial", 11), bg='#007fff', fg='white', relief='flat', command=self.on_debug_vector_field)
+        # self.debug_vector_btn.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
+        # self.param_vis_manager.register_widget(self.debug_vector_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
 
         # 9.ii) Shift vector field origin
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
 
-        self.shift_vector_origin_btn = tk.Button(self.param_frame, text=self.initial_choose_vector_eqn_btn_label, font=("Arial", 11), bg='#007fff', fg='white', relief='flat', command=self.on_shift_vector_origin)
+        self.shift_vector_origin_btn = tk.Button(self.param_frame, text=self.initial_choose_vector_eqn_btn_label, font=("Arial", 11), bg='#007fff', fg='white', command=self.on_shift_vector_origin)
         self.shift_vector_origin_btn.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.shift_vector_origin_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
         
 
         # Set up dependency: 9.i, 9.ii only show if vector_field_chk is checked
-        self.vector_field_chk.set_controlled_widgets([self.edit_vector_btn, self.shift_vector_origin_btn, self.debug_vector_btn])
+        # self.vector_field_chk.set_controlled_widgets([self.edit_vector_btn, self.shift_vector_origin_btn, self.debug_vector_btn])
+        self.vector_field_chk.set_controlled_widgets([self.edit_vector_btn, self.shift_vector_origin_btn])
 
+    # Tab 2
     def _create_parameter_widgets_tab_2(self):
         """Create parameter widgets for the second tab (Output Settings) based on file extension"""
         # Check file extension
@@ -386,6 +407,7 @@ class ParameterUI:
             # 1) Limit number of frames painted in original GIF.
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx + 1, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
+            self.add_between_padding(self.param_frame, self.param_vis_manager)
             self.frames_in_gif_slider = SingleSlider(
                 self.output_frame, min_val=2, max_val=self.num_frames_in_original_gif, init_val=self.num_frames_in_original_gif,
                 width=self.PARAM_COMPONENT_WIDTH,
@@ -421,35 +443,38 @@ class ParameterUI:
             self.output_vis_manager.register_widget(self.multiprocessing_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
             self.add_between_padding(self.output_frame, self.output_vis_manager)
     
-    # Vector field buttons
+    ############### Vector field buttons #################
     def on_shift_vector_origin(self):
         print("Opens the window to get list of (x,y) coordinates")
         # prereq: either gif frames Or target image
         self.resize_shorter_side_of_target = self.computation_size_slider.get()
+
+        # Non GIF case
         if self.file_ext != ".gif":
-            # print(self.target_filepath, self.resize_shorter_side_of_target)
-            print("self.list_of_coord_for_shifting_vector_field_origin before", self.list_of_coord_for_shifting_vector_field_origin)
             user_choosen_coords_list = create_coord_selector_UI(self.target_filepath, self.resize_shorter_side_of_target, master=self.root)
             if user_choosen_coords_list is not None:
                 self.list_of_coord_for_shifting_vector_field_origin = user_choosen_coords_list
                 self.is_selected_vector_field_origin = True
-                if len(user_choosen_coords_list) == 1:
-                    label = "Shift field center to: " + str(user_choosen_coords_list[0])
-                else:
-                    label = str(user_choosen_coords_list[0])+str(user_choosen_coords_list[1])+"..."
+                label = "Shift field center to: " + str(user_choosen_coords_list[0])
                 self.shift_vector_origin_btn.config(text=label)
-            print("self.list_of_coord_for_shifting_vector_field_origin after", self.list_of_coord_for_shifting_vector_field_origin)
-
+        
+        # GIF case
         else:
-            # need the gif frames somehow...
-            print("Gif frames required")
+            user_choosen_coords_list = create_coord_selector_UI(self.gif_frames_full_filepath_list, self.resize_shorter_side_of_target, master=self.root)
+            if user_choosen_coords_list is not None:
+                self.list_of_coord_for_shifting_vector_field_origin = user_choosen_coords_list
+                label = "Shift field center to: " + str(user_choosen_coords_list[0])+", "+str(user_choosen_coords_list[1])+"..."
+                self.shift_vector_origin_btn.config(text=label)
+
+
 
     # Adjusting computation size slider will reset the selected vector field
     def on_computation_size_slider_change(self, sliderval=None):
         self.is_selected_vector_field_origin = False
         self.list_of_coord_for_shifting_vector_field_origin = None
         self.shift_vector_origin_btn.config(text=self.initial_choose_vector_eqn_btn_label)
-
+        
+    # Opens the window for user to define vector field
     def on_edit_vector_field(self):
         custom_presets = {
             "Radial Sink": ("-x", "-y"),
@@ -487,19 +512,21 @@ class ParameterUI:
             # print(self.list_of_coord_for_shifting_vector_field_origin)
         except Exception as e:
             print(f"[DEBUG] Error calling vector_field_function: {e}")
+    ######################################################
+
 
     def run(self):
         """Start the UI main loop"""
         self.root.mainloop()
-# Example usage:
-if __name__ == "__main__":
-    # path_of_target = "asd.png"
-    path_of_target = "C:\\Git Repos\\hill-climb-painter\\target_gif\\galaxy.gif"
-    path_of_target = "C:\\Git Repos\\hill-climb-painter\\target_image\\cat.jpg"
-    # path_of_target = "C:\\Git Repos\\hill-climb-painter\\target_image\\rainbow.png"
 
-    # Create an instance of ParameterUI with a target file path
+        
+if __name__ == "__main__":
+    path_of_target = "C:\\Git Repos\\hill-climb-painter\\target_image\\cat.jpg"
     ui = ParameterUI(target_filepath=path_of_target, gif_frames_full_filepath_list=None)
+
+
+    # gif_frames_full_filepaths = ['C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0001.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0002.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0003.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0004.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0005.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0006.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0007.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0008.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0009.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0010.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0011.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0012.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0013.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0014.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0015.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0016.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0017.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0018.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0019.png']
+    # ui = ParameterUI(target_filepath=path_of_target, gif_frames_full_filepath_list=gif_frames_full_filepaths)
     
     # Start the UI
     ui.run()

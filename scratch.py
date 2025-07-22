@@ -1,75 +1,55 @@
 import tkinter as tk
+from tkinter import ttk
 
-class PageController(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title("Multi-page App")
-        self.geometry("400x300")
+def center_window(root, width, height):
+    # Get screen dimensions
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    
+    # Calculate position to center the window
+    x = (screen_width // 2) - (width // 2)
+    y = (screen_height // 2) - (height // 2)
+    
+    # Set window geometry
+    root.geometry(f"{width}x{height}+{x}+{y}")
 
-        # Container to hold pages
-        container = tk.Frame(self)
-        container.pack(fill="both", expand=True)
+# Create the main window
+root = tk.Tk()
+root.title("Notebook Layout")
 
-        self.pages = {}
+# Set window size and center it
+window_width = 400
+window_height = 300
+center_window(root, window_width, window_height)
 
-        # List of page classes
-        for PageClass in (HomePage, PageOne, PageTwo):
-            page = PageClass(container, self)
-            self.pages[PageClass.__name__] = page
-            page.grid(row=0, column=0, sticky="nsew")
+# Set minimum window size
+root.minsize(300, 200)
 
-        self.show_page("HomePage")
+# Create a frame to center the notebook
+notebook_frame = tk.Frame(root)
+notebook_frame.pack(pady=20)
 
-    def show_page(self, page_name):
-        page = self.pages[page_name]
-        page.tkraise()
+# Create the notebook widget
+notebook = ttk.Notebook(notebook_frame)
+notebook.pack()
 
-# ------------------------
-# Modular Page Definitions
-# ------------------------
+# Create and add two tabs to the notebook
+tab1 = ttk.Frame(notebook)
+tab2 = ttk.Frame(notebook)
+notebook.add(tab1, text="Tab 1")
+notebook.add(tab2, text="Tab 2")
 
-class HomePage(tk.Frame):
-    def __init__(self, parent, controller):
-        super().__init__(parent)
-        self.controller = controller
+# Create a frame for buttons to center them
+button_frame = tk.Frame(root)
+button_frame.pack(pady=10)
 
-        label = tk.Label(self, text="Home Page", font=("Arial", 18))
-        label.pack(pady=20)
+# Create two buttons of equal size
+button1 = tk.Button(button_frame, text="Button 1", width=10)
+button2 = tk.Button(button_frame, text="Button 2", width=10)
 
-        btn1 = tk.Button(self, text="Go to Page One",
-                         command=lambda: self.controller.show_page("PageOne"))
-        btn1.pack(pady=10)
+# Place buttons side by side with padding
+button1.pack(side=tk.LEFT, padx=5)
+button2.pack(side=tk.LEFT, padx=5)
 
-        btn2 = tk.Button(self, text="Go to Page Two",
-                         command=lambda: self.controller.show_page("PageTwo"))
-        btn2.pack(pady=10)
-
-class PageOne(tk.Frame):
-    def __init__(self, parent, controller):
-        super().__init__(parent)
-        self.controller = controller
-
-        label = tk.Label(self, text="Page One", font=("Arial", 18))
-        label.pack(pady=20)
-
-        btn = tk.Button(self, text="Back to Home",
-                        command=lambda: self.controller.show_page("HomePage"))
-        btn.pack()
-
-class PageTwo(tk.Frame):
-    def __init__(self, parent, controller):
-        super().__init__(parent)
-        self.controller = controller
-
-        label = tk.Label(self, text="Page Two", font=("Arial", 18))
-        label.pack(pady=20)
-
-        btn = tk.Button(self, text="Back to Home",
-                        command=lambda: self.controller.show_page("HomePage"))
-        btn.pack()
-
-# ------------------------
-
-if __name__ == "__main__":
-    app = PageController()
-    app.mainloop()
+# Run the main loop
+root.mainloop()
