@@ -106,6 +106,8 @@ class ParameterUI:
         # Apply the style to your notebook
         self.notebook.configure(style="Modern.TNotebook")
     # Helper for scrollable frame
+
+
     class ScrollableFrame(tk.Frame):
         def __init__(self, master, **kwargs):
             super().__init__(master, **kwargs)
@@ -116,8 +118,119 @@ class ParameterUI:
             canvas.pack(side="left", fill="both", expand=True)
             vsb.pack(side="right", fill="y")
             canvas.create_window((0, 0), window=self.frame, anchor="nw")
+            
+            # Configure scroll region when frame changes
             self.frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+            
+            # Store canvas reference
             self.canvas = canvas
+            
+            # Track if cursor is inside the scrollable area
+            self.cursor_inside = False
+            
+            # Set up cursor tracking and scrolling
+            self._setup_cursor_tracking()
+            self._setup_global_scrolling()
+        
+        def _setup_cursor_tracking(self):
+            """Set up cursor tracking using continuous position monitoring"""
+            
+            def check_cursor_position():
+                """Continuously check if cursor is within the scrollable frame bounds"""
+                try:
+                    # Get cursor position relative to screen
+                    x, y = self.winfo_pointerxy()
+                    
+                    # Get widget bounds on screen
+                    widget_x = self.winfo_rootx()
+                    widget_y = self.winfo_rooty()
+                    widget_width = self.winfo_width()
+                    widget_height = self.winfo_height()
+                    
+                    # Check if cursor is within bounds
+                    was_inside = self.cursor_inside
+                    self.cursor_inside = (widget_x <= x <= widget_x + widget_width and 
+                                        widget_y <= y <= widget_y + widget_height)
+                    
+                    # Optional: Debug output
+                    # if was_inside != self.cursor_inside:
+                    #     print(f"Cursor {'entered' if self.cursor_inside else 'left'} scrollable area")
+                        
+                except tk.TclError:
+                    # Widget might be destroyed
+                    return
+                
+                # Schedule next check
+                self.after(50, check_cursor_position)  # Check every 50ms
+            
+            # Start cursor position monitoring
+            self.after_idle(check_cursor_position)
+        
+        def _setup_global_scrolling(self):
+            """Set up global mouse wheel event handling"""
+            
+            def on_mousewheel(event):
+                # Only scroll if cursor is inside this scrollable frame
+                if not self.cursor_inside:
+                    return
+                    
+                # Check if there's content to scroll
+                if not self.canvas.winfo_exists():
+                    return
+                    
+                # Get the scroll region
+                scroll_region = self.canvas.cget("scrollregion")
+                if not scroll_region:
+                    return
+                    
+                # Parse scroll region (x1, y1, x2, y2)
+                region_coords = scroll_region.split()
+                if len(region_coords) != 4:
+                    return
+                    
+                content_height = float(region_coords[3])
+                canvas_height = self.canvas.winfo_height()
+                
+                # Only scroll if content is larger than visible area
+                if content_height <= canvas_height:
+                    return
+                    
+                # Calculate scroll amount
+                if hasattr(event, 'delta') and event.delta:
+                    # Windows and MacOS
+                    delta = -1 * (event.delta / 120)
+                else:
+                    # Linux - event.num: 4=up, 5=down
+                    if hasattr(event, 'num'):
+                        delta = -1 if event.num == 4 else 1
+                    else:
+                        return
+                
+                # Perform the scroll
+                self.canvas.yview_scroll(int(delta), "units")
+            
+            # Bind to the root window to catch all mouse wheel events
+            def setup_global_binding():
+                root = self.winfo_toplevel()
+                
+                # Bind mouse wheel events globally
+                root.bind_all("<MouseWheel>", on_mousewheel, add=True)  # Windows/MacOS
+                root.bind_all("<Button-4>", on_mousewheel, add=True)    # Linux scroll up  
+                root.bind_all("<Button-5>", on_mousewheel, add=True)    # Linux scroll down
+            
+            # Set up the binding after the widget is mapped
+            self.after_idle(setup_global_binding)
+        
+        def destroy(self):
+            """Clean up global bindings when widget is destroyed"""
+            try:
+                root = self.winfo_toplevel()
+                # Note: unbind_all might affect other widgets, so we don't do it here
+                # The bindings will be cleaned up when the root window is destroyed
+            except:
+                pass
+            super().destroy()
+
     
     def add_section_pad(self, frame):
         tk.Frame(frame, height=20, bg='white').pack(fill='x')
