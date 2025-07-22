@@ -170,7 +170,7 @@ class ParameterUI:
         self.add_between_padding(self.param_frame, self.param_vis_manager)
 
 
-        # 3) Number of hill climb iterations
+        # 3) Number of personally climb iterations
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
         self.hill_climb_range = RangeSlider(self.param_frame, min_val=1, max_val=500, init_min=20, init_max=100, width=self.PARAM_COMPONENT_WIDTH,
@@ -272,7 +272,7 @@ class ParameterUI:
         # 9.i) Edit vector field
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.edit_vector_btn = tk.Button(self.param_frame, text="9.i) Edit vector field", font=("Arial", 11), bg='#007fff', fg='white', relief='flat', command=self.on_edit_vector_field)
+        self.edit_vector_btn = tk.Button(self.param_frame, text="9.i) Edit vector field: (-x, -y)", font=("Arial", 11), bg='#007fff', fg='white', relief='flat', command=self.on_edit_vector_field)
         self.edit_vector_btn.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.edit_vector_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
         # 9.iii) Debug vector field function
@@ -400,7 +400,6 @@ class ParameterUI:
         self.root.mainloop()
 
     def on_edit_vector_field(self):
-
         custom_presets = {
             "Radial Sink": ("-x", "-y"),
             "Radial Source": ("x", "y"),
@@ -413,9 +412,12 @@ class ParameterUI:
         }
         custom_grid_sizes = [10, 20, 30]
         self.root.update()
-        func = create_vector_field_visualizer(custom_presets, custom_grid_sizes, master=self.root)
-        if func is not None:
-            self.vector_field_function = func
+        result = create_vector_field_visualizer(custom_presets, custom_grid_sizes, master=self.root)
+        if result is not None:
+            # Update button text with the returned string
+            self.edit_vector_btn.configure(text=f"9.i) Edit vector field: {result[0]}")
+            # Update the vector field function
+            self.vector_field_function = result[1]
 
     def on_debug_vector_field(self):
         print(f"[DEBUG] vector_field_function id: {id(self.vector_field_function)}")
@@ -433,4 +435,3 @@ if __name__ == "__main__":
     
     # Start the UI
     ui.run()
-    

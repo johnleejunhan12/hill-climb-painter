@@ -165,7 +165,6 @@ class VectorFieldVisualizer:
         self.canvas.get_tk_widget().grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
         # Configure plot
-
         self.ax.set_xlabel('x', fontsize=12)
         self.ax.set_ylabel('y', fontsize=12)
         self.ax.grid(True, alpha=0.3)
@@ -384,10 +383,20 @@ class VectorFieldVisualizer:
         
         return vector_field_function
     
+    def create_result_string(self):
+        """Create the formatted string (f(x,y), g(x,y))"""
+        if self.f_expr is None or self.g_expr is None:
+            return None
+        # Convert expressions to strings and remove extra whitespace
+        f_str = str(self.f_expr).replace(" ", "")
+        g_str = str(self.g_expr).replace(" ", "")
+        return f"({f_str}, {g_str})"
+    
     def confirm_selection(self):
         """Handle confirm selection button click"""
         if self.validate_expressions():
             self.result_function = self.create_result_function()
+            self.result_string = self.create_result_string()
             self.confirmed = True
             self.root.quit()  # Exit the mainloop
         else:
@@ -413,7 +422,7 @@ class VectorFieldVisualizer:
         self.update_visualization()
     
     def run(self):
-        """Run the GUI and return the result function"""
+        """Run the GUI and return the result string and function"""
         # Handle window closing
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
@@ -423,7 +432,9 @@ class VectorFieldVisualizer:
         # Clean up
         self.root.destroy()
         
-        return self.result_function
+        if self.confirmed and self.result_string is not None:
+            return self.result_string, self.result_function
+        return None, None
     
     def on_closing(self):
         """Handle window closing event"""
@@ -436,9 +447,10 @@ def create_vector_field_visualizer(presets=None, sq_grid_size=None, master=None)
     Create and run the vector field visualizer GUI.
     
     Returns:
-    function: A Python function object f(x, y) that returns (p, q) tuple
-              where p = f(x,y) and q = g(x,y) as defined by the user.
-              Returns None if the user cancels or closes the window.
+    tuple: (string, function)
+        - string: Formatted string "(f(x,y), g(x,y))" with extra whitespace removed except after the comma
+        - function: A Python function object f(x, y) that returns (p, q) tuple where p = f(x,y) and q = g(x,y)
+        Returns (None, None) if the user cancels or closes the window.
     """
     visualizer = VectorFieldVisualizer(master, presets, sq_grid_size)
     return visualizer.run()
@@ -472,12 +484,11 @@ if __name__ == "__main__":
 
 
     custom_grid_sizes = [10, 20, 30]
-    vector_function = create_vector_field_visualizer(custom_presets, custom_grid_sizes)
+    vector_string, vector_function = create_vector_field_visualizer(custom_presets, custom_grid_sizes)
     
-    if vector_function is not None:
-        print("\nVector field function created successfully!")
-        print(f"f(x,y) = {vector_function.f_expression}")
-        print(f"g(x,y) = {vector_function.g_expression}")
+    if vector_string is not None and vector_function is not None:
+        print("\nVector field created successfully!")
+        print(f"Vector field: {vector_string}")
         
         # Test the function
         print("\nTesting the function:")
