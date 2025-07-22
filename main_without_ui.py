@@ -33,7 +33,7 @@ max_hill_climb_iterations = 50
 texture_opacity_percentage = 100
 
 # 5) Initial texture width to ? pixels (single slider)
-initial_random_rectangle_pixel_width = 50
+initial_random_rectangle_pixel_width = 20
 
 # 6) Allow size of texture to vary during optimization (checkbox)
 is_scaling_allowed_during_mutation = True
@@ -55,7 +55,7 @@ is_enable_vector_field = False
 # 9i) Edit vector field equation (button)
 vector_field_function = lambda x,y: (x+y, x-y)
 # 9ii) Shift vector field origin (button)
-vector_field_center = None
+field_center_x, field_center_y = 0,0
 
 
 # Output tab (For png, jpg, jpeg case)
@@ -81,7 +81,7 @@ recreate_number_of_frames_in_original_gif = N
 gif_painting_of_target_gif = "painted_gif_output"
 
 # 3) Enable multiprocessing for batch frame processing 
-is_enable_multiprocessing_for_batch_frame_processing = False # ensures pygame display is not shown if set to true
+is_enable_multiprocessing_for_batch_frame_processing = True # ensures pygame display is not shown if set to true
 
 
 
