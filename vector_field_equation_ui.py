@@ -9,7 +9,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 class VectorFieldVisualizer:
-    def __init__(self, master=None, presets=None, sq_grid_size=None):
+    def __init__(self, master=None, presets=None, sq_grid_size=None, initial_f_string=None, initial_g_string=None):
         if master is None:
             self.root = tk.Tk()
         else:
@@ -38,9 +38,14 @@ class VectorFieldVisualizer:
         self.g_func = None
         self.result_function = None
         self.confirmed = False
+        self.is_valid = False
         
         # Sympy symbols
         self.x, self.y = sp.symbols('x y', real=True)
+        
+        # Store initial strings
+        self.initial_f_string = initial_f_string
+        self.initial_g_string = initial_g_string
         
         # Create the UI
         self.setup_styles()
@@ -50,18 +55,25 @@ class VectorFieldVisualizer:
     def setup_styles(self):
         """Configure modern styling for ttk widgets"""
         style = ttk.Style()
-        style.theme_use('clam')
+        # style.theme_use('clam')
         
         # Configure button styles
         style.configure('Visualize.TButton',
                        background='#4CAF50',
-                       foreground='white',
+                       foreground='black',
                        font=('Arial', 11, 'bold'),
                        padding=(20, 10))
         
         style.configure('Confirm.TButton',
                        background='#2196F3',
-                       foreground='white',
+                       foreground='black',
+                       font=('Arial', 11, 'bold'),
+                       padding=(20, 10))
+        
+        # Configure disabled button style
+        style.configure('Disabled.TButton',
+                       background='#cccccc',
+                       foreground='#666666',
                        font=('Arial', 11, 'bold'),
                        padding=(20, 10))
         
@@ -119,7 +131,11 @@ class VectorFieldVisualizer:
         
         self.f_entry = ttk.Entry(input_frame, font=('Arial', 12), style='Modern.TEntry')
         self.f_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), pady=5)
-        self.f_entry.insert(0, self.presets[list(self.presets.keys())[0]][0])
+        # Set initial f string if provided, otherwise use preset
+        if self.initial_f_string is not None:
+            self.f_entry.insert(0, self.initial_f_string)
+        else:
+            self.f_entry.insert(0, self.presets[list(self.presets.keys())[0]][0])
         self.f_entry.bind('<KeyRelease>', self.on_entry_change)
         
         # g(x,y) input  
@@ -128,7 +144,11 @@ class VectorFieldVisualizer:
         
         self.g_entry = ttk.Entry(input_frame, font=('Arial', 12), style='Modern.TEntry')
         self.g_entry.grid(row=1, column=1, sticky=(tk.W, tk.E), pady=5)
-        self.g_entry.insert(0, self.presets[list(self.presets.keys())[0]][1])
+        # Set initial g string if provided, otherwise use preset
+        if self.initial_g_string is not None:
+            self.g_entry.insert(0, self.initial_g_string)
+        else:
+            self.g_entry.insert(0, self.presets[list(self.presets.keys())[0]][1])
         self.g_entry.bind('<KeyRelease>', self.on_entry_change)
         
         # Status label
@@ -178,6 +198,8 @@ class VectorFieldVisualizer:
             
             if not f_text or not g_text:
                 self.update_status("Invalid", "Empty expression", 'red')
+                self.is_valid = False
+                self.update_button_state()
                 return False
             
             # Parse expressions with restricted symbols
@@ -209,6 +231,8 @@ class VectorFieldVisualizer:
             test_result = self.safe_evaluate(0.1, 0.1)
             
             self.update_status("Valid", "", 'green')
+            self.is_valid = True
+            self.update_button_state()
             return True
             
         except Exception as e:
@@ -219,6 +243,8 @@ class VectorFieldVisualizer:
                 error_msg = "Invalid syntax"
             
             self.update_status("Invalid", error_msg, 'red')
+            self.is_valid = False
+            self.update_button_state()
             return False
     
     def update_status(self, status, message, color):
@@ -228,6 +254,13 @@ class VectorFieldVisualizer:
             full_text += f": {message}"
         
         self.status_label.configure(text=full_text, foreground=color)
+    
+    def update_button_state(self):
+        """Update the confirm button state based on validation"""
+        if self.is_valid:
+            self.confirm_btn.configure(style='Confirm.TButton', state='normal')
+        else:
+            self.confirm_btn.configure(style='Disabled.TButton', state='disabled')
     
     def safe_evaluate(self, x_val, y_val):
         """Safely evaluate the functions at given points"""
@@ -276,7 +309,6 @@ class VectorFieldVisualizer:
         
         # Create coordinate grid based on selected grid size
         grid_size = self.current_grid_size.get()
-
         density = 1.25
         num_intervals = int(grid_size * density)
         x_range = np.linspace(-grid_size, grid_size, num_intervals)
@@ -290,12 +322,9 @@ class VectorFieldVisualizer:
         magnitude = np.sqrt(U**2 + V**2)
         # Avoid division by zero
         magnitude = np.where(magnitude == 0, 1, magnitude)
-
         length_scale = grid_size/10
-
         U_norm = U / magnitude * length_scale
         V_norm = V / magnitude * length_scale
-
         
         # Plot vector field
         quiver_plot = self.ax.quiver(X, Y, U_norm, V_norm, magnitude, 
@@ -394,13 +423,12 @@ class VectorFieldVisualizer:
     
     def confirm_selection(self):
         """Handle confirm selection button click"""
-        if self.validate_expressions():
+        # Only proceed if expressions are valid (button should be disabled otherwise)
+        if self.is_valid and self.validate_expressions():
             self.result_function = self.create_result_function()
             self.result_string = self.create_result_string()
             self.confirmed = True
             self.root.quit()  # Exit the mainloop
-        else:
-            tk.messagebox.showerror("Error", "Please fix the invalid expressions before confirming.")
     
     def on_preset_select(self, event):
         """Handle preset selection from dropdown"""
@@ -434,7 +462,8 @@ class VectorFieldVisualizer:
         
         if self.confirmed and self.result_string is not None:
             return self.result_string, self.result_function
-        return None, None
+        else:
+            return None
     
     def on_closing(self):
         """Handle window closing event"""
@@ -442,9 +471,21 @@ class VectorFieldVisualizer:
         self.root.quit()
 
 
-def create_vector_field_visualizer(presets=None, sq_grid_size=None, master=None):
+def create_vector_field_visualizer(presets=None, sq_grid_size=None, master=None, initial_f_string=None, initial_g_string=None):
     """
     Create and run the vector field visualizer GUI.
+    
+    Parameters:
+    presets: dict, optional
+        Dictionary of preset vector fields
+    sq_grid_size: list, optional
+        List of grid sizes for visualization
+    master: Tk or Toplevel, optional
+        Parent window
+    initial_f_string: str, optional
+        Initial expression for f(x,y) to display in input box
+    initial_g_string: str, optional
+        Initial expression for g(x,y) to display in input box
     
     Returns:
     tuple: (string, function)
@@ -452,7 +493,7 @@ def create_vector_field_visualizer(presets=None, sq_grid_size=None, master=None)
         - function: A Python function object f(x, y) that returns (p, q) tuple where p = f(x,y) and q = g(x,y)
         Returns (None, None) if the user cancels or closes the window.
     """
-    visualizer = VectorFieldVisualizer(master, presets, sq_grid_size)
+    visualizer = VectorFieldVisualizer(master, presets, sq_grid_size, initial_f_string, initial_g_string)
     return visualizer.run()
 
 
@@ -482,11 +523,15 @@ if __name__ == "__main__":
         "Rotation Anticlockwise": ("-y", "x")            # Anticlockwise rotation (solid-body)
     }
 
-
     custom_grid_sizes = [10, 20, 30]
-    vector_string, vector_function = create_vector_field_visualizer(custom_presets, custom_grid_sizes)
-    
-    if vector_string is not None and vector_function is not None:
+    initial_f_string = "x+y+1"
+    initial_g_string = "x-y-2"
+    result = create_vector_field_visualizer(custom_presets, custom_grid_sizes, initial_f_string=initial_f_string, initial_g_string=initial_g_string)
+
+    if result is None:
+        print("User closed window")
+    else:
+        vector_string, vector_function = result
         print("\nVector field created successfully!")
         print(f"Vector field: {vector_string}")
         
@@ -502,6 +547,3 @@ if __name__ == "__main__":
         y_test = np.array([0, 1, 2])
         result = vector_function(x_test, y_test)
         print(f"Array input test: {result}")
-        
-    else:
-        print("Vector field creation was cancelled.")

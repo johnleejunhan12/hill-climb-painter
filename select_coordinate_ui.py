@@ -5,12 +5,9 @@ import os
 import time
 from typing import Union, List, Tuple
 
-class UserClosedGUIWindow(Exception):
-    """Custom exception for when user closes the GUI window prematurely"""
-    pass
 
 class CoordinateSelectorUI:
-    def __init__(self, image_filepath: Union[str, List[str]], resize_shorter_side_of_image: int, replay_fps: int = 10):
+    def __init__(self, image_filepath: Union[str, List[str]], resize_shorter_side_of_image, replay_fps=10, master=None):
         """
         Initialize the CoordinateSelectorUI class.
     
@@ -18,7 +15,9 @@ class CoordinateSelectorUI:
             image_filepath: Path to a single image or list of paths to multiple images
             resize_shorter_side_of_image: Target size in pixels for the shorter side of each image
             replay_fps: Frames per second for the replay slideshow (if multiple images)
+            master: tk
         """
+        
         # Convert single filepath to list for uniform handling
         self.image_paths = [image_filepath] if isinstance(image_filepath, str) else image_filepath
         self.target_size = resize_shorter_side_of_image
@@ -39,7 +38,12 @@ class CoordinateSelectorUI:
         self._calculate_window_dimensions()
         
         # Initialize Tkinter root window
-        self.root = tk.Tk()
+        if master is None:
+            self.root = tk.Tk()
+        else:
+            self.root = tk.Toplevel(master)
+            self.root.transient(master)
+            self.root.grab_set()
         self.root.title("Select coordinates")
                     
         # Setup the UI components
@@ -61,7 +65,7 @@ class CoordinateSelectorUI:
         for path in self.image_paths:
             if not os.path.exists(path):
                 raise FileNotFoundError(f"Image file not found: {path}")
-            if not path.lower().endswith('.png'):
+            if not path.lower().endswith(('.png', '.jpg', 'jpeg')):
                 raise ValueError(f"File is not a PNG image: {path}")
     
     def _load_and_resize_images(self):
@@ -661,14 +665,12 @@ class CoordinateSelectorUI:
     
     def _on_replay_fps_change(self, val):
         """Update the replay FPS from the slider."""
-        try:
-            fps = float(val)
-            if fps < 0.5:
-                fps = 0.5
-            self.replay_fps = fps
-            self.replay_fps_value_label.config(text=f"{fps:.1f} FPS")
-        except Exception:
-            pass
+        fps = float(val)
+        if fps < 0.5:
+            fps = 0.5
+        self.replay_fps = fps
+        self.replay_fps_value_label.config(text=f"{fps:.1f} FPS")
+
 
     def run(self) -> Union[Tuple[int, int], List[Tuple[int, int]]]:
         """
@@ -677,34 +679,27 @@ class CoordinateSelectorUI:
         Returns:
             If single image was provided: tuple of (x, y)
             If multiple images were provided: list of (x, y) tuples
-            
-        Raises:
-            UserClosedGUIWindow: If user closed the window before completing all selections
+            None if window is closed
         """
         self.root.mainloop()
         if not self.window_closed_properly:
-            raise UserClosedGUIWindow("User closed GUI window before completing all selections")
-        # Return appropriate format based on input
-        if len(self.image_paths) == 1:
-            return self.selected_coordinates[0]
+            print("user closed window, return None")
+            # self.root.quit()
+            self.root.destroy()
+            return None
+
         return self.selected_coordinates
 
 
+def create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_of_target, master=None):
+    get_coords = CoordinateSelectorUI(filepaths_of_frames_or_image, resize_shorter_side_of_target, master=master)
+    coordinates = get_coords.run()
+    return coordinates
+
 # Example usage
 if __name__ == "__main__":
-    try:
-        image_paths = ["target_image/chameleon.png", "target_image/circles.png", "target_image/dark.png"]
-        target_size = 400  # Resize shorter side to 400 pixels
-        get_coords = CoordinateSelectorUI(image_paths, target_size)
-        coordinates = get_coords.run()
-        if type(coordinates) == tuple:
-            print(coordinates)
-        elif isinstance(coordinates, list):
-            for i, (x, y) in enumerate(coordinates):
-                print(f"Image {i+1}: Selected coordinates ({x}, {y})")
-        else:
-            print(coordinates)
-    except FileNotFoundError as e:
-        print(f"Error: {e}")
-    except Exception as e:
-        print(f"Error: {e}")
+    filepaths_of_frames_or_image = ["target_image/cat.jpg", "target_image/circles.png", "target_image/dark.png"]
+    # filepaths_of_frames_or_image = "target_image/chameleon.png"
+
+    coords = create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_of_target=400, master=None)
+    print(coords)

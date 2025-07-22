@@ -4,6 +4,7 @@ from tkinter import filedialog
 from PIL import Image, ImageTk, ImageSequence
 import os
 from select_target_ui import FileSelectorUI
+from file_operations import *
 
 
 class TargetTextureSelectorUI(tk.Tk):
@@ -377,6 +378,9 @@ class TargetTextureSelectorUI(tk.Tk):
     def _on_confirm(self):
         # Called when confirm button is pressed
         self.result = (self.selected_image_path, list(self.selected_texture_paths))
+        
+
+
         self.destroy()
 
 if __name__ == "__main__":

@@ -296,6 +296,8 @@ def get_texture_dict(texture_opacity_percentage = 100):
     """
     Imports all texture pngs from texture folder into greyscale alpha format and returns a dictionary containing numpy array and dimensions
 
+    Parameters: texture_opacity_percentage (int)
+
     Returns:
         texture_dict (dict): 
         Example
@@ -308,6 +310,9 @@ def get_texture_dict(texture_opacity_percentage = 100):
         num_textures (int):
             number of textures in the folder
     """
+    if type(texture_opacity_percentage) != int:
+        raise AssertionError("Invalid texture opacity percentage")
+
     texture_dict = {}
     for i, filename in enumerate(os.listdir("texture")):
         texture_filepath = os.path.join("texture", filename)

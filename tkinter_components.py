@@ -345,8 +345,7 @@ class RangeSlider(tk.Canvas):
 
 class SingleSlider(tk.Canvas):
     def __init__(self, master, min_val=0, max_val=100, init_val=None, width=300, height=None, command=None, title=None, subtitle=None, title_size=13, subtitle_size=10, bg_color='white', is_set_width_to_parent=False, show_value_labels=False, **kwargs):
-        self._line_spacing = 4  # px between lines in title/subtitle (moved to top to avoid AttributeError)
-        # Auto-calculate height if not specified
+        self._line_spacing = 4  # px between lines in title/subtitle
         if height is None:
             height = self._calculate_height(title, subtitle, title_size, subtitle_size)
         kwargs.setdefault('bg', bg_color)
@@ -361,7 +360,7 @@ class SingleSlider(tk.Canvas):
         self.command = command
         self.width = width
         self.height = height
-        self.pad = 15  # Padding for thumb only
+        self.pad = 15
         self.thumb_radius = 10
         self.active_thumb = False
         self.slider_line_y = height // 2
@@ -370,7 +369,7 @@ class SingleSlider(tk.Canvas):
         self.value = init_val if init_val is not None else min_val
         self.title = title
         self.subtitle = subtitle
-        self.title_size = 13
+        self.title_size = title_size
         self.subtitle_size = subtitle_size
         self.show_value_labels = show_value_labels
         self._draw_slider()
@@ -379,13 +378,7 @@ class SingleSlider(tk.Canvas):
         self.bind('<ButtonRelease-1>', self._on_release)
 
     def _calculate_height(self, title, subtitle, title_size, subtitle_size):
-        """
-        Calculate the total height based on presence of title and subtitle.
-        
-        Returns:
-            int: Calculated height in pixels
-        """
-        slider_height = 24  # Height of the slider track and thumb
+        slider_height = 24
         title_lines = title.count('\n') + 1 if title else 0
         subtitle_lines = subtitle.count('\n') + 1 if subtitle else 0
         title_height = title_size * title_lines + self._line_spacing * (title_lines - 1) if title else 0
@@ -409,8 +402,6 @@ class SingleSlider(tk.Canvas):
         self.delete('all')
         x = self._value_to_pos(self.value)
         y = 0
-        
-        # Draw title if present (multi-line support, with string replacement)
         if self.title:
             title_str = self.title.replace('<current_value>', str(self.value))
             title_lines = title_str.split('\n')
@@ -420,11 +411,9 @@ class SingleSlider(tk.Canvas):
                 if i < len(title_lines) - 1:
                     y += self._line_spacing
             if self.subtitle:
-                y += 7  # 7px gap between title and subtitle
+                y += 7
             else:
-                y += 15  # 15px gap between title and slider
-        
-        # Draw subtitle if present (multi-line support, with string replacement)
+                y += 15
         if self.subtitle:
             subtitle_str = self.subtitle.replace('<current_value>', str(self.value))
             subtitle_lines = subtitle_str.split('\n')
@@ -433,19 +422,14 @@ class SingleSlider(tk.Canvas):
                 y += self.subtitle_size
                 if i < len(subtitle_lines) - 1:
                     y += self._line_spacing
-            y += 15  # 15px gap below subtitle
-        
-        # Draw track
-        slider_y = y + 12  # 12px for half thumb height, so thumb sits flush with subtitle
+            y += 15
+        slider_y = y + 12
         self.create_line(self.pad, slider_y, self.width - self.pad, slider_y, width=self.slider_line_width, fill='#ccc')
-        # Draw selected range (from min to value)
         self.create_line(self.pad, slider_y, x, slider_y, width=self.slider_line_width, fill='#007fff')
-        # Draw thumb as blue rectangle
         rect_w, rect_h = 12, 24
         self.thumb = self.create_rectangle(x - rect_w//2, slider_y - rect_h//2,
-                                           x + rect_w//2, slider_y + rect_h//2,
-                                           fill='#007fff', outline='', tags='thumb')
-        # Draw value label below thumb if enabled
+                                          x + rect_w//2, slider_y + rect_h//2,
+                                          fill='#007fff', outline='', tags='thumb')
         if self.show_value_labels:
             self.create_text(x, slider_y + rect_h//2 + 6, text=str(self.value), fill='#007fff', font=('Arial', 10))
 
@@ -462,35 +446,27 @@ class SingleSlider(tk.Canvas):
 
     def _on_click(self, event):
         x = event.x
-        # Check if click is within the slider track bounds
         if x < self.pad or x > self.width - self.pad:
             return
-        
-        # Calculate slider_y using the same logic as _draw_slider
         y = 0
         if self.title:
             y += self.title_size
             if self.subtitle:
-                y += 7  # 7px gap between title and subtitle
+                y += 7
             else:
-                y += 15  # 15px gap between title and slider
-        
+                y += 15
         if self.subtitle:
-            y += self.subtitle_size + 15  # 15px gap below subtitle
-        
-        slider_y = y + 12  # 12px for half thumb height
+            y += self.subtitle_size + 15
+        slider_y = y + 12
         rect_w, rect_h = 12, 24
         thumb_x = self._value_to_pos(self.value)
         thumb_left = thumb_x - rect_w // 2
         thumb_right = thumb_x + rect_w // 2
         thumb_top = slider_y - rect_h // 2
         thumb_bottom = slider_y + rect_h // 2
-        
-        # Check if click is inside the thumb rectangle
         if thumb_left <= x <= thumb_right and thumb_top <= event.y <= thumb_bottom:
             self.active_thumb = True
         else:
-            # Move thumb to click position
             value = self._pos_to_value(x)
             self.value = max(self.min_val, min(self.max_val, value))
             self.active_thumb = True
@@ -521,6 +497,7 @@ class SingleSlider(tk.Canvas):
     def set(self, value):
         self.value = value
         self._draw_slider()
+
 
 class CustomCheckbox(tk.Canvas):
     def __init__(self, master, text='', checked=False, command=None, width=200, height=32, box_size=16, font_size=13, bg_color='white', is_set_width_to_parent=False, **kwargs):
@@ -682,3 +659,25 @@ class Padding(tk.Frame):
         super().__init__(master, height=height, bg=bg_color, **kwargs)
         self.pack_propagate(False)
 
+
+
+def on_slider_change(value):
+    print(f"Slider value changed to: {value}")
+
+    # Example usage
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.title("Single Slider Demo")
+    slider = SingleSlider(
+        root,
+        min_val=0,
+        max_val=100,
+        init_val=50,
+        width=400,
+        title="Adjust Value\n<current_value>",
+        subtitle="Slider Control",
+        show_value_labels=True,
+        command=on_slider_change
+    )
+    slider.pack(padx=10, pady=10)
+    root.mainloop()

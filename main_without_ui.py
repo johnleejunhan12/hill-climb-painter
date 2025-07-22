@@ -20,7 +20,7 @@ is_print_hill_climb_progress_in_console = False
 
 # Parameter tab:
 # 1) Computation size (single slider)
-resize_target_shorter_side_of_target = 500
+resize_target_shorter_side_of_target = 200
 
 # 2) Add N textures (single slider)
 num_shapes_to_draw = 1000 # range between 100 and 5000 in slider widget
@@ -29,11 +29,11 @@ num_shapes_to_draw = 1000 # range between 100 and 5000 in slider widget
 min_hill_climb_iterations = 20 
 max_hill_climb_iterations = 50
 
-# 4) Texture opacity percentage (single slider)
-texture_opacity_percentage = 0.99 
+# 4) Texture opacity percentage from 1 to 100% (single slider)
+texture_opacity_percentage = 100
 
 # 5) Initial texture width to ? pixels (single slider)
-initial_random_rectangle_pixel_width = 20
+initial_random_rectangle_pixel_width = 50
 
 # 6) Allow size of texture to vary during optimization (checkbox)
 is_scaling_allowed_during_mutation = True
@@ -51,7 +51,7 @@ is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True
 fail_threshold_before_terminating_hill_climb = 100 
 
 # 9) Enable vector field (toggle visibility checkbox)
-is_enable_vector_field = True
+is_enable_vector_field = False
 # 9i) Edit vector field equation (button)
 vector_field_function = lambda x,y: (x+y, x-y)
 # 9ii) Shift vector field origin (button)
@@ -66,7 +66,7 @@ desired_length_of_longer_side_in_painted_image = 1200 # slider between 800 and 4
 image_name = "image_output" 
 
 # 3) Create GIF of painting progress (toggle visibility checkbox)
-is_create_painting_progress_gif = True # checkbox, description is "creates gif of painting progress"
+is_create_painting_progress_gif = False # checkbox, description is "creates gif of painting progress"
 # 3.i) GIF filename
 painting_proress_gif_name = "gif_output"
 
@@ -162,13 +162,15 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
     # Import target as numpy arrays
     target_rgba = get_target_image_as_rgba(target_image_full_filepath, resize_target_shorter_side_of_target)
 
-    
+
     # Import multiple texture png from texture folder into dictionary of numpy arrays in the form of
     # {
     # 0: {'texture_greyscale_alpha': texture_greyscale_alpha, 'texture_height': 385, 'texture_width': 1028}, 
     # 1: {'texture_greyscale_alpha': texture_greyscale_alpha, 'texture_height': 408, 'texture_width': 933}} 
     # }
     texture_dict, num_textures = get_texture_dict(texture_opacity_percentage)
+
+
 
     if num_textures == 0:
         raise ValueError("No texture pngs found in texture folder.")
@@ -181,6 +183,7 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
 
     # Instantiate vector field
     vector_field = VectorField(is_enable_vector_field, vector_field_function, canvas_height, canvas_width, field_center_x, field_center_y)
+
 
 
     # keep track of all best scoring rectangle_list and corresponding texture
@@ -249,9 +252,10 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
             else:
                 # increment number of times the hill climbing algorithm failed to improve
                 fail_count += 1
-                
 
-        
+
+
+
         # Update current_rgba with the best rectangle texture
         update_canvas_with_best_rect(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
 
@@ -365,8 +369,7 @@ if __name__ == "__main__":
             coord_selector_UI = CoordinateSelectorUI(full_target_filepath, resize_target_shorter_side_of_target)
             coordinates = coord_selector_UI.run()
             if coordinates is not None:
-                field_center_x, field_center_y = coordinates
-
+                field_center_x, field_center_y = coordinates[0]
         # recreate the image
         paint_target_image(full_target_filepath, output_folder_full_filepath, filename_of_exported_png=image_name)
     
