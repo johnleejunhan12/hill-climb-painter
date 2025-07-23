@@ -62,13 +62,15 @@ class ParameterUI:
         # Shift vector field origin attribute
         self.is_selected_vector_field_origin = False
 
-
+        # Initialize the param dict to be returned
+        self.result = None
 
         # Initialize the UI
         self._create_ui()
     
     def on_dummy(self, *args, **kwargs):
         pass
+    
     def apply_modern_notebook_style(self):
         """Apply modern styling to the ttk.Notebook and remove dotted focus line from tabs"""
         style = ttk.Style()
@@ -105,7 +107,6 @@ class ParameterUI:
         
         # Apply the style to your notebook
         self.notebook.configure(style="Modern.TNotebook")
-    # Helper for scrollable frame
 
     class ScrollableFrame(tk.Frame):
         def __init__(self, master, **kwargs):
@@ -206,7 +207,6 @@ class ParameterUI:
             
             super().destroy()
 
-    
     def add_section_pad(self, frame):
         tk.Frame(frame, height=20, bg='white').pack(fill='x')
     
@@ -248,6 +248,11 @@ class ParameterUI:
         self.root.configure(bg='white')
         self.root.resizable(True, True) ################# Make window resizable? resize this?
 
+        
+        # Bind the close button (X) to show the confirmation dialog
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
+
         self.notebook = ttk.Notebook(self.root)
         self.apply_modern_notebook_style()
         self.notebook.pack(fill='both', expand=True)
@@ -267,23 +272,74 @@ class ParameterUI:
         self.notebook.add(self.param_scroll, text="Parameters")
         self.notebook.add(self.output_scroll, text="Output Settings")
 
-        # Buttons frame
         self.dual_button_frame = tk.Frame(self.root, bg="green")
         self.dual_button_frame.pack(fill="x")
 
-        # Add buttons to button frame using grid to maintain equal spacing
-        self.button1 = tk.Button(self.dual_button_frame, text="button1aaaaaaaaaaaaaa", font=("Arial", 11), height=2)
+        # Bind button1 to on_select_target_texture
+        self.button1 = tk.Button(self.dual_button_frame, text="Select target and texture", 
+                               font=("Arial", 11), height=2, 
+                               command=self.on_select_target_texture)  # Bind to new handler
         self.button1.grid(row=0, column=0, sticky="nsew")
-        self.button2 = tk.Button(self.dual_button_frame, text="button2", font=("Arial", 11), height=2)
+        self.button2 = tk.Button(self.dual_button_frame, text="Submit", 
+                               font=("Arial", 11), height=2, 
+                               command=self.on_submit_button_press)
         self.button2.grid(row=0, column=1, sticky="nsew")
 
-        # Make each column the same weight and part of the same uniform group
         self.dual_button_frame.grid_columnconfigure(0, weight=1, uniform="group1")
         self.dual_button_frame.grid_columnconfigure(1, weight=1, uniform="group1")
 
+    def on_closing(self):
+        """Handle the window close event by setting result and closing the window"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Confirm Exit")
+        dialog.resizable(False, False)
+        dialog.attributes('-topmost', True)
+        
+        dialog_width = 300
+        dialog_height = 150
+        screen_width = dialog.winfo_screenwidth()
+        screen_height = dialog.winfo_screenheight()
+        x = (screen_width // 2) - (dialog_width // 2)
+        y = (screen_height // 2) - (dialog_height // 2)
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        
+        message = tk.Label(dialog, text="Quit application?", font=("Arial", 12), pady=20)
+        message.pack()
+        
+        button_frame = tk.Frame(dialog)
+        button_frame.pack(pady=10)
+        
+        yes_button = tk.Button(button_frame, text="Yes", width=10, 
+                            command=lambda: self.confirm_exit(dialog))
+        yes_button.grid(row=0, column=0, padx=5)
+        
+        no_button = tk.Button(button_frame, text="No", width=10, 
+                            command=dialog.destroy)
+        no_button.grid(row=0, column=1, padx=5)
+        
+        button_frame.grid_columnconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(1, weight=1)
+        
+        dialog.grab_set()
 
 
-    
+    def confirm_exit(self, dialog):
+        """Set result for window close and destroy the dialog and root"""
+        self.result = {"command": "user_closed_param_ui_window"}
+        dialog.destroy()
+        self.root.quit()  # Exit mainloop
+        self.root.destroy()  # Destroy window
+
+    def on_select_target_texture(self):
+        """Handle 'Select target and texture' button press"""
+        self.result = {"command": "reselect_target_texture"}
+        self.root.quit()  # Exit mainloop
+        self.root.destroy()  # Destroy window
+    def on_submit_button_press(self):
+        """Handle 'Submit' button press"""
+        self.result = {"command": "run", "parameters": self.get_parameters()}
+        self.root.quit()  # Exit mainloop
+        self.root.destroy()  # Destroy window
     # Tab 1
     def _create_parameter_widgets_tab_1(self):
         # Check file extension
@@ -585,8 +641,6 @@ class ParameterUI:
                 label = "Shift field center to: " + str(user_choosen_coords_list[0])+", "+str(user_choosen_coords_list[1])+"..."
                 self.shift_vector_origin_btn.config(text=label, fg="black")
 
-
-
     # Adjusting computation size slider will reset the selected vector field
     def on_computation_size_slider_change(self, sliderval=None):
         self.is_selected_vector_field_origin = False
@@ -622,7 +676,6 @@ class ParameterUI:
             expr = function_string.strip("()")  # Remove the parentheses
             self.f_string, self.g_string = [part.strip() for part in expr.split(",")]  # Split by comma and strip whitespace
 
-
     def on_debug_vector_field(self):
         print(f"[DEBUG] vector_field_function id: {id(self.vector_field_function)}")
         try:
@@ -634,21 +687,121 @@ class ParameterUI:
             print(f"[DEBUG] Error calling vector_field_function: {e}")
     ######################################################
 
+    def get_parameters(self):
+        """
+        Returns a dictionary containing all parameters from the UI widgets.
+        
+        Returns:
+            dict: A dictionary with parameter names as keys and their values.
+        """
+        parameters = {}
+
+        # Tab 1: Parameters
+        parameters['computation_size'] = self.computation_size_slider.get()
+        parameters['num_textures'] = self.num_shapes_slider.get()
+        min_iter, max_iter = self.hill_climb_range.get()
+        parameters['hill_climb_min_iterations'] = min_iter
+        parameters['hill_climb_max_iterations'] = max_iter
+        parameters['texture_opacity'] = self.texture_opacity_slider.get()
+        parameters['initial_texture_width'] = self.rect_width_slider.get()
+        parameters['uniform_texture_size'] = self.scaling_chk.get()
+        parameters['allow_early_termination'] = self.premature_chk.get()
+        parameters['failed_iterations_threshold'] = self.fail_threshold_slider.get()
+        parameters['enable_vector_field'] = self.vector_field_chk.get()
+        parameters['vector_field_f'] = self.f_string
+        parameters['vector_field_g'] = self.g_string
+        parameters['vector_field_function'] = self.vector_field_function
+        parameters['vector_field_origin_shift'] = self.list_of_coord_for_shifting_vector_field_origin
+
+        # Conditional parameters for image files (.png, .jpg, .jpeg)
+        if self.file_ext in ['.png', '.jpg', '.jpeg']:
+            parameters['display_painting_progress'] = self.show_pygame_chk.get()
+            parameters['display_placement_progress'] = self.rect_improve_chk.get()
+            parameters['display_final_image'] = self.display_final_chk.get()
+
+        # Tab 2: Output Settings
+        if self.file_ext in ['.png', '.jpg', '.jpeg']:
+            parameters['output_image_size'] = self.output_size_slider.get()
+            parameters['output_image_name'] = self.image_name_input.get()
+            parameters['create_gif'] = self.create_gif_chk.get()
+            parameters['gif_output_name'] = self.gif_name_input.get() if self.create_gif_chk.get() else None
+        elif self.file_ext == '.gif':
+            parameters['num_frames_to_paint'] = self.frames_in_gif_slider.get()
+            parameters['painted_gif_name'] = self.painted_gif_name_input.get()
+            parameters['enable_multiprocessing'] = self.multiprocessing_chk.get()
+
+        return parameters
 
     def run(self):
-        """Start the UI main loop"""
-        self.root.mainloop()
+        """Start the UI main loop and return the result based on user action"""
+        self.result = None  # Reset result
+        self.root.mainloop()  # Run the Tkinter main loop
+        return self.result  # Return the result set by button actions or closing
 
-        
-if __name__ == "__main__":
-    path_of_target = "C:\\Git Repos\\hill-climb-painter\\target_image\\cat.jpg"
+        # modify the run method and the methods inside param ui to return values in 3 cases:
+        # Case 1: User closed the "X" button
+        # return {"command":"user_closed_param_ui_window"}
 
-    # ui = ParameterUI(target_filepath=path_of_target, gif_frames_full_filepath_list=None)
-    # ui.run()
+        # Case 2: User pressed button1 (Select target and texture button)
+        # return {"command":"reselect_target_texture"}
+
+        # Case 3: User pressed button2 (Submit button)
+        # return {"command":"run", "parameters":<parameter dictionary obtained>}
+
+def get_command_from_parameter_ui(target, target_gif_frames=None):
+    """
+    Initialize the ParameterUI and return the command based on user interaction.
     
+    Args:
+        target (str): Path to the target file (image or GIF).
+        target_gif_frames (list or None): List of file paths for GIF frames or None for non-GIF targets.
+    
+    Returns:
+        dict: Dictionary containing the command and optional parameters based on user action.
+    """
+    # Initialize ParameterUI
+    ui = ParameterUI(target_filepath=target, gif_frames_full_filepath_list=target_gif_frames)
+    # Run the UI and get the result
+    result = ui.run()
+    return result
+
+# def get_command_from_parameter_ui(target, texture):
+#     # Initialises the GUI and returns its output
+#     # init gui
+#     # call its run method to get output
+#     # return output
+
+
+# Inside another file:
+# import get_command_from_parameter_ui from parameter_ui
+
+# get_command_from_parameter_ui("C:\\Git Repos\\hill-climb-painter\\readme_stuff\\shrek_original.gif", 
+#                               ['C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0001.png'])
+
+
+# Take a look at the run method and clarify requirements before coding
+
+
+
+# in other file...
+if __name__ == "__main__":
 
     path_of_target = "C:\\Git Repos\\hill-climb-painter\\readme_stuff\\shrek_original.gif"
     gif_frames_full_filepaths = ['C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0001.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0002.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0003.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0004.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0005.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0006.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0007.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0008.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0009.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0010.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0011.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0012.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0013.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0014.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0015.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0016.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0017.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0018.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0019.png']
     
-    ui = ParameterUI(target_filepath=path_of_target, gif_frames_full_filepath_list=gif_frames_full_filepaths)
-    ui.run()
+    command = get_command_from_parameter_ui(path_of_target, target_gif_frames=gif_frames_full_filepaths)
+    print(command)
+
+    
+#     path_of_target = "C:\\Git Repos\\hill-climb-painter\\target_image\\cat.jpg"
+
+#     ui = ParameterUI(target_filepath=path_of_target, gif_frames_full_filepath_list=None)
+#     ui.run()
+    
+
+    # quit()
+    # path_of_target = "C:\\Git Repos\\hill-climb-painter\\readme_stuff\\shrek_original.gif"
+    # gif_frames_full_filepaths = ['C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0001.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0002.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0003.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0004.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0005.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0006.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0007.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0008.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0009.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0010.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0011.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0012.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0013.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0014.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0015.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0016.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0017.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0018.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0019.png']
+    
+    # ui = ParameterUI(target_filepath=path_of_target, gif_frames_full_filepath_list=gif_frames_full_filepaths)
+    # ui.run()
