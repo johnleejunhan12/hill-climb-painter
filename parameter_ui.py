@@ -52,7 +52,7 @@ class ParameterUI:
         self.prev_color_idx = None
         
 
-        self.initial_choose_vector_eqn_btn_label = "Shift vector field origin to (?, ?)" if self.file_ext != ".gif" else "Shift vector field origin to (?, ?), (?, ?), ..."
+        self.initial_choose_vector_eqn_btn_label = "*Shift vector field origin to (?, ?)" if self.file_ext != ".gif" else "*Shift vector field origin to (?, ?), (?, ?), ..."
 
         # Vector field function attribute
         self.vector_field_function = lambda x, y: (-x,-y)
@@ -107,7 +107,6 @@ class ParameterUI:
         self.notebook.configure(style="Modern.TNotebook")
     # Helper for scrollable frame
 
-
     class ScrollableFrame(tk.Frame):
         def __init__(self, master, **kwargs):
             super().__init__(master, **kwargs)
@@ -117,118 +116,94 @@ class ParameterUI:
             canvas.configure(yscrollcommand=vsb.set)
             canvas.pack(side="left", fill="both", expand=True)
             vsb.pack(side="right", fill="y")
-            canvas.create_window((0, 0), window=self.frame, anchor="nw")
+            canvas.create_window((5, 0), window=self.frame, anchor="nw")
             
-            # Configure scroll region when frame changes
             self.frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-            
-            # Store canvas reference
             self.canvas = canvas
-            
-            # Track if cursor is inside the scrollable area
             self.cursor_inside = False
             
-            # Set up cursor tracking and scrolling
+            # Store the after ID for cursor tracking
+            self.cursor_check_id = None
+            
             self._setup_cursor_tracking()
             self._setup_global_scrolling()
         
         def _setup_cursor_tracking(self):
             """Set up cursor tracking using continuous position monitoring"""
-            
             def check_cursor_position():
-                """Continuously check if cursor is within the scrollable frame bounds"""
                 try:
-                    # Get cursor position relative to screen
                     x, y = self.winfo_pointerxy()
-                    
-                    # Get widget bounds on screen
                     widget_x = self.winfo_rootx()
                     widget_y = self.winfo_rooty()
                     widget_width = self.winfo_width()
                     widget_height = self.winfo_height()
-                    
-                    # Check if cursor is within bounds
                     was_inside = self.cursor_inside
                     self.cursor_inside = (widget_x <= x <= widget_x + widget_width and 
                                         widget_y <= y <= widget_y + widget_height)
-                    
-                    # Optional: Debug output
-                    # if was_inside != self.cursor_inside:
-                    #     print(f"Cursor {'entered' if self.cursor_inside else 'left'} scrollable area")
-                        
+                    # Schedule next check and store the after ID
+                    self.cursor_check_id = self.after(50, check_cursor_position)
                 except tk.TclError:
                     # Widget might be destroyed
                     return
-                
-                # Schedule next check
-                self.after(50, check_cursor_position)  # Check every 50ms
             
             # Start cursor position monitoring
             self.after_idle(check_cursor_position)
         
         def _setup_global_scrolling(self):
             """Set up global mouse wheel event handling"""
-            
             def on_mousewheel(event):
-                # Only scroll if cursor is inside this scrollable frame
                 if not self.cursor_inside:
                     return
-                    
-                # Check if there's content to scroll
                 if not self.canvas.winfo_exists():
                     return
-                    
-                # Get the scroll region
                 scroll_region = self.canvas.cget("scrollregion")
                 if not scroll_region:
                     return
-                    
-                # Parse scroll region (x1, y1, x2, y2)
                 region_coords = scroll_region.split()
                 if len(region_coords) != 4:
                     return
-                    
                 content_height = float(region_coords[3])
                 canvas_height = self.canvas.winfo_height()
-                
-                # Only scroll if content is larger than visible area
                 if content_height <= canvas_height:
                     return
-                    
-                # Calculate scroll amount
                 if hasattr(event, 'delta') and event.delta:
-                    # Windows and MacOS
                     delta = -1 * (event.delta / 120)
                 else:
-                    # Linux - event.num: 4=up, 5=down
                     if hasattr(event, 'num'):
                         delta = -1 if event.num == 4 else 1
                     else:
                         return
-                
-                # Perform the scroll
                 self.canvas.yview_scroll(int(delta), "units")
             
-            # Bind to the root window to catch all mouse wheel events
             def setup_global_binding():
                 root = self.winfo_toplevel()
-                
-                # Bind mouse wheel events globally
-                root.bind_all("<MouseWheel>", on_mousewheel, add=True)  # Windows/MacOS
-                root.bind_all("<Button-4>", on_mousewheel, add=True)    # Linux scroll up  
-                root.bind_all("<Button-5>", on_mousewheel, add=True)    # Linux scroll down
+                root.bind_all("<MouseWheel>", on_mousewheel, add=True)
+                root.bind_all("<Button-4>", on_mousewheel, add=True)
+                root.bind_all("<Button-5>", on_mousewheel, add=True)
             
-            # Set up the binding after the widget is mapped
             self.after_idle(setup_global_binding)
         
         def destroy(self):
-            """Clean up global bindings when widget is destroyed"""
+            """Clean up global bindings and cancel after callbacks when widget is destroyed"""
+            # Cancel the cursor tracking after callback
+            if self.cursor_check_id is not None:
+                try:
+                    self.after_cancel(self.cursor_check_id)
+                except tk.TclError as e:
+                    print(e)
+                    pass  # Ignore if the callback is already invalid
+                self.cursor_check_id = None
+            
+            # Optionally unbind global mouse wheel events
             try:
                 root = self.winfo_toplevel()
-                # Note: unbind_all might affect other widgets, so we don't do it here
-                # The bindings will be cleaned up when the root window is destroyed
-            except:
-                pass
+                root.unbind_all("<MouseWheel>")
+                root.unbind_all("<Button-4>")
+                root.unbind_all("<Button-5>")
+            except tk.TclError as e:
+                print(e)
+                pass  # Ignore if the root window is already destroyed
+            
             super().destroy()
 
     
@@ -269,9 +244,9 @@ class ParameterUI:
         window_width = 540
         window_height = 800
         center_window(self.root, window_width, window_height)
-        self.root.minsize(window_width, window_height)   # Set minimum window size (width=300, height=200)
+        self.root.minsize(window_width, 540)   # Set minimum window size (width, height)
         self.root.configure(bg='white')
-        self.root.resizable(False, False)
+        self.root.resizable(True, True) ################# Make window resizable? resize this?
 
         self.notebook = ttk.Notebook(self.root)
         self.apply_modern_notebook_style()
@@ -291,6 +266,23 @@ class ParameterUI:
 
         self.notebook.add(self.param_scroll, text="Parameters")
         self.notebook.add(self.output_scroll, text="Output Settings")
+
+        # Buttons frame
+        self.dual_button_frame = tk.Frame(self.root, bg="green")
+        self.dual_button_frame.pack(fill="x")
+
+        # Add buttons to button frame using grid to maintain equal spacing
+        self.button1 = tk.Button(self.dual_button_frame, text="button1aaaaaaaaaaaaaa", font=("Arial", 11), height=2)
+        self.button1.grid(row=0, column=0, sticky="nsew")
+        self.button2 = tk.Button(self.dual_button_frame, text="button2", font=("Arial", 11), height=2)
+        self.button2.grid(row=0, column=1, sticky="nsew")
+
+        # Make each column the same weight and part of the same uniform group
+        self.dual_button_frame.grid_columnconfigure(0, weight=1, uniform="group1")
+        self.dual_button_frame.grid_columnconfigure(1, weight=1, uniform="group1")
+
+
+
     
     # Tab 1
     def _create_parameter_widgets_tab_1(self):
@@ -339,7 +331,7 @@ class ParameterUI:
         # 4) Texture opacity settings
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.texture_opacity_slider = SingleSlider(self.param_frame, min_val=0, max_val=100, init_val=50, width=self.PARAM_COMPONENT_WIDTH,
+        self.texture_opacity_slider = SingleSlider(self.param_frame, min_val=0, max_val=100, init_val=100, width=self.PARAM_COMPONENT_WIDTH,
             title="4) Texture opacity percentage: <current_value>%", 
             subtitle="- Gives the texture a translucent effect by decreasing its opacity", is_set_width_to_parent=True, bg_color=color)
         self.texture_opacity_slider.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
@@ -361,7 +353,7 @@ class ParameterUI:
         # 6) Allow size of texture to vary
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.scaling_chk = CustomCheckbox(self.param_frame, text="6) Allow size of texture to vary during optimization", checked=True, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, 
+        self.scaling_chk = CustomCheckbox(self.param_frame, text="6) Make all textures the same size", checked=True, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, 
             is_set_width_to_parent=True, bg_color=color)
         self.scaling_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.scaling_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
@@ -375,18 +367,18 @@ class ParameterUI:
             self.show_pygame_chk = CustomToggleVisibilityCheckbox(self.param_frame, text="7) Display painting progress", checked=False, visibility_manager=self.param_vis_manager, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, is_set_width_to_parent=True, bg_color=color)
             self.show_pygame_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
             self.param_vis_manager.register_widget(self.show_pygame_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
-            # 7.i) Show improvement of individual textures
+            # 7a) Show improvement of individual textures
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
-            self.rect_improve_chk = CustomCheckbox(self.param_frame, text="7.i)Show improvement of individual textures", checked=False, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, is_set_width_to_parent=True, bg_color=color)
+            self.rect_improve_chk = CustomCheckbox(self.param_frame, text="7a) Display placement progress", checked=False, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, is_set_width_to_parent=True, bg_color=color)
             self.rect_improve_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
             self.param_vis_manager.register_widget(self.rect_improve_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
-            # 7.ii) Display final image after painting (conditional)
+            # 7b) Display final image after painting (conditional)
             display_final_chk = None
             if file_ext in ['.png', '.jpg', '.jpeg']:
                 color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
                 self.prev_color_idx = self.widget_color_idx
-                self.display_final_chk = CustomCheckbox(self.param_frame, text="7.ii) Display final image after painting", checked=False, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, is_set_width_to_parent=True, bg_color=color)
+                self.display_final_chk = CustomCheckbox(self.param_frame, text="7b) Display final image after painting", checked=False, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, is_set_width_to_parent=True, bg_color=color)
                 self.display_final_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
                 self.param_vis_manager.register_widget(self.display_final_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
                 display_final_chk = self.display_final_chk
@@ -405,11 +397,11 @@ class ParameterUI:
             visibility_manager=self.param_vis_manager, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, is_set_width_to_parent=True, bg_color=color)
         self.premature_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.premature_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
-        # 8i) Terminate after n iterations
+        # 8a) Terminate after n iterations
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
         self.fail_threshold_slider = SingleSlider(self.param_frame, min_val=20, max_val=100, init_val=100, width=self.PARAM_COMPONENT_WIDTH, height=50, 
-            subtitle="- 8i) Terminate after <current_value> failed iterations where there is no improvement", is_set_width_to_parent=True, bg_color=color)
+            subtitle="- Terminate after <current_value> failed iterations where there is no improvement", is_set_width_to_parent=True, bg_color=color)
         self.fail_threshold_slider.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.fail_threshold_slider, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
         self.add_between_padding(self.param_frame, self.param_vis_manager)
@@ -427,8 +419,13 @@ class ParameterUI:
         # 9.i) Edit vector field
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.edit_vector_btn = tk.Button(self.param_frame, text="9.i) Edit vector field: (f(x,y), g(x,y)) = (-x, -y)", font=("Arial", 11), bg='#007fff', fg='white', command=self.on_edit_vector_field)
-        self.edit_vector_btn.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
+        self.edit_vector_btn = tk.Button(self.param_frame, text="Edit vector field: (f(x,y), g(x,y)) = (-x, -y)", 
+                                         font=("Arial", 11, "bold"), bg=None, fg='black', 
+                                         command=self.on_edit_vector_field, height=2)
+        
+        ######################################
+        self.edit_vector_btn.pack(fill='x', padx=(20, 0), pady=self.PAD_BETWEEN_ALL_COMPONENTS)
+        
         self.param_vis_manager.register_widget(self.edit_vector_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
 
         # # 9.iii) Debug vector field function
@@ -442,14 +439,21 @@ class ParameterUI:
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
 
-        self.shift_vector_origin_btn = tk.Button(self.param_frame, text=self.initial_choose_vector_eqn_btn_label, font=("Arial", 11), bg='#007fff', fg='white', command=self.on_shift_vector_origin)
-        self.shift_vector_origin_btn.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
-        self.param_vis_manager.register_widget(self.shift_vector_origin_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
+        self.shift_vector_origin_btn = tk.Button(self.param_frame, text=self.initial_choose_vector_eqn_btn_label, 
+                                                 font=("Arial", 11, "bold"), bg=None, fg='red',  ##########################################
+                                                 command=self.on_shift_vector_origin, height=2)
         
+
+        ######################################
+        self.shift_vector_origin_btn.pack(fill='x', padx=(20,0), pady=self.PAD_BETWEEN_ALL_COMPONENTS)
+
+        self.param_vis_manager.register_widget(self.shift_vector_origin_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
+
 
         # Set up dependency: 9.i, 9.ii only show if vector_field_chk is checked
         # self.vector_field_chk.set_controlled_widgets([self.edit_vector_btn, self.shift_vector_origin_btn, self.debug_vector_btn])
         self.vector_field_chk.set_controlled_widgets([self.edit_vector_btn, self.shift_vector_origin_btn])
+        self.add_between_padding(self.param_frame, self.param_vis_manager)
 
     # Tab 2
     def _create_parameter_widgets_tab_2(self):
@@ -462,6 +466,7 @@ class ParameterUI:
         # Section 6: Image Output Settings (for .png, .jpg, .jpeg)
         if file_ext in ['.png', '.jpg', '.jpeg']:
             # 1) Output image size
+            self.add_between_padding(self.output_frame, self.output_vis_manager)
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
             self.output_size_slider = SingleSlider(
@@ -503,7 +508,7 @@ class ParameterUI:
             self.prev_color_idx = self.widget_color_idx
             self.gif_name_input = CustomTextInput(
                 self.output_frame, width=self.PARAM_COMPONENT_WIDTH, 
-                title="3.i) GIF filename", is_set_width_to_parent=True, bg_color=color
+                title="3a) Enter GIF filename", subtitle="- Gif will be saved to output folder when algorithm terminates", is_set_width_to_parent=True, bg_color=color
             )
             self.gif_name_input.set("gif_output")
             self.gif_name_input.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
@@ -517,6 +522,7 @@ class ParameterUI:
 
         # Sections 8: GIF Settings (for .gif)
         elif file_ext == '.gif':
+            self.add_between_padding(self.output_frame, self.output_vis_manager)
             # 1) Limit number of frames painted in original GIF.
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx + 1, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
@@ -569,7 +575,7 @@ class ParameterUI:
                 self.list_of_coord_for_shifting_vector_field_origin = user_choosen_coords_list
                 self.is_selected_vector_field_origin = True
                 label = "Shift field center to: " + str(user_choosen_coords_list[0])
-                self.shift_vector_origin_btn.config(text=label)
+                self.shift_vector_origin_btn.config(text=label, fg="black")
         
         # GIF case
         else:
@@ -577,7 +583,7 @@ class ParameterUI:
             if user_choosen_coords_list is not None:
                 self.list_of_coord_for_shifting_vector_field_origin = user_choosen_coords_list
                 label = "Shift field center to: " + str(user_choosen_coords_list[0])+", "+str(user_choosen_coords_list[1])+"..."
-                self.shift_vector_origin_btn.config(text=label)
+                self.shift_vector_origin_btn.config(text=label, fg="black")
 
 
 
@@ -586,6 +592,7 @@ class ParameterUI:
         self.is_selected_vector_field_origin = False
         self.list_of_coord_for_shifting_vector_field_origin = None
         self.shift_vector_origin_btn.config(text=self.initial_choose_vector_eqn_btn_label)
+        self.shift_vector_origin_btn.config(fg="red")
         
     # Opens the window for user to define vector field
     def on_edit_vector_field(self):
@@ -608,7 +615,7 @@ class ParameterUI:
         if result is not None:
             function_string = result[0]
             # Update button text with the returned string
-            self.edit_vector_btn.configure(text=f"9.i) Edit vector field: {function_string}")
+            self.edit_vector_btn.configure(text=f"Edit vector field: {function_string}")
             # Update the vector field function
             self.vector_field_function = result[1]
             # update the f_string and g_string
@@ -635,11 +642,13 @@ class ParameterUI:
         
 if __name__ == "__main__":
     path_of_target = "C:\\Git Repos\\hill-climb-painter\\target_image\\cat.jpg"
-    ui = ParameterUI(target_filepath=path_of_target, gif_frames_full_filepath_list=None)
 
-
-    # gif_frames_full_filepaths = ['C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0001.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0002.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0003.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0004.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0005.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0006.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0007.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0008.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0009.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0010.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0011.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0012.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0013.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0014.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0015.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0016.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0017.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0018.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0019.png']
-    # ui = ParameterUI(target_filepath=path_of_target, gif_frames_full_filepath_list=gif_frames_full_filepaths)
+    # ui = ParameterUI(target_filepath=path_of_target, gif_frames_full_filepath_list=None)
+    # ui.run()
     
-    # Start the UI
+
+    path_of_target = "C:\\Git Repos\\hill-climb-painter\\readme_stuff\\shrek_original.gif"
+    gif_frames_full_filepaths = ['C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0001.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0002.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0003.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0004.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0005.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0006.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0007.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0008.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0009.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0010.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0011.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0012.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0013.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0014.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0015.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0016.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0017.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0018.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0019.png']
+    
+    ui = ParameterUI(target_filepath=path_of_target, gif_frames_full_filepath_list=gif_frames_full_filepaths)
     ui.run()

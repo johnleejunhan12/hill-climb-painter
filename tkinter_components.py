@@ -1,4 +1,5 @@
 import tkinter as tk
+import re
 
 __all__ = [
     'VisibilityManager',
@@ -51,7 +52,6 @@ class VisibilityManager:
                 self.controlled_widgets[widget]['visible']):
                 pack_info = self.controlled_widgets[widget]['pack_info']
                 widget.pack(**pack_info)
-
 class CustomToggleVisibilityCheckbox(tk.Canvas):
     def __init__(self, master, text='', checked=False, command=None, 
                  visibility_manager=None, controlled_widgets=None,
@@ -68,8 +68,10 @@ class CustomToggleVisibilityCheckbox(tk.Canvas):
         self.is_set_width_to_parent = is_set_width_to_parent
         self._user_height = height
         super().__init__(master, width=width, height=height, **kwargs)
+        
         if is_set_width_to_parent:
             self.bind('<Configure>', self._on_resize)
+            
         self.text = text
         self.checked = checked
         self.command = command
@@ -80,19 +82,36 @@ class CustomToggleVisibilityCheckbox(tk.Canvas):
         self.box_pad = 14
         self.visibility_manager = visibility_manager
         self.controlled_widgets = controlled_widgets or []
+        
+        # Find the scrollable frame reference
+        self._scrollable_frame = None
+        self._find_scrollable_frame()
+        
         self._draw_checkbox()
         self.bind('<Button-1>', self._on_click)
-        # NOTE: Don't apply initial state here - controlled_widgets might not be set yet
+
+    def _find_scrollable_frame(self):
+        """Find the parent ScrollableFrame to enable auto-scrolling"""
+        parent = self.master
+        while parent:
+            # Check if parent is a ScrollableFrame by looking for the canvas attribute
+            if hasattr(parent, 'canvas') and hasattr(parent, 'frame'):
+                self._scrollable_frame = parent
+                break
+            parent = parent.master if hasattr(parent, 'master') else None
+
     def set_controlled_widgets(self, controlled_widgets):
         """Set the controlled widgets and apply initial visibility state"""
         self.controlled_widgets = controlled_widgets
         # Now apply the initial visibility state
         self._update_widget_visibility()
+
     def _on_resize(self, event):
         self.config(width=event.width)
         self.width = event.width
         self.height = self._user_height
         self._draw_checkbox()
+
     def _draw_checkbox(self):
         self.delete('all')
         # Draw box
@@ -100,26 +119,135 @@ class CustomToggleVisibilityCheckbox(tk.Canvas):
         y0 = (self.height - self.box_size) // 2
         x1 = x0 + self.box_size
         y1 = y0 + self.box_size
+        
         box_color = 'black' if self.checked else '#888'
         tick_color = 'black' if self.checked else '#888'
         text_color = 'black' if self.checked else '#888'
+        
         self.create_rectangle(x0, y0, x1, y1, outline=box_color, width=2, fill='white', tags='box')
+        
         # Draw check if checked
         if self.checked:
-            self.create_line(x0+4, y0+self.box_size//2, x0+self.box_size//2, y1-4, x1-4, y0+4, fill=tick_color, width=3, capstyle=tk.ROUND, joinstyle=tk.ROUND)
+            self.create_line(x0+4, y0+self.box_size//2, x0+self.box_size//2, y1-4, 
+                           x1-4, y0+4, fill=tick_color, width=3, 
+                           capstyle=tk.ROUND, joinstyle=tk.ROUND)
+        
         # Draw label (bold)
-        self.create_text(x1 + 10, self.height//2, text=self.text, anchor='w', fill=text_color, font=('Arial', 13, 'bold'))
+        self.create_text(x1 + 10, self.height//2, text=self.text, anchor='w', 
+                        fill=text_color, font=('Arial', 13, 'bold'))
+
     def _on_click(self, event):
         x0 = self.box_pad
         y0 = (self.height - self.box_size) // 2
         x1 = x0 + self.box_size
         y1 = y0 + self.box_size
+        
         if x0 <= event.x <= x1 and y0 <= event.y <= y1 or event.x > x1:
+            was_checked = self.checked
             self.checked = not self.checked
             self._draw_checkbox()
             self._update_widget_visibility()
+            
+            # Auto-scroll when revealing widgets
+            if not was_checked and self.checked:
+                self._scroll_to_show_revealed_content()
+            
             if self.command:
                 self.command(self.checked)
+
+    def _scroll_to_show_revealed_content(self):
+        """Automatically scroll to show newly revealed content"""
+        if not self._scrollable_frame or not self.controlled_widgets:
+            return
+            
+        # Wait for widgets to be shown and rendered
+        self.after(50, self._perform_scroll)
+
+    def _perform_scroll(self):
+        """Perform the actual scrolling operation"""
+        try:
+            if not self._scrollable_frame or not self.controlled_widgets:
+                return
+                
+            canvas = self._scrollable_frame.canvas
+            
+            # Update the scroll region first
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            
+            # Find the bottommost controlled widget
+            bottom_widget = None
+            max_bottom = 0
+            
+            for widget in self.controlled_widgets:
+                if widget.winfo_viewable():
+                    # Get widget position relative to the scrollable frame
+                    widget_y = widget.winfo_y()
+                    widget_height = widget.winfo_reqheight()
+                    widget_bottom = widget_y + widget_height
+                    
+                    if widget_bottom > max_bottom:
+                        max_bottom = widget_bottom
+                        bottom_widget = widget
+            
+            if bottom_widget is None:
+                return
+                
+            # Get canvas dimensions
+            canvas_height = canvas.winfo_height()
+            
+            # Get current scroll region
+            scroll_region = canvas.cget("scrollregion")
+            if not scroll_region:
+                return
+                
+            region_coords = scroll_region.split()
+            if len(region_coords) != 4:
+                return
+                
+            total_content_height = float(region_coords[3])
+            
+            # Calculate the position to scroll to show the bottom widget
+            # We want to show the bottom widget near the bottom of the viewport
+            target_bottom = max_bottom + 20  # Add some padding
+            
+            # Calculate what fraction of the content should be scrolled
+            if total_content_height > canvas_height:
+                # Calculate the scroll fraction to show the target position
+                visible_top_target = target_bottom - canvas_height
+                scroll_fraction = max(0, min(1, visible_top_target / (total_content_height - canvas_height)))
+                
+                # Smooth scroll to the target position
+                self._smooth_scroll_to(canvas, scroll_fraction)
+                
+        except Exception as e:
+            print(f"Error in auto-scroll: {e}")
+
+    def _smooth_scroll_to(self, canvas, target_fraction, steps=10, current_step=0):
+        """Smoothly scroll to the target position"""
+        try:
+            if current_step >= steps:
+                return
+                
+            # Get current scroll position
+            current_top, current_bottom = canvas.yview()
+            current_fraction = current_top
+            
+            # Calculate intermediate position
+            progress = (current_step + 1) / steps
+            # Use easing function for smoother animation
+            eased_progress = 1 - (1 - progress) ** 2  # Ease-out quadratic
+            
+            intermediate_fraction = current_fraction + (target_fraction - current_fraction) * eased_progress
+            
+            # Scroll to intermediate position
+            canvas.yview_moveto(intermediate_fraction)
+            
+            # Schedule next step
+            self.after(30, lambda: self._smooth_scroll_to(canvas, target_fraction, steps, current_step + 1))
+            
+        except Exception as e:
+            print(f"Error in smooth scroll: {e}")
+
     def _update_widget_visibility(self):
         """Update visibility of controlled widgets"""
         if self.visibility_manager and self.controlled_widgets:
@@ -127,13 +255,19 @@ class CustomToggleVisibilityCheckbox(tk.Canvas):
                 self.visibility_manager.show_widgets(self.controlled_widgets)
             else:
                 self.visibility_manager.hide_widgets(self.controlled_widgets)
+
     def get(self):
         return self.checked
+
     def set(self, checked):
+        was_checked = self.checked
         self.checked = checked
         self._draw_checkbox()
         self._update_widget_visibility()
-
+        
+        # Auto-scroll when programmatically revealing widgets
+        if not was_checked and self.checked:
+            self._scroll_to_show_revealed_content()
 class RangeSlider(tk.Canvas):
     def __init__(self, master, min_val=0, max_val=100, init_min=None, init_max=None, width=300, height=None, command=None, title=None, subtitle=None, title_size=13, subtitle_size=10, bg_color='white', is_set_width_to_parent=False, show_value_labels=False, **kwargs):
         self._line_spacing = 6  # px between lines in title/subtitle (moved to top to avoid AttributeError)
@@ -576,18 +710,14 @@ class CustomCheckbox(tk.Canvas):
     def set(self, checked):
         self.checked = checked
         self._draw_checkbox()
-
-class CustomTextInput(tk.Frame):
+class CustomTextInput(tk.Frame): 
     def __init__(self, master, width=300, height=None, title=None, subtitle=None, title_size=13, subtitle_size=10, bg_color='white', is_set_width_to_parent=False, on_text_change=None, **kwargs):
-        self._line_spacing = 6  # px between lines in title/subtitle
-        # Auto-calculate height if not specified
+        self._line_spacing = 6
         if height is None:
-            # Count lines for title and subtitle
             title_lines = title.count('\n') + 1 if title else 0
             subtitle_lines = subtitle.count('\n') + 1 if subtitle else 0
             title_height = title_size * title_lines + self._line_spacing * (title_lines - 1) if title else 0
             subtitle_height = subtitle_size * subtitle_lines + self._line_spacing * (subtitle_lines - 1) if subtitle else 0
-            # 7px gap between title and subtitle, 15px gap below subtitle, 4px padding above entry if subtitle, 32px for entry
             if title and subtitle:
                 height = title_height + 5 + subtitle_height + 15 + 4 + 32
             elif title:
@@ -606,7 +736,7 @@ class CustomTextInput(tk.Frame):
         self.subtitle_size = subtitle_size
         self.on_text_change = on_text_change
         self.pack_propagate(False)
-        # Layout
+
         x_pad = 12
         y = 0
         if self.title:
@@ -616,25 +746,25 @@ class CustomTextInput(tk.Frame):
             if self.title.count('\n'):
                 y += self._line_spacing * self.title.count('\n')
             if self.subtitle:
-                y += 5  # 5px gap between title and subtitle
+                y += 5
             else:
-                y += 15  # 15px gap between title and entry
+                y += 15
         if self.subtitle:
             self.subtitle_label = tk.Label(self, text=self.subtitle, anchor='w', font=('Arial', self.subtitle_size), bg=bg_color, fg='black')
             self.subtitle_label.pack(fill='x', anchor='w', pady=(0,0), padx=(x_pad,0))
             y += self.subtitle_size
             if self.subtitle.count('\n'):
                 y += self._line_spacing * self.subtitle.count('\n')
-            y += 15  # 15px gap below subtitle
-        # Add 4px padding between subtitle and text box
+            y += 15
+
         entry_pad_top = 4 if self.subtitle else 0
-        # Blue border frame for Entry
         self.entry_border = tk.Frame(self, bg='#007fff', bd=0, highlightthickness=0)
         self.entry_border.pack(fill='x', padx=(x_pad, x_pad), pady=(entry_pad_top,0))
         self.entry = tk.Entry(self.entry_border, font=('Arial', 12), bg='white', relief='flat', highlightthickness=0, bd=0)
         self.entry.pack(fill='x', padx=0, pady=0, ipady=2)
         self.entry_border.config(highlightbackground='#007fff', highlightcolor='#007fff', highlightthickness=2, bd=0)
         self.entry.bind('<KeyRelease>', self._on_text_change)
+
         if is_set_width_to_parent:
             self.bind('<Configure>', self._on_resize)
 
@@ -644,15 +774,28 @@ class CustomTextInput(tk.Frame):
         self.entry.config(width=event.width)
 
     def _on_text_change(self, event):
+        # Validate and sanitize filename
+        current_text = self.entry.get()
+        safe_text = self._sanitize_filename(current_text)
+        if current_text != safe_text:
+            self.entry.delete(0, tk.END)
+            self.entry.insert(0, safe_text)
         if self.on_text_change:
-            self.on_text_change(self.entry.get())
+            self.on_text_change(safe_text)
+
+    def _sanitize_filename(self, name):
+        # Remove unsafe characters (only allow letters, numbers, underscores, dashes)
+        name = re.sub(r'[^A-Za-z0-9_-]', '_', name)
+        # Optional: Limit length to 255 characters
+        return name[:255]
 
     def get(self):
         return self.entry.get()
 
     def set(self, text):
+        safe_text = self._sanitize_filename(text)
         self.entry.delete(0, tk.END)
-        self.entry.insert(0, text)
+        self.entry.insert(0, safe_text)
 
 class Padding(tk.Frame):
     def __init__(self, master, height=20, bg_color='white', **kwargs):

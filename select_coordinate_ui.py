@@ -32,6 +32,7 @@ class CoordinateSelectorUI:
         
         # Convert single filepath to list for uniform handling
         self.image_paths = [image_filepath] if isinstance(image_filepath, str) else image_filepath
+        self.is_single_image = len(self.image_paths) == 1
         self.target_size = resize_shorter_side_of_image
         self.replay_fps = replay_fps
         self.selected_coordinates = []
@@ -59,10 +60,10 @@ class CoordinateSelectorUI:
         self.root.title("Select coordinates")
         
         # Center the main window
-        center_window(self.root, self.window_width, self.window_height)
+        center_window(self.root, max(self.window_width, 590), max(self.window_height+20, 250))
 
         # set min height and min width
-        self.root.minsize(self.window_width, self.window_height+20)
+        self.root.minsize(max(self.window_width, 590), max(self.window_height+20, 250))
         
         # Setup the UI components
         self._setup_ui()
@@ -150,38 +151,37 @@ class CoordinateSelectorUI:
         )
         self.title_label.pack(pady=(0, 6))
 
-        # Instruction label above the image
-        self.instruction_label = ttk.Label(
-            self.main_frame,
-            text="Hold right click for faster selection. Press 'Clear all previous selections' to start over.",
-            font=('Arial', 11, 'italic'),
-            foreground='blue',
-            background="#f7f7fa"
-        )
-        self.instruction_label.pack(pady=(0, 10))
-        
-        # Create canvas for image display
-        self.canvas = tk.Canvas(
-            self.main_frame,
-            width=self.max_width,
-            height=self.max_height,
-            bg='white',
-            highlightthickness=2,
-            highlightbackground="#b0b0b0",
-            relief=tk.RIDGE,
-            bd=2
-        )
-        self.canvas.pack(pady=(0, 10))
+        # Instruction label above the image (only for multiple images)
+        if not self.is_single_image:
+            self.instruction_label = ttk.Label(
+                self.main_frame,
+                text="Hold right click for faster selection. Press 'Clear all previous selections' to start over.",
+                font=('Arial', 11, 'italic'),
+                foreground='blue',
+                background="#f7f7fa"
+            )
+            self.instruction_label.pack(pady=(0, 10))
         
         # Label for instructions and coordinate display
         self.coord_label = ttk.Label(
             self.main_frame,
             text="Select (x,y) coordinate",
-            font=('Arial', 12),
+            font=('Arial', 13),
             background="#f7f7fa"
         )
         self.coord_label.pack(pady=(0, 8))
+
+        # Create canvas for image display
+        self.canvas = tk.Canvas(
+            self.main_frame,
+            width=self.max_width,
+            height=self.max_height,
+            bg='white'
+        )
+        self.canvas.pack(pady=(0, 10))
         
+
+        #################################################################
         button_frame = tk.Frame(self.main_frame, bg="#f7f7fa")
         button_frame.pack(pady=(0, 12))
         self.confirm_button = tk.Button(
@@ -194,60 +194,67 @@ class CoordinateSelectorUI:
             font=('Arial', 12, 'bold'),
             activebackground='#2ecc40',
             activeforeground='white',
-            width=16,
             height=2,
             bd=0,
         )
-        self.confirm_button.pack(side=tk.LEFT, padx=(0, 12))
+        self.confirm_button.grid(row=0, column=0, sticky="nsew", padx=5)
         self.clear_button = tk.Button(
             button_frame,
-            text="Clear all previous selections",
+            text="Clear" if self.is_single_image else "Clear all previous selections",
             command=self._clear_all_selections,
             bg='red',
             fg='white',
             font=('Arial', 12, 'bold'),
             activebackground='#e74c3c',
             activeforeground='white',
-            width=22,
             height=2,
             bd=0,
         )
-        self.clear_button.pack(side=tk.LEFT)
-        
-        # Slider for long hold selection delay
-        self.slider_frame = tk.Frame(self.main_frame, bg="#f7f7fa")
-        self.slider_frame.pack(pady=(0, 10))
-        ttk.Label(
-            self.slider_frame,
-            text="Long hold selection delay (ms):",
-            font=('Arial', 10),
-            background="#f7f7fa"
-        ).pack(side=tk.LEFT)
-        self.delay_slider = ttk.Scale(
-            self.slider_frame,
-            from_=20,
-            to=500,
-            orient=tk.HORIZONTAL,
-            value=50,
-            command=self._update_long_hold_delay,
-            length=180
-        )
-        self.delay_slider.pack(side=tk.LEFT, padx=5)
-        self.delay_value_label = ttk.Label(
-            self.slider_frame,
-            text="50",
-            font=('Arial', 10, 'bold'),
-            background="#f7f7fa"
-        )
-        self.delay_value_label.pack(side=tk.LEFT, padx=(5, 0))
+        self.clear_button.grid(row=0, column=1, sticky="nsew", padx=5)
+
+        # Make each column the same weight and part of the same uniform group
+        button_frame.grid_columnconfigure(0, weight=1, uniform="group1")
+        button_frame.grid_columnconfigure(1, weight=1, uniform="group1")
+        ###########################################################
+
+        # Slider for long hold selection delay (only for multiple images)
+        if not self.is_single_image:
+            self.slider_frame = tk.Frame(self.main_frame, bg="#f7f7fa")
+            self.slider_frame.pack(pady=(0, 10))
+            ttk.Label(
+                self.slider_frame,
+                text="Long hold selection delay (ms):",
+                font=('Arial', 10),
+                background="#f7f7fa"
+            ).pack(side=tk.LEFT)
+            self.delay_slider = ttk.Scale(
+                self.slider_frame,
+                from_=20,
+                to=500,
+                orient=tk.HORIZONTAL,
+                value=50,
+                command=self._update_long_hold_delay,
+                length=180
+            )
+            self.delay_slider.pack(side=tk.LEFT, padx=5)
+            self.delay_value_label = ttk.Label(
+                self.slider_frame,
+                text="50",
+                font=('Arial', 10, 'bold'),
+                background="#f7f7fa"
+            )
+            self.delay_value_label.pack(side=tk.LEFT, padx=(5, 0))
         
         # Bind mouse events
         self.canvas.bind("<Button-1>", self._on_left_click)
         self.canvas.bind("<B1-Motion>", self._on_left_drag)
         self.canvas.bind("<ButtonRelease-1>", self._on_left_release)
-        self.canvas.bind("<Button-3>", self._on_right_click)
-        self.canvas.bind("<B3-Motion>", self._on_right_drag)
-        self.canvas.bind("<ButtonRelease-3>", self._on_right_release)
+        
+        # Only bind right click events for multiple images
+        if not self.is_single_image:
+            self.canvas.bind("<Button-3>", self._on_right_click)
+            self.canvas.bind("<B3-Motion>", self._on_right_drag)
+            self.canvas.bind("<ButtonRelease-3>", self._on_right_release)
         
         # Handle window close event
         self.root.protocol("WM_DELETE_WINDOW", self._on_window_close)
@@ -255,7 +262,8 @@ class CoordinateSelectorUI:
     def _update_long_hold_delay(self, value):
         """Update the long hold selection delay based on slider value"""
         self.long_hold_selection_delay = int(float(value))
-        self.delay_value_label.config(text=str(self.long_hold_selection_delay))
+        if hasattr(self, 'delay_value_label'):
+            self.delay_value_label.config(text=str(self.long_hold_selection_delay))
     
     def _display_current_image(self):
         """Display the current image on the canvas"""
@@ -276,7 +284,13 @@ class CoordinateSelectorUI:
         self.selected_x = None
         self.selected_y = None
         self.confirm_button.config(state=tk.DISABLED, bg='green')
-        self.coord_label.config(text=f"Image {self.current_image_index + 1}/{len(self.image_paths)}")
+        
+        # Only show image count for multiple images
+        if not self.is_single_image:
+            self.coord_label.config(text=f"Image {self.current_image_index + 1}/{len(self.image_paths)}")
+        else:
+            self.coord_label.config(text="Select (x,y) coordinate")
+            
         if hasattr(self, 'title_label'):
             self.title_label.config(text="Shift vector field origin to (?,?)")
     
@@ -332,6 +346,9 @@ class CoordinateSelectorUI:
     
     def _on_right_click(self, event):
         """Handle right mouse button click (initial press)"""
+        if self.is_single_image:
+            return  # Disable right click for single image
+            
         self.right_click_press_time = time.time()
         self.last_long_hold_selection_time = 0
         self._long_hold_active = True
@@ -346,6 +363,9 @@ class CoordinateSelectorUI:
     
     def _on_right_drag(self, event):
         """Handle right mouse button drag (moving while pressed)"""
+        if self.is_single_image:
+            return  # Disable right click for single image
+            
         current_time = time.time()
         press_duration = current_time - self.right_click_press_time
         coords = self._get_image_coordinates(event)
@@ -358,6 +378,9 @@ class CoordinateSelectorUI:
     
     def _on_right_release(self, event):
         """Handle right mouse button release"""
+        if self.is_single_image:
+            return  # Disable right click for single image
+            
         self.right_click_press_time = 0
         self._long_hold_active = False
     
@@ -411,6 +434,9 @@ class CoordinateSelectorUI:
     
     def _start_long_hold_loop(self):
         """Start the long hold loop for repeated selection confirmation"""
+        if self.is_single_image:
+            return  # Skip long hold loop for single image
+            
         def loop():
             if not getattr(self, '_long_hold_active', False):
                 return
@@ -435,21 +461,24 @@ class CoordinateSelectorUI:
         state = tk.NORMAL if enabled else tk.DISABLED
         self.confirm_button.config(state=state)
         self.clear_button.config(state=state)
-        self.delay_slider.config(state=state)
+        if hasattr(self, 'delay_slider'):
+            self.delay_slider.config(state=state)
         if not enabled:
             self.canvas.unbind("<Button-1>")
             self.canvas.unbind("<B1-Motion>")
             self.canvas.unbind("<ButtonRelease-1>")
-            self.canvas.unbind("<Button-3>")
-            self.canvas.unbind("<B3-Motion>")
-            self.canvas.unbind("<ButtonRelease-3>")
+            if not self.is_single_image:
+                self.canvas.unbind("<Button-3>")
+                self.canvas.unbind("<B3-Motion>")
+                self.canvas.unbind("<ButtonRelease-3>")
         else:
             self.canvas.bind("<Button-1>", self._on_left_click)
             self.canvas.bind("<B1-Motion>", self._on_left_drag)
             self.canvas.bind("<ButtonRelease-1>", self._on_left_release)
-            self.canvas.bind("<Button-3>", self._on_right_click)
-            self.canvas.bind("<B3-Motion>", self._on_right_drag)
-            self.canvas.bind("<ButtonRelease-3>", self._on_right_release)
+            if not self.is_single_image:
+                self.canvas.bind("<Button-3>", self._on_right_click)
+                self.canvas.bind("<B3-Motion>", self._on_right_drag)
+                self.canvas.bind("<ButtonRelease-3>", self._on_right_release)
     
     def _show_replay_window(self):
         """Show a replay window with a slideshow of images and overlays of selected coordinates"""
@@ -460,8 +489,15 @@ class CoordinateSelectorUI:
         self.replay_window.title("Replay")
         self.replay_window.protocol("WM_DELETE_WINDOW", self._on_replay_close)
         
+
+
+
+        # set min height and min width
+        self.replay_window.minsize(max(self.window_width, 590), max(self.window_height+20, 250))
+
+
         # Center the replay window
-        center_window(self.replay_window, self.window_width, self.window_height)
+        center_window(self.replay_window, max(self.window_width, 590), max(self.window_height+20, 250))
         
         self.replay_window.configure(bg="#f7f7fa")
         title_label = ttk.Label(
@@ -475,13 +511,10 @@ class CoordinateSelectorUI:
             self.replay_window,
             width=self.max_width,
             height=self.max_height,
-            bg='white',
-            highlightthickness=2,
-            highlightbackground="#b0b0b0",
-            relief=tk.RIDGE,
-            bd=2
+            bg='white'
         )
         self.replay_canvas.pack(padx=10, pady=10)
+        ####################################################################
         button_frame = tk.Frame(self.replay_window, bg="#f7f7fa")
         button_frame.pack(pady=10)
         confirm_all_btn = tk.Button(
@@ -492,12 +525,11 @@ class CoordinateSelectorUI:
             font=("Arial", 12, "bold"),            
             activebackground='#2ecc40',
             activeforeground='white',
-            width=16,
             height=2,
             bd=0,
             command=self._on_replay_confirm_all
         )
-        confirm_all_btn.pack(side=tk.LEFT, padx=10)
+        confirm_all_btn.grid(row=0, column=0, sticky="nsew", padx=5)
         reset_all_btn = tk.Button(
             button_frame,
             text="Reset all",
@@ -506,12 +538,17 @@ class CoordinateSelectorUI:
             font=('Arial', 12, 'bold'),
             activebackground='#e74c3c',
             activeforeground='white',
-            width=22,
             height=2,
             bd=0,
             command=self._on_replay_reset_all
         )
-        reset_all_btn.pack(side=tk.LEFT, padx=10)
+        reset_all_btn.grid(row=0, column=1, sticky="nsew", padx=5)
+
+        # Make each column the same weight and part of the same uniform group
+        button_frame.grid_columnconfigure(0, weight=1, uniform="group1")
+        button_frame.grid_columnconfigure(1, weight=1, uniform="group1")
+        #####################################################################
+
         slider_frame = tk.Frame(self.replay_window, bg="#f7f7fa")
         slider_frame.pack(pady=(0, 10))
         ttk.Label(slider_frame, text="Replay FPS:").pack(side=tk.LEFT)
@@ -656,5 +693,5 @@ if __name__ == "__main__":
 
     # filepaths_of_frames_or_image = "target_image/chameleon.png"
 
-    coords = create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_of_target=400, master=None)
+    coords = create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_of_target=600, master=None)
     print(coords)

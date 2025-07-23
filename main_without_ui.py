@@ -35,7 +35,7 @@ texture_opacity_percentage = 100
 # 5) Initial texture width to ? pixels (single slider)
 initial_random_rectangle_pixel_width = 20
 
-# 6) Allow size of texture to vary during optimization (checkbox)
+# 6) Allow size of texture to vary during optimization (checkbox) equivalent to NOT make all textures the same size
 is_scaling_allowed_during_mutation = True
 
 # 7) Display painting progress (toggle visibility checkbox)

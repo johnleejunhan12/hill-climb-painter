@@ -8,8 +8,13 @@ from sympy import sympify, lambdify
 import warnings
 warnings.filterwarnings('ignore')
 
+
 class VectorFieldVisualizer:
     def __init__(self, master=None, presets=None, sq_grid_size=None, initial_f_string=None, initial_g_string=None):
+        # Set initial window dimensions
+        self.initial_width = 800
+        self.initial_height = 800
+
         if master is None:
             self.root = tk.Tk()
         else:
@@ -17,7 +22,9 @@ class VectorFieldVisualizer:
             self.root.transient(master)
             self.root.grab_set()
         self.root.title("Vector Field Visualizer")
-        self.root.geometry("800x700")
+        
+        # Center the window
+        self.center_window(self.initial_width, self.initial_height)
         self.root.configure(bg='#f0f0f0')
         
         # Default presets if none provided
@@ -51,6 +58,19 @@ class VectorFieldVisualizer:
         self.setup_styles()
         self.create_widgets()
         self.update_visualization()
+
+    def center_window(self, width, height):
+        """Center the given window on the screen."""
+        # Get screen dimensions
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        
+        # Calculate position to center the window
+        x = (screen_width // 2) - (width // 2)
+        y = (screen_height // 2) - (height // 2) - 10
+        
+        # Set window geometry
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
         
     def setup_styles(self):
         """Configure modern styling for ttk widgets"""
@@ -160,17 +180,21 @@ class VectorFieldVisualizer:
         # Buttons frame
         button_frame = ttk.Frame(main_frame, padding="10")
         button_frame.grid(row=4, column=0, pady=(10, 0))
-        
+
         self.visualize_btn = ttk.Button(button_frame, text="Visualize", 
-                                       style='Visualize.TButton',
-                                       command=self.update_visualization)
-        self.visualize_btn.grid(row=0, column=0, padx=(0, 10))
-        
+                                    style='Visualize.TButton',
+                                    command=self.update_visualization)
+        self.visualize_btn.grid(row=0, column=0, sticky="nsew", padx=5)
+
         self.confirm_btn = ttk.Button(button_frame, text="Confirm selection", 
-                                     style='Confirm.TButton',
-                                     command=self.confirm_selection)
-        self.confirm_btn.grid(row=0, column=1, padx=(10, 0))
-        
+                                    style='Confirm.TButton',
+                                    command=self.confirm_selection)
+        self.confirm_btn.grid(row=0, column=1, sticky="nsew", padx=5)
+
+        # Make each column the same weight and part of the same uniform group
+        button_frame.grid_columnconfigure(0, weight=1, uniform="group1")
+        button_frame.grid_columnconfigure(1, weight=1, uniform="group1")
+                
         # Initial validation
         self.validate_expressions()
         
@@ -451,14 +475,22 @@ class VectorFieldVisualizer:
     
     def run(self):
         """Run the GUI and return the result string and function"""
+        print("Starting VectorFieldVisualizer")
         # Handle window closing
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
         # Start the GUI
         self.root.mainloop()
         
+        # Clean up matplotlib resources
+        if hasattr(self, 'fig'):
+            plt.close(self.fig)
+        
         # Clean up
-        self.root.destroy()
+        try:
+            self.root.destroy()
+        except tk.TclError:
+            pass
         
         if self.confirmed and self.result_string is not None:
             return self.result_string, self.result_function
@@ -467,8 +499,13 @@ class VectorFieldVisualizer:
     
     def on_closing(self):
         """Handle window closing event"""
+        print("Closing VectorFieldVisualizer")
         self.confirmed = False
+        # Clean up matplotlib resources
+        if hasattr(self, 'fig'):
+            plt.close(self.fig)
         self.root.quit()
+        self.root.destroy()
 
 
 def create_vector_field_visualizer(presets=None, sq_grid_size=None, master=None, initial_f_string=None, initial_g_string=None):

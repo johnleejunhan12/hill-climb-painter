@@ -1,21 +1,61 @@
+# import tkinter as tk
+
+# root = tk.Tk()
+# root.title("Tkinter Button Relief Styles")
+
+# reliefs = ["flat", "raised", "sunken", "groove", "ridge", "solid"]
+
+# for i, style in enumerate(reliefs):
+#     btn = tk.Button(
+#         root,
+#         text=style.capitalize(),
+#         relief=style,
+#         width=12,
+#         height=2,
+#         bd=4  # Border width (matters for most styles)
+#     )
+#     btn.grid(row=0, column=i, padx=5, pady=10)
+
+# root.mainloop()
+
+
 import tkinter as tk
+from tkinter import messagebox
 
+def on_exit_click():
+    # Create popup
+    popup = tk.Toplevel(root)
+    popup.title("Confirm Exit")
+    popup.geometry("300x120")
+    popup.resizable(False, False)
+
+    # Keep popup on top and modal
+    popup.transient(root)    # Attach popup to root
+    popup.grab_set()         # Make popup modal
+    popup.attributes('-topmost', True)  # Always on top
+
+    # Center message
+    tk.Label(popup, text="Are you sure you want to exit?", pady=10).pack()
+
+    # Button frame
+    button_frame = tk.Frame(popup)
+    button_frame.pack(pady=10)
+
+    def on_yes():
+        root.destroy()
+
+    def on_no():
+        popup.destroy()
+
+    tk.Button(button_frame, text="Yes", width=10, command=on_yes).pack(side="left", padx=5)
+    tk.Button(button_frame, text="No", width=10, command=on_no).pack(side="right", padx=5)
+
+# Main window
 root = tk.Tk()
-root.title("Multiple Frames")
+root.title("Main Window")
+root.geometry("400x300")
+root.protocol("WM_DELETE_WINDOW", on_exit_click)  # Intercept close button
 
-# Top frame
-top_frame = tk.Frame(root, bg="lightblue", height=100)
-top_frame.pack(fill="x")  # Fill horizontally
-
-# Bottom frame
-bottom_frame = tk.Frame(root, bg="lightgreen")
-bottom_frame.pack(fill="both", expand=True)  # Fill all available space
-
-# Add widgets to top frame
-tk.Label(top_frame, text="Top Section").pack(pady=20)
-
-# Add widgets to bottom frame
-tk.Button(bottom_frame, text="Button 1").pack(side="left", padx=10)
-tk.Button(bottom_frame, text="Button 2").pack(side="left")
+tk.Button(root, text="Exit", command=on_exit_click).pack(pady=120)
 
 root.mainloop()
