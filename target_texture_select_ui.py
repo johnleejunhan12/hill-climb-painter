@@ -299,40 +299,91 @@ class TargetTextureSelectorUI(tk.Tk):
         self._update_texture_display = new_update_texture_display
 
         update_confirm_btn()
-
     def on_closing(self):
+        """Handle the window close event with a modern confirmation dialog"""
         if self.is_prompt_user_before_quit:
             dialog = tk.Toplevel(self)
             dialog.title("Confirm Exit")
             dialog.resizable(False, False)
             dialog.attributes('-topmost', True)
             
-            dialog_width = 300
-            dialog_height = 150
+            # Modern styling
+            dialog.configure(bg="#f0f2f5")
+            
+            # Center the dialog
+            dialog_width = 350
+            dialog_height = 180
             screen_width = dialog.winfo_screenwidth()
             screen_height = dialog.winfo_screenheight()
             x = (screen_width // 2) - (dialog_width // 2)
             y = (screen_height // 2) - (dialog_height // 2)
             dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
             
-            message = tk.Label(dialog, text="Quit application?", font=("Arial", 12), pady=20)
-            message.pack()
+            # Container frame for better padding
+            container = tk.Frame(dialog, bg="#f0f2f5")
+            container.pack(expand=True, fill="both", padx=20, pady=20)
             
-            button_frame = tk.Frame(dialog)
-            button_frame.pack(pady=10)
+            # Message with modern font and spacing
+            message = tk.Label(
+                container,
+                text="Exit application?",
+                font=("Segoe UI", 13, "bold"),
+                bg="#f0f2f5",
+                fg="#333333"
+            )
+            message.pack(pady=(20, 30))
             
-            yes_button = tk.Button(button_frame, text="Yes", width=10, 
-                                command=lambda: self.confirm_exit(dialog))
-            yes_button.grid(row=0, column=0, padx=5)
+            # Button frame
+            button_frame = tk.Frame(container, bg="#f0f2f5")
+            button_frame.pack(fill="x")
             
-            no_button = tk.Button(button_frame, text="No", width=10, 
-                                command=dialog.destroy)
-            no_button.grid(row=0, column=1, padx=5)
+            # Modern button style
+            style = ttk.Style()
+            style.configure(
+                "Modern.TButton",
+                font=("Segoe UI", 11),
+                padding=10,
+                background="#ffffff",
+                foreground="#333333",
+                borderwidth=0
+            )
+            style.map(
+                "Modern.TButton",
+                background=[("active", "#e0e0e0"), ("pressed", "#d0d0d0")],
+                foreground=[("active", "#333333")]
+            )
             
-            button_frame.grid_columnconfigure(0, weight=1)
-            button_frame.grid_columnconfigure(1, weight=1)
+            # Yes button
+            yes_button = ttk.Button(
+                button_frame,
+                text="Yes",
+                style="Modern.TButton",
+                command=lambda: self.confirm_exit(dialog)
+            )
+            yes_button.pack(side="left", padx=(0, 10), ipady=5, ipadx=20)
             
+            # No button
+            no_button = ttk.Button(
+                button_frame,
+                text="No",
+                style="Modern.TButton",
+                command=dialog.destroy
+            )
+            no_button.pack(side="right", padx=(10, 0), ipady=5, ipadx=20)
+            
+            # Add subtle shadow effect to dialog
+            dialog.update_idletasks()
+            dialog.configure(
+                borderwidth=1,
+                relief="flat",
+                highlightbackground="#d0d0d0",
+                highlightcolor="#d0d0d0",
+                highlightthickness=1
+            )
+            
+            # Ensure dialog stays on top and grabs focus
             dialog.grab_set()
+            dialog.transient(self)
         else:
             self.confirm_exit(None)
 

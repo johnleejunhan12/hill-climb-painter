@@ -1,61 +1,63 @@
-# import tkinter as tk
-
-# root = tk.Tk()
-# root.title("Tkinter Button Relief Styles")
-
-# reliefs = ["flat", "raised", "sunken", "groove", "ridge", "solid"]
-
-# for i, style in enumerate(reliefs):
-#     btn = tk.Button(
-#         root,
-#         text=style.capitalize(),
-#         relief=style,
-#         width=12,
-#         height=2,
-#         bd=4  # Border width (matters for most styles)
-#     )
-#     btn.grid(row=0, column=i, padx=5, pady=10)
-
-# root.mainloop()
-
-
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk
 
-def on_exit_click():
-    # Create popup
-    popup = tk.Toplevel(root)
-    popup.title("Confirm Exit")
-    popup.geometry("300x120")
-    popup.resizable(False, False)
+class SelectTargetButtonApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        
+        # Set window properties
+        self.title("Select Target Button Demo")
+        self.configure(bg="#f5f6fa")
+        self.minsize(300, 200)
+        self._center_window(300, 200)
+        
+        # Setup style for the button
+        self._setup_style()
+        
+        # Create the select target button
+        self.select_target_btn = ttk.Button(
+            self,
+            text="Select target",
+            command=self._on_select_target,
+            takefocus=0
+        )
+        self.select_target_btn.pack(pady=20, padx=20, ipady=10, fill="x")
+        
+        # Configure button width to stretch
+        self.update_idletasks()
+        self.select_target_btn.configure(width=1)
+    
+    def _center_window(self, width, height):
+        """Center the window on the screen."""
+        self.update_idletasks()
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = (screen_width // 2) - (width // 2)
+        y = (screen_height // 2) - (height // 2)
+        self.geometry(f"{width}x{height}+{x}+{y}")
+    
+    def _setup_style(self):
+        """Apply the exact style from TargetTextureSelectorUI for TButton."""
+        style = ttk.Style(self)
+        style.theme_use('clam')
+        style.configure(
+            'TButton',
+            font=('Segoe UI', 12),
+            padding=0,
+            relief='flat',
+            background='#4078c0',  # Blue background
+            foreground='#fff',     # White text
+            focuscolor=style.lookup('TButton', 'background')
+        )
+        style.map(
+            'TButton',
+            background=[('active', '#305080')]  # Darker blue when active
+        )
+    
+    def _on_select_target(self):
+        """Placeholder for select target action."""
+        print("Select target button clicked")
 
-    # Keep popup on top and modal
-    popup.transient(root)    # Attach popup to root
-    popup.grab_set()         # Make popup modal
-    popup.attributes('-topmost', True)  # Always on top
-
-    # Center message
-    tk.Label(popup, text="Are you sure you want to exit?", pady=10).pack()
-
-    # Button frame
-    button_frame = tk.Frame(popup)
-    button_frame.pack(pady=10)
-
-    def on_yes():
-        root.destroy()
-
-    def on_no():
-        popup.destroy()
-
-    tk.Button(button_frame, text="Yes", width=10, command=on_yes).pack(side="left", padx=5)
-    tk.Button(button_frame, text="No", width=10, command=on_no).pack(side="right", padx=5)
-
-# Main window
-root = tk.Tk()
-root.title("Main Window")
-root.geometry("400x300")
-root.protocol("WM_DELETE_WINDOW", on_exit_click)  # Intercept close button
-
-tk.Button(root, text="Exit", command=on_exit_click).pack(pady=120)
-
-root.mainloop()
+if __name__ == "__main__":
+    app = SelectTargetButtonApp()
+    app.mainloop()
