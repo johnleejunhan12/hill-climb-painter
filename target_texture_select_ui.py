@@ -92,7 +92,7 @@ class TargetTextureSelectorUI(tk.Tk):
     def _setup_style(self):
         style = ttk.Style(self)
         style.theme_use('clam')
-        style.configure('TButton', font=('Segoe UI', 12), padding=0, relief='flat', background='#4078c0', foreground='#fff', focuscolor=style.lookup('TButton', 'background'))
+        style.configure('TButton', font=('Segoe UI', 12), padding=0, relief='flat', background='#4078c0', foreground='#fff', focuscolor="none")
         style.map('TButton', background=[('active', '#305080')])
         style.configure('TFrame', background='#f5f6fa')
         style.configure("Red.TButton", background="#d32f2f", foreground="#fff")
@@ -299,6 +299,7 @@ class TargetTextureSelectorUI(tk.Tk):
         self._update_texture_display = new_update_texture_display
 
         update_confirm_btn()
+        
     def on_closing(self):
         """Handle the window close event with a modern confirmation dialog"""
         if self.is_prompt_user_before_quit:
@@ -333,24 +334,29 @@ class TargetTextureSelectorUI(tk.Tk):
             )
             message.pack(pady=(20, 30))
             
-            # Button frame
+            # Button frame with grid configuration
             button_frame = tk.Frame(container, bg="#f0f2f5")
             button_frame.pack(fill="x")
+            
+            # Configure grid columns to expand equally
+            button_frame.grid_columnconfigure(0, weight=1)
+            button_frame.grid_columnconfigure(1, weight=1)
             
             # Modern button style
             style = ttk.Style()
             style.configure(
                 "Modern.TButton",
-                font=("Segoe UI", 11),
+                font=("Segoe UI", 12),
                 padding=10,
                 background="#ffffff",
                 foreground="#333333",
-                borderwidth=0
+                borderwidth=0,
+                focuscolor="none"
             )
             style.map(
                 "Modern.TButton",
-                background=[("active", "#e0e0e0"), ("pressed", "#d0d0d0")],
-                foreground=[("active", "#333333")]
+                background=[('selected', 'white'), ('active', "#4792d3")],
+                foreground=[('selected', 'black'), ('active', 'white')],
             )
             
             # Yes button
@@ -360,7 +366,7 @@ class TargetTextureSelectorUI(tk.Tk):
                 style="Modern.TButton",
                 command=lambda: self.confirm_exit(dialog)
             )
-            yes_button.pack(side="left", padx=(0, 10), ipady=5, ipadx=20)
+            yes_button.grid(row=0, column=0, padx=(0, 5), pady=5, ipadx=20, ipady=5, sticky="ew")
             
             # No button
             no_button = ttk.Button(
@@ -369,7 +375,7 @@ class TargetTextureSelectorUI(tk.Tk):
                 style="Modern.TButton",
                 command=dialog.destroy
             )
-            no_button.pack(side="right", padx=(10, 0), ipady=5, ipadx=20)
+            no_button.grid(row=0, column=1, padx=(5, 0), pady=5, ipadx=20, ipady=5, sticky="ew")
             
             # Add subtle shadow effect to dialog
             dialog.update_idletasks()
@@ -386,6 +392,7 @@ class TargetTextureSelectorUI(tk.Tk):
             dialog.transient(self)
         else:
             self.confirm_exit(None)
+
 
     def confirm_exit(self, dialog):
         if dialog:

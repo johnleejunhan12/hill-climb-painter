@@ -21,7 +21,7 @@ class VectorFieldVisualizer:
             self.root = tk.Toplevel(master)
             self.root.transient(master)
             self.root.grab_set()
-        self.root.title("Vector Field Visualizer")
+        self.root.title("Vector Field Selector")
         
         # Center the window
         self.center_window(self.initial_width, self.initial_height)
@@ -75,7 +75,7 @@ class VectorFieldVisualizer:
     def setup_styles(self):
         """Configure modern styling for ttk widgets"""
         style = ttk.Style()
-        # style.theme_use('clam')
+        style.theme_use('clam')
         
         # Configure button styles
         style.configure('Visualize.TButton',

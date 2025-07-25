@@ -52,7 +52,7 @@ class ParameterUI:
         self.prev_color_idx = None
         
 
-        self.initial_choose_vector_eqn_btn_label = "*Shift vector field origin to (?, ?)" if self.file_ext != ".gif" else "*Shift vector field origin to (?, ?), (?, ?), ..."
+        self.initial_choose_vector_eqn_btn_label = "*Shift origin to (?, ?)" if self.file_ext != ".gif" else "*Shift origin to (?, ?), (?, ?), ..."
 
         # Vector field function attribute
         self.vector_field_function = lambda x, y: (-x,-y)
@@ -73,40 +73,35 @@ class ParameterUI:
     
     def apply_modern_notebook_style(self):
         """Apply modern styling to the ttk.Notebook and remove dotted focus line from tabs"""
+        # Set the clam theme
         style = ttk.Style()
-        
-        # Configure modern tab appearance
-        style.configure("Modern.TNotebook", 
-                    background="#f8f9fa",
-                    borderwidth=0)
-        
-        style.configure("Modern.TNotebook.Tab",
-                    padding=[10, 10],  # More spacious padding
-                    background="#e9ecef",
-                    foreground="black",  # Always black text
-                    font=("Segoe UI", 11, "normal"),
-                    borderwidth=0,
-                    focuscolor="",      # Disable focus highlight
-                    lightcolor="",      # Remove light border effect
-                    darkcolor="")       # Remove dark border effect (optional)
-        
-        # Active tab styling (background only, text remains black)
-        style.map("Modern.TNotebook.Tab",
-                background=[("selected", "#007bff"),
-                            ("active", "#6c757d")],
-                focuscolor=[("!focus", "#e9ecef"), ("focus", "#e9ecef")])
+        style.theme_use('clam')
 
-        # Remove the focus element from the tab layout to fully eliminate the dotted line
-        style.layout("Modern.TNotebook.Tab",
-            [('Notebook.tab', {'sticky': 'nswe', 'children':
-                [('Notebook.padding', {'side': 'top', 'sticky': 'nswe', 'children':
-                    [('Notebook.label', {'side': 'top', 'sticky': ''})]
-                })]
-            })]
-        )
+        # Configure notebook style
+        style.configure('TNotebook', 
+                       background='#f8f9fa',
+                       borderwidth=0)
+
+        # Configure notebook tabs
+        style.configure('TNotebook.Tab', 
+                        padding=(20,8),
+                       background='#e9ecef',
+                       foreground='#495057',
+                       borderwidth=0,
+                       focuscolor='none',   ################### important
+                       relief='flat',
+                       font = ('Segoe UI', 12))
         
-        # Apply the style to your notebook
-        self.notebook.configure(style="Modern.TNotebook")
+        # Configure selected tab
+        style.map('TNotebook.Tab',
+                    padding=[('selected', [20, 8]), ('active', [20, 8])],
+                  background=[('selected', 'white'), ('active', "#4792d3")],
+                  foreground=[('selected', 'black'), ('active', 'white')],
+                  relief=[('selected', 'flat'), ('active', 'flat')])
+        
+
+        # Apply the custom style to the notebook
+        self.notebook.configure(style="TNotebook")
 
     class ScrollableFrame(tk.Frame):
         def __init__(self, master, **kwargs):
@@ -237,7 +232,7 @@ class ParameterUI:
             relief='flat',
             background='#4078c0',  # Blue background
             foreground='#fff',     # White text
-            focuscolor='#305080'
+            focuscolor='none'
         )
         style.map('button1.TButton', background=[('active', '#305080')])  # Darker blue when active
 
@@ -249,11 +244,39 @@ class ParameterUI:
             relief='flat',
             background='#388e3c',  # Green background
             foreground='#fff',     # White text
-            focuscolor='#1b5e20'
+            focuscolor='none'
         )
         style.map("button2.TButton", background=[("active", "#1b5e20")]) # Darker green when active
         self.button1.configure(style="button1.TButton")
         self.button2.configure(style="button2.TButton")
+
+        # Button for editing vector field
+        # style.configure(
+        #     'button_edit_vector_field.TButton',
+        #     font=('Segoe UI', 12),
+        #     padding=(0, 7),  # (horizontal_padding, vertical_padding)
+        #     relief='flat',
+        #     background='#4078c0',  # Blue background
+        #     foreground='#fff',     # White text
+        #     focuscolor='#305080'
+        # )
+        # style.map('button_edit_vector_field.TButton', background=[('active', '#305080')])  # Darker blue when active
+        style.configure(
+            'button_edit_vector_field.TButton',
+            font=('Times New Roman', 16),
+            padding=(0, 8),  # (horizontal_padding, vertical_padding)
+            relief='default',
+            background='#ffffff',  # white background
+            foreground='black',     # black text
+            focuscolor='none',
+            borderwidth=2
+        )
+        style.map(
+            "button_edit_vector_field.TButton",
+            background=[('selected', 'white'), ('active', "#4792d3")],
+            foreground=[('selected', 'black'), ('active', 'white')],
+        )
+
 
 
     def _create_ui(self):
@@ -286,8 +309,10 @@ class ParameterUI:
         # Bind the close button (X) to show the confirmation dialog
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
+        self.parent_frame = tk.Frame(self.root, bg="white", relief="flat")
+        self.parent_frame.pack(fill="both", expand=True, padx=2, pady=2)
 
-        self.notebook = ttk.Notebook(self.root)
+        self.notebook = ttk.Notebook(self.parent_frame)
         self.apply_modern_notebook_style()
         self.notebook.pack(fill='both', expand=True)
 
@@ -306,11 +331,11 @@ class ParameterUI:
         self.notebook.add(self.param_scroll, text="Parameters")
         self.notebook.add(self.output_scroll, text="Output Settings")
 
-        self.dual_button_frame = tk.Frame(self.root, bg="white", height = 50)
+        self.dual_button_frame = tk.Frame(self.parent_frame, bg="white", height = 50)
         self.dual_button_frame.pack(fill="x")
 
         # Bind button1 to on_select_target_texture
-        padx,pady=0,0
+        padx,pady=1,0
         self.button1 = ttk.Button(self.dual_button_frame, text="Select target and texture", command=self.on_select_target_texture) 
         self.button1.grid(row=0, column=0, sticky="nsew", padx=padx, pady=pady)
         self.button2 = ttk.Button(self.dual_button_frame, text="Submit", command=self.on_submit_button_press)
@@ -320,6 +345,9 @@ class ParameterUI:
 
         self.dual_button_frame.grid_columnconfigure(0, weight=1, uniform="group1")
         self.dual_button_frame.grid_columnconfigure(1, weight=1, uniform="group1")
+
+
+
     def on_closing(self):
         """Handle the window close event with a modern confirmation dialog"""
         dialog = tk.Toplevel(self.root)
@@ -346,33 +374,38 @@ class ParameterUI:
         # Message with modern font and spacing
         message = tk.Label(
             container,
-            text="Quit application?",
+            text="Exit application?",
             font=("Segoe UI", 14, "bold"),
             bg="#f0f2f5",
             fg="#333333"
         )
         message.pack(pady=(20, 30))
         
-        # Button frame
+        # Button frame with grid configuration
         button_frame = tk.Frame(container, bg="#f0f2f5")
         button_frame.pack(fill="x")
+        
+        # Configure grid columns to expand equally
+        button_frame.grid_columnconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(1, weight=1)
         
         # Modern button style
         style = ttk.Style()
         style.configure(
             "Modern.TButton",
-            font=("Segoe UI", 11),
+            font=("Segoe UI", 12),
             padding=10,
             background="#ffffff",
             foreground="#333333",
-            borderwidth=0
+            borderwidth=0,
+            focuscolor="none"
         )
         style.map(
             "Modern.TButton",
-            background=[("active", "#e0e0e0"), ("pressed", "#d0d0d0")],
-            foreground=[("active", "#333333")]
+            background=[('selected', 'white'), ('active', "#4792d3")],
+            foreground=[('selected', 'black'), ('active', 'white')],
         )
-        
+
         # Yes button
         yes_button = ttk.Button(
             button_frame,
@@ -380,7 +413,7 @@ class ParameterUI:
             style="Modern.TButton",
             command=lambda: self.confirm_exit(dialog)
         )
-        yes_button.pack(side="left", padx=(0, 10), ipady=5, ipadx=20)
+        yes_button.grid(row=0, column=0, padx=(0, 5), pady=5, ipadx=20, ipady=5, sticky="ew")
         
         # No button
         no_button = ttk.Button(
@@ -389,7 +422,7 @@ class ParameterUI:
             style="Modern.TButton",
             command=dialog.destroy
         )
-        no_button.pack(side="right", padx=(10, 0), ipady=5, ipadx=20)
+        no_button.grid(row=0, column=1, padx=(5, 0), pady=5, ipadx=20, ipady=5, sticky="ew")
         
         # Add subtle shadow effect to dialog
         dialog.update_idletasks()
@@ -404,39 +437,7 @@ class ParameterUI:
         # Ensure dialog stays on top and grabs focus
         dialog.grab_set()
         dialog.transient(self.root)
-    # def on_closing(self):
-    #     """Handle the window close event by setting result and closing the window"""
-    #     dialog = tk.Toplevel(self.root)
-    #     dialog.title("Confirm Exit")
-    #     dialog.resizable(False, False)
-    #     dialog.attributes('-topmost', True)
-        
-    #     dialog_width = 300
-    #     dialog_height = 150
-    #     screen_width = dialog.winfo_screenwidth()
-    #     screen_height = dialog.winfo_screenheight()
-    #     x = (screen_width // 2) - (dialog_width // 2)
-    #     y = (screen_height // 2) - (dialog_height // 2)
-    #     dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
-        
-    #     message = tk.Label(dialog, text="Quit application?", font=("Arial", 12), pady=20)
-    #     message.pack()
-        
-    #     button_frame = tk.Frame(dialog)
-    #     button_frame.pack(pady=10)
-        
-    #     yes_button = tk.Button(button_frame, text="Yes", width=10, 
-    #                         command=lambda: self.confirm_exit(dialog))
-    #     yes_button.grid(row=0, column=0, padx=5)
-        
-    #     no_button = tk.Button(button_frame, text="No", width=10, 
-    #                         command=dialog.destroy)
-    #     no_button.grid(row=0, column=1, padx=5)
-        
-    #     button_frame.grid_columnconfigure(0, weight=1)
-    #     button_frame.grid_columnconfigure(1, weight=1)
-        
-    #     dialog.grab_set()
+
 
 
     def confirm_exit(self, dialog):
@@ -591,9 +592,13 @@ class ParameterUI:
         # 9.i) Edit vector field
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.edit_vector_btn = tk.Button(self.param_frame, text="Edit vector field: (f(x,y), g(x,y)) = (-x, -y)", 
-                                         font=("Arial", 11, "bold"), bg=None, fg='black', 
-                                         command=self.on_edit_vector_field, height=2)
+        # self.edit_vector_btn = tk.Button(self.param_frame, text="Edit vector field: (f(x,y), g(x,y)) = (-x, -y)", 
+        #                                  font=("Arial", 11, "bold"), bg=None, fg='black', 
+        #                                  command=self.on_edit_vector_field, height=2)
+        
+        self.edit_vector_btn = ttk.Button(self.param_frame, text="(f(x,y), g(x,y)) = (-x, -y)", 
+                                         style="button_edit_vector_field.TButton",
+                                         command=self.on_edit_vector_field)
         
         ######################################
         self.edit_vector_btn.pack(fill='x', padx=(20, 0), pady=self.PAD_BETWEEN_ALL_COMPONENTS)
@@ -611,10 +616,14 @@ class ParameterUI:
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
 
-        self.shift_vector_origin_btn = tk.Button(self.param_frame, text=self.initial_choose_vector_eqn_btn_label, 
-                                                 font=("Arial", 11, "bold"), bg=None, fg='red',  ##########################################
-                                                 command=self.on_shift_vector_origin, height=2)
+        # self.shift_vector_origin_btn = tk.Button(self.param_frame, text=self.initial_choose_vector_eqn_btn_label, 
+        #                                          font=("Arial", 11, "bold"), bg=None, fg='red',  ##########################################
+        #                                          command=self.on_shift_vector_origin, height=2)
         
+        self.shift_vector_origin_btn = ttk.Button(self.param_frame, text=self.initial_choose_vector_eqn_btn_label, 
+                                                 style="button1.TButton",
+                                                 command=self.on_shift_vector_origin)
+
 
         ######################################
         self.shift_vector_origin_btn.pack(fill='x', padx=(20,0), pady=self.PAD_BETWEEN_ALL_COMPONENTS)
@@ -785,7 +794,7 @@ class ParameterUI:
         if result is not None:
             function_string = result[0]
             # Update button text with the returned string
-            self.edit_vector_btn.configure(text=f"Edit vector field: {function_string}")
+            self.edit_vector_btn.configure(text=f"(f(x,y), g(x,y)) = {function_string}")
             # Update the vector field function
             self.vector_field_function = result[1]
             # update the f_string and g_string

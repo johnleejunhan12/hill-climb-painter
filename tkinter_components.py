@@ -11,6 +11,8 @@ __all__ = [
     'Padding',
 ]
 
+custom_font = "Arial"
+
 # --- VisibilityManager and CustomToggleVisibilityCheckbox for conditional UI logic ---
 class VisibilityManager:
     """Manages widget visibility while maintaining proper order"""
@@ -134,7 +136,7 @@ class CustomToggleVisibilityCheckbox(tk.Canvas):
         
         # Draw label (bold)
         self.create_text(x1 + 10, self.height//2, text=self.text, anchor='w', 
-                        fill=text_color, font=('Arial', 13, 'bold'))
+                        fill=text_color, font=(custom_font, 13, 'bold'))
 
     def _on_click(self, event):
         x0 = self.box_pad
@@ -347,7 +349,7 @@ class RangeSlider(tk.Canvas):
             title_str = self.title.replace('<current_min_value>', str(self.val_min)).replace('<current_max_value>', str(self.val_max))
             title_lines = title_str.split('\n')
             for i, line in enumerate(title_lines):
-                self.create_text(self.pad, y, text=line, fill='black', font=('Arial', self.title_size, 'bold'), anchor='nw')
+                self.create_text(self.pad, y, text=line, fill='black', font=(custom_font, self.title_size, 'bold'), anchor='nw')
                 y += self.title_size
                 if i < len(title_lines) - 1:
                     y += self._line_spacing
@@ -361,7 +363,7 @@ class RangeSlider(tk.Canvas):
             subtitle_str = self.subtitle.replace('<current_min_value>', str(self.val_min)).replace('<current_max_value>', str(self.val_max))
             subtitle_lines = subtitle_str.split('\n')
             for i, line in enumerate(subtitle_lines):
-                self.create_text(self.pad, y, text=line, fill='black', font=('Arial', self.subtitle_size), anchor='nw')
+                self.create_text(self.pad, y, text=line, fill='black', font=(custom_font, self.subtitle_size), anchor='nw')
                 y += self.subtitle_size
                 if i < len(subtitle_lines) - 1:
                     y += self._line_spacing
@@ -382,8 +384,8 @@ class RangeSlider(tk.Canvas):
                                             fill='#007fff', outline='', tags='thumb2')
         # Draw value labels below thumbs if enabled
         if self.show_value_labels:
-            self.create_text(x1, slider_y + rect_h//2 + 6, text=str(self.val_min), fill='#007fff', font=('Arial', 10))
-            self.create_text(x2, slider_y + rect_h//2 + 6, text=str(self.val_max), fill='#007fff', font=('Arial', 10))
+            self.create_text(x1, slider_y + rect_h//2 + 6, text=str(self.val_min), fill='#007fff', font=(custom_font, 10))
+            self.create_text(x2, slider_y + rect_h//2 + 6, text=str(self.val_max), fill='#007fff', font=(custom_font, 10))
         self._slider_y = slider_y  # For hit testing
 
     def _value_to_pos(self, value):
@@ -540,7 +542,7 @@ class SingleSlider(tk.Canvas):
             title_str = self.title.replace('<current_value>', str(self.value))
             title_lines = title_str.split('\n')
             for i, line in enumerate(title_lines):
-                self.create_text(self.pad, y, text=line, fill='black', font=('Arial', self.title_size, 'bold'), anchor='nw')
+                self.create_text(self.pad, y, text=line, fill='black', font=(custom_font, self.title_size, 'bold'), anchor='nw')
                 y += self.title_size
                 if i < len(title_lines) - 1:
                     y += self._line_spacing
@@ -552,7 +554,7 @@ class SingleSlider(tk.Canvas):
             subtitle_str = self.subtitle.replace('<current_value>', str(self.value))
             subtitle_lines = subtitle_str.split('\n')
             for i, line in enumerate(subtitle_lines):
-                self.create_text(self.pad, y, text=line, fill='black', font=('Arial', self.subtitle_size), anchor='nw')
+                self.create_text(self.pad, y, text=line, fill='black', font=(custom_font, self.subtitle_size), anchor='nw')
                 y += self.subtitle_size
                 if i < len(subtitle_lines) - 1:
                     y += self._line_spacing
@@ -565,7 +567,7 @@ class SingleSlider(tk.Canvas):
                                           x + rect_w//2, slider_y + rect_h//2,
                                           fill='#007fff', outline='', tags='thumb')
         if self.show_value_labels:
-            self.create_text(x, slider_y + rect_h//2 + 6, text=str(self.value), fill='#007fff', font=('Arial', 10))
+            self.create_text(x, slider_y + rect_h//2 + 6, text=str(self.value), fill='#007fff', font=(custom_font, 10))
 
     def _value_to_pos(self, value):
         usable_width = self.width - 2 * self.pad
@@ -691,7 +693,7 @@ class CustomCheckbox(tk.Canvas):
         if self.checked:
             self.create_line(x0+4, y0+self.box_size//2, x0+self.box_size//2, y1-4, x1-4, y0+4, fill=tick_color, width=3, capstyle=tk.ROUND, joinstyle=tk.ROUND)
         # Draw label (bold)
-        self.create_text(x1 + 10, self.height//2, text=self.text, anchor='w', fill=text_color, font=('Arial', 13, 'bold'))
+        self.create_text(x1 + 10, self.height//2, text=self.text, anchor='w', fill=text_color, font=(custom_font, 13, 'bold'))
 
     def _on_click(self, event):
         x0 = self.box_pad
@@ -740,7 +742,7 @@ class CustomTextInput(tk.Frame):
         x_pad = 12
         y = 0
         if self.title:
-            self.title_label = tk.Label(self, text=self.title, anchor='w', font=('Arial', self.title_size, 'bold'), bg=bg_color, fg='black')
+            self.title_label = tk.Label(self, text=self.title, anchor='w', font=(custom_font, self.title_size, 'bold'), bg=bg_color, fg='black')
             self.title_label.pack(fill='x', anchor='w', pady=(0,0), padx=(x_pad,0))
             y += self.title_size
             if self.title.count('\n'):
@@ -750,7 +752,7 @@ class CustomTextInput(tk.Frame):
             else:
                 y += 15
         if self.subtitle:
-            self.subtitle_label = tk.Label(self, text=self.subtitle, anchor='w', font=('Arial', self.subtitle_size), bg=bg_color, fg='black')
+            self.subtitle_label = tk.Label(self, text=self.subtitle, anchor='w', font=(custom_font, self.subtitle_size), bg=bg_color, fg='black')
             self.subtitle_label.pack(fill='x', anchor='w', pady=(0,0), padx=(x_pad,0))
             y += self.subtitle_size
             if self.subtitle.count('\n'):
@@ -758,11 +760,11 @@ class CustomTextInput(tk.Frame):
             y += 15
 
         entry_pad_top = 4 if self.subtitle else 0
-        self.entry_border = tk.Frame(self, bg='#007fff', bd=0, highlightthickness=0)
+        self.entry_border = tk.Frame(self, bg='black', bd=0, highlightthickness=0)
         self.entry_border.pack(fill='x', padx=(x_pad, x_pad), pady=(entry_pad_top,0))
-        self.entry = tk.Entry(self.entry_border, font=('Arial', 12), bg='white', relief='flat', highlightthickness=0, bd=0)
+        self.entry = tk.Entry(self.entry_border, font=(custom_font, 12), bg='white', relief='flat', highlightthickness=0, bd=0)
         self.entry.pack(fill='x', padx=0, pady=0, ipady=2)
-        self.entry_border.config(highlightbackground='#007fff', highlightcolor='#007fff', highlightthickness=2, bd=0)
+        self.entry_border.config(highlightbackground='black', highlightcolor='black', highlightthickness=2, bd=0)
         self.entry.bind('<KeyRelease>', self._on_text_change)
 
         if is_set_width_to_parent:
