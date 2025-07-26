@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 import os
 import time
 from typing import Union, List, Tuple
+from abc import ABC, abstractmethod
 
 def center_window(root, width, height):
     """Center the given window on the screen."""
@@ -17,6 +18,151 @@ def center_window(root, width, height):
     
     # Set window geometry
     root.geometry(f"{width}x{height}+{x}+{y}")
+
+class WindowConfig:
+    """Centralized configuration for all window sizing and spacing"""
+    # Padding and margins
+    WINDOW_PADDING_X = 20
+    WINDOW_PADDING_Y = 20
+    COMPONENT_SPACING = 10
+    BUTTON_FRAME_PADDING = 10
+    CANVAS_MARGIN = 10
+    
+    # Component heights
+    TITLE_HEIGHT = 25
+    SUBTITLE_HEIGHT = 20
+    INSTRUCTION_HEIGHT = 15
+    COORD_LABEL_HEIGHT = 18
+    BUTTON_HEIGHT = 60
+    SLIDER_CONTAINER_HEIGHT = 35
+    
+    # Minimum sizes
+    MIN_WINDOW_WIDTH = 590
+    MIN_CANVAS_WIDTH = 400
+    MIN_CANVAS_HEIGHT = 200
+    
+    # Button styling
+    BUTTON_PADDING_X = 20
+    BUTTON_PADDING_Y = 15
+    BUTTON_GRID_SPACING = 10
+    
+    # Font sizes
+    TITLE_FONT_SIZE = 15
+    SUBTITLE_FONT_SIZE = 11
+    COORD_LABEL_FONT_SIZE = 13
+    BUTTON_FONT_SIZE = 12
+    SLIDER_LABEL_FONT_SIZE = 10
+
+class UIComponent(ABC):
+    """Abstract base class for UI components that need to report their space requirements"""
+    
+    @abstractmethod
+    def get_required_height(self) -> int:
+        """Return the height this component requires"""
+        pass
+    
+    @abstractmethod
+    def get_required_width(self) -> int:
+        """Return the width this component requires"""
+        pass
+    
+    def get_spacing_after(self) -> int:
+        """Return the spacing needed after this component"""
+        return WindowConfig.COMPONENT_SPACING
+
+class TitleComponent(UIComponent):
+    def __init__(self, has_subtitle: bool = False, has_instruction: bool = False):
+        self.has_subtitle = has_subtitle
+        self.has_instruction = has_instruction
+    
+    def get_required_height(self) -> int:
+        height = WindowConfig.TITLE_HEIGHT
+        if self.has_subtitle:
+            height += WindowConfig.SUBTITLE_HEIGHT + 5  # Small gap between title and subtitle
+        if self.has_instruction:
+            height += WindowConfig.INSTRUCTION_HEIGHT + 5
+        return height
+    
+    def get_required_width(self) -> int:
+        return 400  # Minimum width for title text
+
+class CoordLabelComponent(UIComponent):
+    def get_required_height(self) -> int:
+        return WindowConfig.COORD_LABEL_HEIGHT
+    
+    def get_required_width(self) -> int:
+        return 300  # Minimum width for coordinate label
+
+class CanvasComponent(UIComponent):
+    def __init__(self, canvas_width: int, canvas_height: int):
+        self.canvas_width = max(canvas_width, WindowConfig.MIN_CANVAS_WIDTH)
+        self.canvas_height = max(canvas_height, WindowConfig.MIN_CANVAS_HEIGHT)
+    
+    def get_required_height(self) -> int:
+        return self.canvas_height
+    
+    def get_required_width(self) -> int:
+        return self.canvas_width
+
+class ButtonFrameComponent(UIComponent):
+    def __init__(self, button_count: int = 2):
+        self.button_count = button_count
+    
+    def get_required_height(self) -> int:
+        # Add extra padding to ensure buttons are fully visible
+        return WindowConfig.BUTTON_HEIGHT + (2 * WindowConfig.BUTTON_FRAME_PADDING) + 10
+    
+    def get_required_width(self) -> int:
+        # Calculate minimum width needed for buttons with equal spacing
+        button_width = 150  # Minimum button width
+        spacing = WindowConfig.BUTTON_GRID_SPACING
+        total_spacing = spacing * (self.button_count + 1)  # Spacing on sides and between buttons
+        return (button_width * self.button_count) + total_spacing
+    
+    def get_spacing_after(self) -> int:
+        return 0  # Button frame is typically at the bottom
+
+class SliderComponent(UIComponent):
+    def __init__(self, visible: bool = True):
+        self.visible = visible
+    
+    def get_required_height(self) -> int:
+        return WindowConfig.SLIDER_CONTAINER_HEIGHT if self.visible else 0
+    
+    def get_required_width(self) -> int:
+        return 350 if self.visible else 0  # Width for slider + labels
+
+class DynamicWindowSizer:
+    """Calculates window dimensions based on component requirements"""
+    
+    def __init__(self):
+        self.components = []
+    
+    def add_component(self, component: UIComponent):
+        """Add a component to the layout calculation"""
+        self.components.append(component)
+    
+    def calculate_required_height(self) -> int:
+        """Calculate total height needed for all components"""
+        total_height = WindowConfig.WINDOW_PADDING_Y * 2  # Top and bottom padding
+        
+        for i, component in enumerate(self.components):
+            total_height += component.get_required_height()
+            if i < len(self.components) - 1:  # Don't add spacing after last component
+                total_height += component.get_spacing_after()
+        
+        return total_height
+    
+    def calculate_required_width(self) -> int:
+        """Calculate total width needed for all components"""
+        max_component_width = max((comp.get_required_width() for comp in self.components), default=0)
+        total_width = max_component_width + (WindowConfig.WINDOW_PADDING_X * 2)
+        return max(total_width, WindowConfig.MIN_WINDOW_WIDTH)
+    
+    def get_window_dimensions(self) -> Tuple[int, int]:
+        """Get the calculated window dimensions"""
+        return self.calculate_required_width(), self.calculate_required_height()
+
 class SingleSliderModified(tk.Canvas):
     def __init__(self, master, min_val=0, max_val=100, init_val=None, width=300, height=None,
                  command=None, title=None, subtitle=None, title_size=13, subtitle_size=10,
@@ -201,24 +347,65 @@ class CoordinateSelectorUI:
         self.long_hold_selection_delay = 50
         self.right_click_press_time = 0
         self.last_long_hold_selection_time = 0
+        self.master = master  # Store master reference
+        
+        # Initialize window sizer
+        self.window_sizer = DynamicWindowSizer()
+        
+        # Initialize image reference holders to prevent garbage collection
+        self.current_image_tk = None
+        self._replay_photo_img = None
+        
         self._validate_image_paths()
         self._load_and_resize_images()
-        self._calculate_window_dimensions()
-        if master is None:
-            self.root = tk.Tk()
-        else:
-            self.root = tk.Toplevel(master)
-            self.root.transient(master)
-            self.root.grab_set()
-        self.root.title("Select coordinates")
-        center_window(self.root, max(self.window_width, 590), max(self.window_height+20, 250))
-        self.root.minsize(max(self.window_width, 590), max(self.window_height+20, 250))
+        self._calculate_component_requirements()
+        self._setup_window()
         self._setup_ui()
         self._display_current_image()
+        
         self.window_closed_properly = False
         self.replay_window = None
         self.replay_running = False
         self.replay_after_id = None
+
+    def _calculate_component_requirements(self):
+        """Calculate space requirements for all components"""
+        # Add title component (always present)
+        title_comp = TitleComponent(has_subtitle=False, has_instruction=not self.is_single_image)
+        self.window_sizer.add_component(title_comp)
+        
+        # Add coordinate label component
+        coord_comp = CoordLabelComponent()
+        self.window_sizer.add_component(coord_comp)
+        
+        # Add canvas component based on image size
+        canvas_comp = CanvasComponent(self.max_width, self.max_height)
+        self.window_sizer.add_component(canvas_comp)
+        
+        # Add slider component (only for multiple images)
+        slider_comp = SliderComponent(visible=not self.is_single_image)
+        self.window_sizer.add_component(slider_comp)
+        
+        # Add button frame component
+        button_comp = ButtonFrameComponent(button_count=2)
+        self.window_sizer.add_component(button_comp)
+        
+        # Get calculated dimensions
+        self.window_width, self.window_height = self.window_sizer.get_window_dimensions()
+
+    def _setup_window(self):
+        """Setup the main window with calculated dimensions"""
+        if self.master is not None:
+            self.root = tk.Toplevel(self.master)
+            self.root.transient(self.master)
+            self.root.grab_set()
+        else:
+            self.root = tk.Tk()
+        
+        self.root.title("Select coordinates")
+        center_window(self.root, self.window_width, self.window_height)
+        self.root.minsize(self.window_width, self.window_height)
+        self.root.configure(bg="#f7f7fa")
 
     def _validate_image_paths(self):
         for path in self.image_paths:
@@ -238,6 +425,10 @@ class CoordinateSelectorUI:
                 self.resized_images.append(resized)
             except Exception as e:
                 raise RuntimeError(f"Error loading image {path}: {str(e)}")
+        
+        # Calculate max dimensions for canvas sizing
+        self.max_width = max(img.width for img in self.resized_images)
+        self.max_height = max(img.height for img in self.resized_images)
 
     def _resize_image(self, image: Image.Image, target_shorter_side: int) -> Image.Image:
         width, height = image.size
@@ -249,105 +440,109 @@ class CoordinateSelectorUI:
         new_height = int(height * scale_factor)
         return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-    def _calculate_window_dimensions(self):
-        self.max_width = max(img.width for img in self.resized_images)
-        self.max_height = max(img.height for img in self.resized_images)
-        self.window_width = self.max_width + 40
-        self.window_height = self.max_height + 220
-
     def _setup_style(self):
         self.style = ttk.Style(self.root)
         self.style.theme_use('clam')
-        self.style.configure('TButton', font=('Segoe UI', 12), padding=0, relief='flat',
-                           background='#4078c0', foreground='#fff', focuscolor="none")
+        
+        # Button styles with consistent sizing
+        button_config = {
+            'font': ('Segoe UI', WindowConfig.BUTTON_FONT_SIZE),
+            'padding': (WindowConfig.BUTTON_PADDING_X, WindowConfig.BUTTON_PADDING_Y),
+            'relief': 'flat',
+            'focuscolor': "none"
+        }
+        
+        self.style.configure('TButton', **button_config, background='#4078c0', foreground='#fff')
         self.style.map('TButton', background=[('active', '#305080')])
+        
         self.style.configure('TFrame', background='#f5f6fa')
-        self.style.configure("Red.TButton", background="#d32f2f", foreground="#fff",
-                           font=('Arial', 12, 'bold'), padding=(20, 10))
+        
+        # Specialized button styles
+        self.style.configure("Red.TButton", **button_config, background="#d32f2f", foreground="#fff")
         self.style.map("Red.TButton", background=[("active", "#b71c1c")])
-        self.style.configure("Grey.TButton", background="#bdbdbd", foreground="#fff",
-                           font=('Arial', 12, 'bold'), padding=(20, 10))
+        
+        self.style.configure("Grey.TButton", **button_config, background="#bdbdbd", foreground="#fff")
         self.style.map("Grey.TButton", background=[("active", "#9e9e9e")])
-        self.style.configure("Green.TButton", background="#388e3c", foreground="#fff",
-                           font=('Arial', 12, 'bold'), padding=(20, 10))
+        
+        self.style.configure("Green.TButton", **button_config, background="#388e3c", foreground="#fff")
         self.style.map("Green.TButton", background=[("active", "#1b5e20")])
-        self.style.configure("DisabledGreen.TButton", background="#a5d6a7", foreground="#fff",
-                           font=('Arial', 12, 'bold'), padding=(20, 10))
-        self.style.configure("ReplayGreen.TButton", background="#388e3c", foreground="#fff",
-                           font=('Arial', 12, 'bold'), padding=(20, 10))
+        
+        self.style.configure("DisabledGreen.TButton", **button_config, background="#a5d6a7", foreground="#fff")
+        
+        self.style.configure("ReplayGreen.TButton", **button_config, background="#388e3c", foreground="#fff")
         self.style.map("ReplayGreen.TButton", background=[("active", "#1b5e20")])
-        self.style.configure("ReplayRed.TButton", background="#d32f2f", foreground="#fff",
-                           font=('Arial', 12, 'bold'), padding=(20, 10))
+        
+        self.style.configure("ReplayRed.TButton", **button_config, background="#d32f2f", foreground="#fff")
         self.style.map("ReplayRed.TButton", background=[("active", "#b71c1c")])
+
+    def _create_equal_spaced_button_frame(self, parent):
+        """Create a button frame with equally spaced buttons"""
+        button_frame = tk.Frame(parent, bg="#f0f2f5")
+        button_frame.pack(fill="x", pady=WindowConfig.BUTTON_FRAME_PADDING)
+        
+        # Configure grid to have equal column weights for equal spacing
+        button_frame.grid_columnconfigure(0, weight=1, uniform="button_group")
+        button_frame.grid_columnconfigure(1, weight=1, uniform="button_group")
+        
+        return button_frame
 
     def _setup_ui(self):
         self._setup_style()
-        self.main_frame = tk.Frame(self.root)
-        self.main_frame.pack(padx=10, pady=10)
-        self.root.configure(bg="#f7f7fa")
-        self.main_frame.configure(bg="#f7f7fa")
+        
+        # Main content frame with proper padding
+        self.main_frame = tk.Frame(self.root, bg="#f7f7fa")
+        self.main_frame.pack(padx=WindowConfig.WINDOW_PADDING_X, pady=WindowConfig.WINDOW_PADDING_Y, fill="both", expand=True)
+        
+        # Title label
         self.title_label = ttk.Label(
             self.main_frame,
             text="Shift vector field origin to (?, ?)",
-            font=('Arial', 15, 'bold'),
+            font=('Arial', WindowConfig.TITLE_FONT_SIZE, 'bold'),
             background="#f7f7fa"
         )
-        self.title_label.pack(pady=(0, 6))
+        self.title_label.pack(pady=(0, WindowConfig.COMPONENT_SPACING))
+        
+        # Instruction label (only for multiple images)
         if not self.is_single_image:
             self.instruction_label = ttk.Label(
                 self.main_frame,
                 text="Hold right click for faster selection. Press 'Reset all previous selections' to start over.",
-                font=('Arial', 11, 'italic'),
+                font=('Arial', WindowConfig.SUBTITLE_FONT_SIZE, 'italic'),
                 foreground='blue',
                 background="#f7f7fa"
             )
-            self.instruction_label.pack(pady=(0, 10))
+            self.instruction_label.pack(pady=(0, WindowConfig.COMPONENT_SPACING))
+        
+        # Coordinate label
         self.coord_label = ttk.Label(
             self.main_frame,
             text="Select (x,y) coordinate",
-            font=('Arial', 13),
+            font=('Arial', WindowConfig.COORD_LABEL_FONT_SIZE),
             background="#f7f7fa"
         )
-        self.coord_label.pack(pady=(0, 8))
+        self.coord_label.pack(pady=(0, WindowConfig.COMPONENT_SPACING))
+        
+        # Canvas with proper sizing
         self.canvas = tk.Canvas(
             self.main_frame,
             width=self.max_width,
             height=self.max_height,
             bg='white'
         )
-        self.canvas.pack(pady=(0, 10))
-        button_frame = tk.Frame(self.root, bg="#f0f2f5")
-        button_frame.pack(fill="x")
-        button_frame.grid_columnconfigure(0, weight=1)
-        button_frame.grid_columnconfigure(1, weight=1)
-        self.confirm_button = ttk.Button(
-            button_frame,
-            text="Confirm Selection",
-            command=self._confirm_selection,
-            style='DisabledGreen.TButton',
-            state=tk.DISABLED,
-            padding=(20, 15)
-        )
-        self.clear_button = ttk.Button(
-            button_frame,
-            text="Clear" if self.is_single_image else "Reset all previous selections",
-            command=self._clear_all_selections,
-            style='Red.TButton',
-            padding=(20, 15)
-        )
-        self.clear_button.grid(row=0, column=0, sticky="nsew", padx=5)
-        self.confirm_button.grid(row=0, column=1, sticky="nsew", padx=5)
-        button_frame.grid_columnconfigure(0, weight=1, uniform="group1")
-        button_frame.grid_columnconfigure(1, weight=1, uniform="group1")
+        self.canvas.pack(pady=(0, WindowConfig.COMPONENT_SPACING))
+        
+        # Slider frame (only for multiple images)
         if not self.is_single_image:
             self.slider_frame = tk.Frame(self.main_frame, bg="#f7f7fa")
-            self.slider_frame.pack(pady=(0, 10))
+            self.slider_frame.pack(pady=(0, WindowConfig.COMPONENT_SPACING))
+            
             ttk.Label(
                 self.slider_frame,
                 text="Holding selection delay",
-                font=('Arial', 10),
+                font=('Arial', WindowConfig.SLIDER_LABEL_FONT_SIZE),
                 background="#f7f7fa"
             ).pack(side=tk.LEFT, padx=(0, 5))
+            
             self.delay_var = tk.DoubleVar(value=50)
             self.delay_slider = SingleSliderModified(
                 self.slider_frame,
@@ -358,13 +553,39 @@ class CoordinateSelectorUI:
                 command=self._update_long_hold_delay
             )
             self.delay_slider.pack(side=tk.LEFT, padx=5)
+            
             self.delay_value_label = ttk.Label(
                 self.slider_frame,
                 text="50 ms",
-                font=('Arial', 10, 'bold'),
+                font=('Arial', WindowConfig.SLIDER_LABEL_FONT_SIZE, 'bold'),
                 background="#f7f7fa"
             )
             self.delay_value_label.pack(side=tk.LEFT, padx=(5, 0))
+        
+        # Button frame with equal spacing
+        button_frame = self._create_equal_spaced_button_frame(self.root)
+        
+        # Create buttons with equal spacing
+        self.clear_button = ttk.Button(
+            button_frame,
+            text="Clear" if self.is_single_image else "Reset all previous selections",
+            command=self._clear_all_selections,
+            style='Red.TButton'
+        )
+        
+        self.confirm_button = ttk.Button(
+            button_frame,
+            text="Confirm Selection",
+            command=self._confirm_selection,
+            style='DisabledGreen.TButton',
+            state=tk.DISABLED
+        )
+        
+        # Grid buttons with equal spacing
+        self.clear_button.grid(row=0, column=0, sticky="ew", padx=(WindowConfig.BUTTON_GRID_SPACING//2, WindowConfig.BUTTON_GRID_SPACING//2))
+        self.confirm_button.grid(row=0, column=1, sticky="ew", padx=(WindowConfig.BUTTON_GRID_SPACING//2, WindowConfig.BUTTON_GRID_SPACING//2))
+        
+        # Bind events
         self.canvas.bind("<Button-1>", self._on_left_click)
         self.canvas.bind("<B1-Motion>", self._on_left_drag)
         self.canvas.bind("<ButtonRelease-1>", self._on_left_release)
@@ -583,34 +804,53 @@ class CoordinateSelectorUI:
         if self.replay_window is not None:
             return
         self._set_selection_window_state(False)
+        
+        # Calculate replay window dimensions using the same system
+        replay_sizer = DynamicWindowSizer()
+        replay_sizer.add_component(TitleComponent())  # "Replay" title
+        replay_sizer.add_component(CanvasComponent(self.max_width, self.max_height))
+        replay_sizer.add_component(SliderComponent(visible=True))  # Speed slider
+        replay_sizer.add_component(ButtonFrameComponent(button_count=2))
+        
+        replay_width, replay_height = replay_sizer.get_window_dimensions()
+        
         self.replay_window = tk.Toplevel(self.root)
         self.replay_window.title("Replay")
         self.replay_window.protocol("WM_DELETE_WINDOW", self._on_replay_close)
-        self.replay_window.minsize(max(self.window_width, 590), max(self.window_height-20, 200))
-        center_window(self.replay_window, max(self.window_width, 590), max(self.window_height+20, 200))
+        self.replay_window.minsize(replay_width, replay_height)
+        center_window(self.replay_window, replay_width, replay_height)
         self.replay_window.configure(bg="#f7f7fa")
+        
+        # Main frame with proper padding
+        replay_main_frame = tk.Frame(self.replay_window, bg="#f7f7fa")
+        replay_main_frame.pack(padx=WindowConfig.WINDOW_PADDING_X, pady=WindowConfig.WINDOW_PADDING_Y, fill="both", expand=True)
+        
         title_label = ttk.Label(
-            self.replay_window,
+            replay_main_frame,
             text="Replay",
-            font=('Arial', 15, 'bold'),
+            font=('Arial', WindowConfig.TITLE_FONT_SIZE, 'bold'),
             background="#f7f7fa"
         )
-        title_label.pack(pady=(10, 6))
+        title_label.pack(pady=(0, WindowConfig.COMPONENT_SPACING))
+        
         self.replay_canvas = tk.Canvas(
-            self.replay_window,
+            replay_main_frame,
             width=self.max_width,
             height=self.max_height,
             bg='white'
         )
-        self.replay_canvas.pack(padx=10, pady=10)
-        slider_frame = tk.Frame(self.replay_window, bg="#f7f7fa")
-        slider_frame.pack(pady=(0, 10))
+        self.replay_canvas.pack(pady=(0, WindowConfig.COMPONENT_SPACING))
+        
+        slider_frame = tk.Frame(replay_main_frame, bg="#f7f7fa")
+        slider_frame.pack(pady=(0, WindowConfig.COMPONENT_SPACING))
+        
         ttk.Label(
             slider_frame,
             text="Replay speed",
-            font=('Arial', 10),
+            font=('Arial', WindowConfig.SLIDER_LABEL_FONT_SIZE),
             background="#f7f7fa"
         ).pack(side=tk.LEFT, padx=(0, 5))
+        
         self.replay_fps_var = tk.DoubleVar(value=self.replay_fps)
         self.replay_fps_slider = SingleSliderModified(
             slider_frame,
@@ -621,21 +861,22 @@ class CoordinateSelectorUI:
             command=self._on_replay_fps_change
         )
         self.replay_fps_slider.pack(side=tk.LEFT, padx=5)
+        
         self.replay_fps_value_label = ttk.Label(
             slider_frame,
             text=f"{self.replay_fps:.1f} FPS",
-            font=('Arial', 10, 'bold'),
+            font=('Arial', WindowConfig.SLIDER_LABEL_FONT_SIZE, 'bold'),
             background="#f7f7fa"
         )
         self.replay_fps_value_label.pack(side=tk.LEFT, padx=(5, 0))
+        
         self.replay_running = True
         self._replay_index = 0
         self._start_replay_loop()
-        button_frame = tk.Frame(self.replay_window, bg="#f0f2f5")
-        button_frame.pack(fill="x")
-        button_frame.grid_columnconfigure(0, weight=1)
-        button_frame.grid_columnconfigure(1, weight=1)
-        button_frame.pack(pady=10)
+        
+        # Button frame with equal spacing
+        button_frame = self._create_equal_spaced_button_frame(self.replay_window)
+        
         confirm_all_btn = ttk.Button(
             button_frame,
             text="Confirm all",
@@ -648,8 +889,9 @@ class CoordinateSelectorUI:
             style="ReplayRed.TButton",
             command=self._on_replay_reset_all
         )
-        reset_all_btn.grid(row=0, column=0, padx=(5, 5), pady=5, ipadx=20, ipady=5, sticky="ew")
-        confirm_all_btn.grid(row=0, column=1, padx=(5, 5), pady=5, ipadx=20, ipady=5, sticky="ew")
+        
+        reset_all_btn.grid(row=0, column=0, sticky="ew", padx=(WindowConfig.BUTTON_GRID_SPACING//2, WindowConfig.BUTTON_GRID_SPACING//2))
+        confirm_all_btn.grid(row=0, column=1, sticky="ew", padx=(WindowConfig.BUTTON_GRID_SPACING//2, WindowConfig.BUTTON_GRID_SPACING//2))
 
     def _start_replay_loop(self):
         if not self.replay_running or self.replay_window is None:
@@ -731,6 +973,7 @@ class CoordinateSelectorUI:
             self.root.destroy()
             return None
         return self.selected_coordinates
+
 def create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_of_target, master=None):
     get_coords = CoordinateSelectorUI(filepaths_of_frames_or_image, resize_shorter_side_of_target, master=master)
     coordinates = get_coords.run()
@@ -739,9 +982,8 @@ def create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_o
 # Example usage
 if __name__ == "__main__":
     filepaths_of_frames_or_image = ["target_image/cat.jpg", "target_image/circles.png", "target_image/dark.png"]
-    # filepaths_of_frames_or_image = ['C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0001.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0002.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0003.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0004.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0005.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0006.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0007.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0008.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0009.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0010.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0011.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0012.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0013.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0014.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0015.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0016.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0017.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0018.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0019.png']
 
     # filepaths_of_frames_or_image = "target_image/chameleon.png"
 
-    coords = create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_of_target=200, master=None)
+    coords = create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_of_target=265, master=None)
     print(coords)

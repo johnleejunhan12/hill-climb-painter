@@ -511,7 +511,7 @@ class ParameterUI:
         self.prev_color_idx = self.widget_color_idx
         self.texture_opacity_slider = SingleSlider(self.param_frame, min_val=0, max_val=100, init_val=100, width=self.PARAM_COMPONENT_WIDTH,
             title="4) Texture opacity: <current_value>%", 
-            subtitle="- Gives the texture a translucent effect by decreasing its opacity", is_set_width_to_parent=True, bg_color=color)
+            subtitle="- Give the texture a translucent effect by decreasing its opacity", is_set_width_to_parent=True, bg_color=color)
         self.texture_opacity_slider.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.texture_opacity_slider, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
         self.add_between_padding(self.param_frame, self.param_vis_manager)
@@ -597,47 +597,22 @@ class ParameterUI:
         # 9.i) Edit vector field
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        # self.edit_vector_btn = tk.Button(self.param_frame, text="Edit vector field: (f(x,y), g(x,y)) = (-x, -y)", 
-        #                                  font=("Arial", 11, "bold"), bg=None, fg='black', 
-        #                                  command=self.on_edit_vector_field, height=2)
-        
         self.edit_vector_btn = ttk.Button(self.param_frame, text="(f(x,y), g(x,y)) = (-x, -y)", 
                                          style="button_edit_vector_field.TButton",
                                          command=self.on_edit_vector_field)
-        
-        ######################################
         self.edit_vector_btn.pack(fill='x', padx=(20, 0), pady=self.PAD_BETWEEN_ALL_COMPONENTS)
-        
         self.param_vis_manager.register_widget(self.edit_vector_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
-
-        # # 9.iii) Debug vector field function
-        # color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
-        # self.prev_color_idx = self.widget_color_idx
-        # self.debug_vector_btn = tk.Button(self.param_frame, text="9.iii) Debug vector field function", font=("Arial", 11), bg='#007fff', fg='white', relief='flat', command=self.on_debug_vector_field)
-        # self.debug_vector_btn.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
-        # self.param_vis_manager.register_widget(self.debug_vector_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
 
         # 9.ii) Shift vector field origin
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-
-        # self.shift_vector_origin_btn = tk.Button(self.param_frame, text=self.initial_choose_vector_eqn_btn_label, 
-        #                                          font=("Arial", 11, "bold"), bg=None, fg='red',  ##########################################
-        #                                          command=self.on_shift_vector_origin, height=2)
-        
         self.shift_vector_origin_btn = ttk.Button(self.param_frame, text=self.initial_choose_vector_eqn_btn_label, 
                                                  style="button_shift_vector_field.TButton",
                                                  command=self.on_shift_vector_origin)
-
-
-        ######################################
         self.shift_vector_origin_btn.pack(fill='x', padx=(20,0), pady=self.PAD_BETWEEN_ALL_COMPONENTS)
-
         self.param_vis_manager.register_widget(self.shift_vector_origin_btn, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
 
-
         # Set up dependency: 9.i, 9.ii only show if vector_field_chk is checked
-        # self.vector_field_chk.set_controlled_widgets([self.edit_vector_btn, self.shift_vector_origin_btn, self.debug_vector_btn])
         self.vector_field_chk.set_controlled_widgets([self.edit_vector_btn, self.shift_vector_origin_btn])
         self.add_between_padding(self.param_frame, self.param_vis_manager)
 
