@@ -12,8 +12,8 @@ warnings.filterwarnings('ignore')
 class VectorFieldVisualizer:
     def __init__(self, master=None, presets=None, sq_grid_size=None, initial_f_string=None, initial_g_string=None):
         # Set initial window dimensions
-        self.initial_width = 800
-        self.initial_height = 800
+        self.initial_width = 820
+        self.initial_height = 820
 
         if master is None:
             self.root = tk.Tk()
@@ -76,37 +76,47 @@ class VectorFieldVisualizer:
         """Configure modern styling for ttk widgets"""
         style = ttk.Style()
         style.theme_use('clam')
-        
+
+
+        style.configure('TButton', font=('Segoe UI', 12), padding=0, relief='flat', background='#4078c0', foreground='#fff', focuscolor="none")
+        style.map('TButton', background=[('active', '#305080')])
+        # style.configure('TFrame', background='#f5f6fa')
+        # style.configure("Red.TButton", background="#d32f2f", foreground="#fff")
+        # style.map("Red.TButton", background=[("active", "#b71c1c")])
+        # style.configure("Grey.TButton", background="#bdbdbd", foreground="#fff")
+        # style.map("Grey.TButton", background=[("active", "#9e9e9e")])
+        # style.configure("Green.TButton", background="#388e3c", foreground="#fff")
+        # style.map("Green.TButton", background=[("active", "#1b5e20")])
+
+
+
         # Configure button styles
-        style.configure('Visualize.TButton',
-                       background='#4CAF50',
-                       foreground='black',
-                       font=('Arial', 11, 'bold'),
-                       padding=(20, 10))
+        style.configure('Visualize.TButton', font=('Segoe UI', 13), relief='flat', background='#4078c0', foreground='#fff', focuscolor="none", padding=(100, 10))
+        style.map('Visualize.TButton', background=[('active', '#305080')])
+
+                # style.configure('Visualize.TButton',
+        #                background='#4CAF50',
+        #                foreground='black',
+        #                font=('Segoe UI', 11, 'bold'),
+        #                padding=(20, 10))
         
-        style.configure('Confirm.TButton',
-                       background='#2196F3',
-                       foreground='black',
-                       font=('Arial', 11, 'bold'),
-                       padding=(20, 10))
-        
-        # Configure disabled button style
-        style.configure('Disabled.TButton',
-                       background='#cccccc',
-                       foreground='#666666',
-                       font=('Arial', 11, 'bold'),
-                       padding=(20, 10))
-        
-        style.map('Visualize.TButton',
-                 background=[('active', '#45a049')])
-        style.map('Confirm.TButton',
-                 background=[('active', '#1976D2')])
-        
+        # style.configure('Confirm.TButton',
+        #                background='#2196F3',
+        #                foreground='black',
+        #                font=('Segoe UI', 11, 'bold'),
+        #                padding=(20, 10))
+
+        style.configure('Confirm.TButton', font=('Segoe UI', 13), relief='flat', background='#388e3c', foreground='#fff', focuscolor="none", padding=(100, 10))
+        style.map("Confirm.TButton", background=[("active", "#1b5e20")])
+
+        style.configure('Disabled.TButton', font=('Segoe UI', 13), relief='flat', background='#bdbdbd', foreground='#fff', focuscolor="none", padding=(100, 10))
+        style.map('Disabled.TButton', background=[('active', '#9e9e9e')])
+
         # Configure entry style
         style.configure('Modern.TEntry',
                        fieldbackground='white',
                        borderwidth=2,
-                       font=('Arial', 12))
+                       font=('Segoe UI', 12))
         
     def create_widgets(self):
         """Create and layout all GUI widgets"""
@@ -124,14 +134,14 @@ class VectorFieldVisualizer:
         preset_frame = ttk.Frame(main_frame)
         preset_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
         
-        ttk.Label(preset_frame, text="Presets", font=('Arial', 12, 'bold')).grid(row=0, column=0, padx=(0, 10))
+        ttk.Label(preset_frame, text="Presets", font=('Segoe UI', 12, 'bold')).grid(row=0, column=0, padx=(0, 10))
         self.preset_var = tk.StringVar()
         self.preset_dropdown = ttk.Combobox(preset_frame, textvariable=self.preset_var, values=list(self.presets.keys()))
         self.preset_dropdown.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 10))
         self.preset_dropdown.bind('<<ComboboxSelected>>', self.on_preset_select)
         self.preset_dropdown.set(list(self.presets.keys())[0])
         
-        ttk.Label(preset_frame, text="Grid size", font=('Arial', 12, 'bold')).grid(row=0, column=2, padx=(10, 10))
+        ttk.Label(preset_frame, text="Grid size", font=('Segoe UI', 12, 'bold')).grid(row=0, column=2, padx=(10, 10))
         self.grid_size_var = tk.StringVar(value=f"{self.sq_grid_size[0]}x{self.sq_grid_size[0]}")
         self.grid_size_dropdown = ttk.Combobox(preset_frame, textvariable=self.grid_size_var, values=[f"{size}x{size}" for size in self.sq_grid_size])
         self.grid_size_dropdown.grid(row=0, column=3, sticky=(tk.W, tk.E))
@@ -146,10 +156,10 @@ class VectorFieldVisualizer:
         input_frame.columnconfigure(1, weight=1)
         
         # f(x,y) input
-        ttk.Label(input_frame, text="f(x,y)", font=('Arial', 12, 'bold')).grid(
+        ttk.Label(input_frame, text="f(x,y)", font=('Segoe UI', 12, 'bold')).grid(
             row=0, column=0, sticky=tk.W, padx=(0, 10), pady=5)
         
-        self.f_entry = ttk.Entry(input_frame, font=('Arial', 12), style='Modern.TEntry')
+        self.f_entry = ttk.Entry(input_frame, font=('Segoe UI', 12), style='Modern.TEntry')
         self.f_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), pady=5)
         # Set initial f string if provided, otherwise use preset
         if self.initial_f_string is not None:
@@ -159,10 +169,10 @@ class VectorFieldVisualizer:
         self.f_entry.bind('<KeyRelease>', self.on_entry_change)
         
         # g(x,y) input  
-        ttk.Label(input_frame, text="g(x,y)", font=('Arial', 12, 'bold')).grid(
+        ttk.Label(input_frame, text="g(x,y)", font=('Segoe UI', 12, 'bold')).grid(
             row=1, column=0, sticky=tk.W, padx=(0, 10), pady=5)
         
-        self.g_entry = ttk.Entry(input_frame, font=('Arial', 12), style='Modern.TEntry')
+        self.g_entry = ttk.Entry(input_frame, font=('Segoe UI', 12), style='Modern.TEntry')
         self.g_entry.grid(row=1, column=1, sticky=(tk.W, tk.E), pady=5)
         # Set initial g string if provided, otherwise use preset
         if self.initial_g_string is not None:
@@ -173,7 +183,7 @@ class VectorFieldVisualizer:
         
         # Status label
         self.status_label = ttk.Label(main_frame, text="Valid", 
-                                     font=('Arial', 11), 
+                                     font=('Segoe UI', 11), 
                                      foreground='green')
         self.status_label.grid(row=3, column=0, pady=(10, 0))
         
@@ -362,8 +372,7 @@ class VectorFieldVisualizer:
         self.ax.set_ylabel('y', fontsize=12)
         self.ax.grid(True, alpha=0.3)
         self.ax.set_aspect('equal')
-        self.ax.set_title('Vector Field: (f(x,y), g(x,y))', fontsize=14, fontweight='bold')
-        
+        self.ax.set_title('Vector Field Plot: (f(x,y), g(x,y))', fontsize=14)
         # Handle colorbar - create once, update afterwards
         if not hasattr(self, 'colorbar') or self.colorbar is None:
             # Create colorbar only on first run

@@ -252,7 +252,7 @@ class ParameterUI:
 
         self.style.configure(
             'button_edit_vector_field.TButton',
-            font=('Times New Roman', 16),
+            font=('Segoe UI', 14), # times new roman alternative
             padding=(0, 8),  # (horizontal_padding, vertical_padding)
             relief='default',
             background='#ffffff',  # white background
@@ -262,13 +262,13 @@ class ParameterUI:
         )
         self.style.map(
             "button_edit_vector_field.TButton",
-            background=[('selected', 'white'), ('active', "#4792d3")],
-            foreground=[('selected', 'black'), ('active', 'white')],
+            background=[('selected', 'white'), ('active', "#dcefff")],
+            foreground=[('selected', 'black'), ('active', 'black')],
         )
 
         self.style.configure(
             'button_shift_vector_field.TButton',
-            font=('Times New Roman', 16),
+            font=('Segoe UI', 14), # times new roman alternative
             padding=(0, 8),  # (horizontal_padding, vertical_padding)
             relief='default',
             background='#ffffff',  # white background
@@ -278,8 +278,8 @@ class ParameterUI:
         )
         self.style.map(
             "button_shift_vector_field.TButton",
-            background=[('selected', 'white'), ('active', "#4792d3")],
-            foreground=[('selected', 'black'), ('active', 'white')],
+            background=[('selected', 'white'), ('active', "#dcefff")],
+            foreground=[('selected', 'black'), ('active', 'black')],
         )
 
 
@@ -287,7 +287,7 @@ class ParameterUI:
     def _create_ui(self):
         """Create the main UI elements"""
         self.root = tk.Tk()
-        self.root.title("Hill Climb Painter UI")
+        self.root.title("Select parameters")
 
 
         def center_window(root, width, height):
@@ -380,7 +380,7 @@ class ParameterUI:
         message = tk.Label(
             container,
             text="Exit application?",
-            font=("Segoe UI", 14, "bold"),
+            font=("Segoe UI", 13),
             bg="#f0f2f5",
             fg="#333333"
         )
@@ -499,7 +499,7 @@ class ParameterUI:
         self.prev_color_idx = self.widget_color_idx
         self.hill_climb_range = RangeSlider(self.param_frame, min_val=1, max_val=500, init_min=20, init_max=100, width=self.PARAM_COMPONENT_WIDTH,
             title="3) Number of hill climb iterations: Min = <current_min_value>, Max = <current_max_value>", 
-            subtitle="- Number of iterations grows from min to max linearly as more textures are painted. \
+            subtitle="- Number of iterations grows linearly as more textures are painted. \
                 \n- Higher iteraton improves texture placement but requires more computation", is_set_width_to_parent=True, bg_color=color)
         self.hill_climb_range.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.hill_climb_range, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
@@ -510,7 +510,7 @@ class ParameterUI:
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
         self.texture_opacity_slider = SingleSlider(self.param_frame, min_val=0, max_val=100, init_val=100, width=self.PARAM_COMPONENT_WIDTH,
-            title="4) Texture opacity percentage: <current_value>%", 
+            title="4) Texture opacity: <current_value>%", 
             subtitle="- Gives the texture a translucent effect by decreasing its opacity", is_set_width_to_parent=True, bg_color=color)
         self.texture_opacity_slider.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.texture_opacity_slider, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
@@ -521,7 +521,7 @@ class ParameterUI:
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
         self.rect_width_slider = SingleSlider(self.param_frame, min_val=10, max_val=200, init_val=20, width=self.PARAM_COMPONENT_WIDTH, 
-            title="5) Initial texture width to <current_value> pixels", 
+            title="5) Initial texture size: <current_value> pixels", 
             subtitle="- Influences size of texture when it is initially created", is_set_width_to_parent=True, bg_color=color)
         self.rect_width_slider.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.rect_width_slider, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
@@ -531,7 +531,7 @@ class ParameterUI:
         # 6) Allow size of texture to vary
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.scaling_chk = CustomCheckbox(self.param_frame, text="6) Make all textures the same size", checked=True, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, 
+        self.scaling_chk = CustomCheckbox(self.param_frame, text="6) Constrain texture dimensions to initial size", checked=True, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, 
             is_set_width_to_parent=True, bg_color=color)
         self.scaling_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.scaling_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})

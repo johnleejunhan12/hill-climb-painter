@@ -74,7 +74,7 @@ painting_proress_gif_name = "gif_output"
 
 # Output tab (For gif case)
 # 1) Paint N out of total number frames from target GIF
-N = 100 # placeholder for testing, this is upper limit, can exceed number of frames in original GIF
+N = 200 # placeholder for testing, this is upper limit, can exceed number of frames in original GIF
 recreate_number_of_frames_in_original_gif = N
 
 # 2) Painted GIF filename

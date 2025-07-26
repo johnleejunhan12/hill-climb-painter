@@ -328,7 +328,7 @@ class TargetTextureSelectorUI(tk.Tk):
             message = tk.Label(
                 container,
                 text="Exit application?",
-                font=("Segoe UI", 13, "bold"),
+                font=("Segoe UI", 13),
                 bg="#f0f2f5",
                 fg="#333333"
             )
