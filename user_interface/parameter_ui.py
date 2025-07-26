@@ -1,10 +1,49 @@
 import tkinter.ttk as ttk
 import tkinter as tk
-from select_coordinate_ui import *
-from tkinter_components import *
 
-from utilities import count_frames_in_gif
-from vector_field_equation_ui import create_vector_field_visualizer
+import os
+import warnings
+print("Working directory:", os.getcwd())
+
+try:
+    from .select_coordinate_ui import *
+except ImportError:
+    from select_coordinate_ui import *
+
+try:
+    from .tkinter_components import *
+except ImportError:
+    from tkinter_components import *
+
+try:
+    from .vector_field_equation_ui import create_vector_field_visualizer
+except ImportError:
+    from vector_field_equation_ui import create_vector_field_visualizer
+
+
+try:
+    from .read_write_parameter_json import read_parameter_json
+except ImportError:
+    from read_write_parameter_json import read_parameter_json
+
+def count_frames_in_gif(filepath):
+    """
+    Returns the number of frames in a GIF file.
+    Args:
+        filepath (str): Full path to the GIF file.
+    Returns:
+        int: Number of frames in the GIF.
+    """
+    from PIL import Image
+    with Image.open(filepath) as img:
+        count = 0
+        try:
+            while True:
+                img.seek(count)
+                count += 1
+        except EOFError:
+            pass
+    return count
 
 
 
@@ -52,7 +91,7 @@ class ParameterUI:
         self.prev_color_idx = None
         
 
-        self.initial_choose_vector_eqn_btn_label = "*Shift origin to (?, ?)" if self.file_ext != ".gif" else "*Shift origin to (?, ?), (?, ?), ..."
+        self.initial_choose_vector_eqn_btn_label = "Shift origin to (?, ?)" if self.file_ext != ".gif" else "Shift origin to (?, ?), (?, ?), ..."
 
         # Vector field function attribute
         self.vector_field_function = lambda x, y: (-x,-y)
@@ -63,14 +102,121 @@ class ParameterUI:
         self.is_selected_vector_field_origin = False
 
         # Initialize the param dict to be returned
-        self.result = None
+        self.returned_dict_command = None
+
+        # Initialize the parameters from the param_dict
+        self.create_initial_params()
+
 
         # Initialize the UI
         self._create_ui()
-    
-    def on_dummy(self, *args, **kwargs):
-        pass
-    
+
+
+
+
+
+    def create_initial_params(self):
+        """
+        Create initial parameters from the param_dict.
+        """
+        self.param_dict = read_parameter_json()
+        if self.param_dict is None:
+            raise ValueError("Failed to read parameters.json or it is empty.")
+        def get_value(key, value_key='value', assert_type=None):
+            """
+            Helper function to get value from param_dict with a default.
+            Issues a warning only if the key or 'value' field is missing.
+            """
+            if key not in self.param_dict:
+                raise KeyError(f"Key '{key}' is missing in parameters.json.")
+            parameter = self.param_dict[key]
+            if value_key not in parameter:
+                raise KeyError(f"'{value_key}' field is missing in parameters.json for key '{key}'.")
+            result = parameter[value_key]
+
+            if assert_type is not None:
+                if not isinstance(result, assert_type):
+                    raise TypeError(f"Expected type {assert_type} for key '{key}', but got {type(result)}.") 
+            return result
+
+        # i_ stand for "initial" and is used to indicate that this is the initial value of the parameter
+
+        # 1) Computation size
+        self.i_computation_size = get_value("computation_size", assert_type=int)
+        self.i_computation_size_min_value = get_value("computation_size", "min_value", assert_type=int)
+        self.i_computation_size_max_value = get_value("computation_size", "max_value", assert_type=int)
+
+        # 2) Add how many textures
+        self.i_num_textures = get_value("num_textures", assert_type=int)
+        self.i_num_textures_min_value = get_value("num_textures", "min_value", assert_type=int)
+        self.i_num_textures_max_value = get_value("num_textures", "max_value", assert_type=int)
+
+        # 3) Number of hill climb iterations
+        self.i_num_hill_climb_iterations_current_lower_value = get_value("num_hill_climb_iterations", "current_lower_value", assert_type=int)
+        self.i_num_hill_climb_iterations_current_upper_value = get_value("num_hill_climb_iterations", "current_upper_value", assert_type=int)
+        self.i_num_hill_climb_iterations_min_value = get_value("num_hill_climb_iterations", "min_value", assert_type=int)
+        self.i_num_hill_climb_iterations_max_value = get_value("num_hill_climb_iterations", "max_value", assert_type=int)
+
+        # 4) Texture opacity settings
+        self.i_texture_opacity = get_value("texture_opacity", assert_type=int)
+        self.i_texture_opacity_min_value = get_value("texture_opacity", "min_value", assert_type=int)
+        self.i_texture_opacity_max_value = get_value("texture_opacity", "max_value", assert_type=int)
+
+        # 5) Initial texture width
+        self.i_initial_texture_width = get_value("initial_texture_width", assert_type=int)
+        self.i_initial_texture_width_min_value = get_value("initial_texture_width", "min_value", assert_type=int)
+        self.i_initial_texture_width_max_value = get_value("initial_texture_width", "max_value", assert_type=int)
+
+        # 6) Fix size of texture
+        self.i_uniform_texture_size_bool = get_value("uniform_texture_size", assert_type=bool)
+
+        # 7) Show painting progress as new textures are added
+        self.i_display_painting_progress_bool = get_value("display_painting_progress", assert_type=bool)
+        # 7a) Show improvement of individual textures
+        self.i_display_placement_progress_bool = get_value("display_placement_progress", assert_type=bool)
+        # 7b) Display final image after painting (conditional)
+        self.i_display_final_image_bool = get_value("display_final_image", assert_type=bool)
+
+
+        # 8) allow early termination of hill climb
+        self.i_allow_early_termination_bool = get_value("allow_early_termination", assert_type=bool)
+        # 8a) Terminate after n iterations
+        self.i_failed_iterations_threshold = get_value("failed_iterations_threshold", assert_type=int)
+        self.i_failed_iterations_threshold_min_value = get_value("failed_iterations_threshold", "min_value", assert_type=int)
+        self.i_failed_iterations_threshold_max_value = get_value("failed_iterations_threshold", "max_value", assert_type=int)
+
+        # 9) Enable vector field
+        self.i_enable_vector_field_bool = get_value("enable_vector_field", assert_type=bool)
+
+        self.i_vector_field_f_string = get_value("vector_field_f", assert_type=str)
+        self.i_vector_field_f_string = get_value("vector_field_g", assert_type=str)
+
+        self.i_vector_field_origin_shift_list_of_tuples = get_value("vector_field_origin_shift", assert_type=list)
+
+
+        # Output tab initial parameters
+
+        # 1) Output image size
+        self.i_output_image_size = get_value("output_image_size", assert_type=int)
+        self.i_output_image_size_min_value = get_value("output_image_size", "min_value", assert_type=int)
+        self.i_output_image_size_max_value = get_value("output_image_size", "max_value", assert_type=int)
+
+        # 2) Output image name
+        self.i_output_image_name_string = get_value("output_image_name", assert_type=str)
+
+        # 3) Create gif of painting progress checkbox
+        self.i_create_gif_of_painting_progress_bool = get_value("create_gif_of_painting_progress", assert_type=bool)
+        # 3i) Name of painting progress gif
+        self.i_name_of_painting_progress_gif_string = get_value("painting_progress_gif_name", assert_type=str)
+
+        # tab2 GIF Settings (for target with .gif)
+        # A) Name of painted gif (a new gif where we paint all frames of target gif)
+        self.i_painted_gif_name_string = get_value("painted_gif_name", assert_type=str)
+        # B) Multiprocessing checkbox
+        self.i_enable_multiprocessing_bool = get_value("enable_multiprocessing", assert_type=bool)
+
+
+
     def apply_modern_notebook_style(self):
         """Apply modern styling to the ttk.Notebook and remove dotted focus line from tabs"""
         # Set the clam theme
@@ -220,7 +366,6 @@ class ParameterUI:
 
     def setup_button_style(self):
         """Apply the exact style from TargetTextureSelectorUI for TButton."""
-        print("Setting up button style...")
         self.style = ttk.Style()
         self.style.theme_use('clam')
 
@@ -447,19 +592,19 @@ class ParameterUI:
 
     def confirm_exit(self, dialog):
         """Set result for window close and destroy the dialog and root"""
-        self.result = {"command": "user_closed_param_ui_window"}
+        self.returned_dict_command = {"command": "user_closed_param_ui_window"}
         dialog.destroy()
         self.root.quit()  # Exit mainloop
         self.root.destroy()  # Destroy window
 
     def on_select_target_texture(self):
         """Handle 'Select target and texture' button press"""
-        self.result = {"command": "reselect_target_texture"}
+        self.returned_dict_command = {"command": "reselect_target_texture"}
         self.root.quit()  # Exit mainloop
         self.root.destroy()  # Destroy window
     def on_submit_button_press(self):
         """Handle 'Submit' button press"""
-        self.result = {"command": "run", "parameters": self.get_parameters()}
+        self.returned_dict_command = {"command": "run", "parameters": self.get_parameters()}
         self.root.quit()  # Exit mainloop
         self.root.destroy()  # Destroy window
     # Tab 1
@@ -474,10 +619,17 @@ class ParameterUI:
         self.add_between_padding(self.param_frame, self.param_vis_manager)
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.computation_size_slider = SingleSlider(self.param_frame, min_val=100, max_val=500, init_val=500, width=self.PARAM_COMPONENT_WIDTH, 
+        self.computation_size_slider = SingleSlider(self.param_frame, 
+            min_val=self.i_computation_size_min_value, 
+            max_val=self.i_computation_size_max_value, 
+            init_val=self.i_computation_size, 
+            width=self.PARAM_COMPONENT_WIDTH, 
             title="1) Computation size: <current_value> pixels", 
             subtitle="- Increase to capture more image detail, decrease for speed\n- Slider will reset existing selection of vector field origin translation coordinates", 
-            is_set_width_to_parent=True, bg_color=color, command=self.on_computation_size_slider_change)
+            is_set_width_to_parent=True, 
+            bg_color=color, 
+            command=self.on_computation_size_slider_change
+        )
         self.computation_size_slider.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.computation_size_slider, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
         self.add_between_padding(self.param_frame, self.param_vis_manager)
@@ -487,20 +639,35 @@ class ParameterUI:
         # 2) Add how many textures
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.num_shapes_slider = SingleSlider(self.param_frame, min_val=100, max_val=1000, init_val=500, width=self.PARAM_COMPONENT_WIDTH, 
-            title="2) Add <current_value> textures", subtitle="- Increase to paint finer details, decrease for speed", is_set_width_to_parent=True, bg_color=color)
+        self.num_shapes_slider = SingleSlider(self.param_frame, 
+            min_val=self.i_num_textures_min_value, 
+            max_val=self.i_num_textures_max_value, 
+            init_val=self.i_num_textures, 
+            width=self.PARAM_COMPONENT_WIDTH, 
+            title="2) Add <current_value> textures", 
+            subtitle="- Increase to paint finer details, decrease for speed", 
+            is_set_width_to_parent=True, 
+            bg_color=color
+        )
         self.num_shapes_slider.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.num_shapes_slider, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
         self.add_between_padding(self.param_frame, self.param_vis_manager)
 
 
-        # 3) Number of personally climb iterations
+        # 3) Number of hill climb iterations
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.hill_climb_range = RangeSlider(self.param_frame, min_val=1, max_val=500, init_min=20, init_max=100, width=self.PARAM_COMPONENT_WIDTH,
+        self.hill_climb_range = RangeSlider(self.param_frame, 
+            min_val=self.i_num_hill_climb_iterations_min_value, 
+            max_val=self.i_num_hill_climb_iterations_max_value, 
+            init_min=self.i_num_hill_climb_iterations_current_lower_value, 
+            init_max=self.i_num_hill_climb_iterations_current_upper_value,
+            width=self.PARAM_COMPONENT_WIDTH,
             title="3) Number of hill climb iterations: Min = <current_min_value>, Max = <current_max_value>", 
-            subtitle="- Number of iterations grows linearly as more textures are painted. \
-                \n- Higher iteraton improves texture placement but requires more computation", is_set_width_to_parent=True, bg_color=color)
+            subtitle="- Number of iterations grows linearly as more textures are painted. \n- Higher iteraton improves texture placement but requires more computation", 
+            is_set_width_to_parent=True, 
+            bg_color=color
+        )
         self.hill_climb_range.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.hill_climb_range, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
         self.add_between_padding(self.param_frame, self.param_vis_manager)
@@ -509,9 +676,16 @@ class ParameterUI:
         # 4) Texture opacity settings
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.texture_opacity_slider = SingleSlider(self.param_frame, min_val=0, max_val=100, init_val=100, width=self.PARAM_COMPONENT_WIDTH,
+        self.texture_opacity_slider = SingleSlider(self.param_frame, 
+            min_val=self.i_texture_opacity_min_value, 
+            max_val=self.i_texture_opacity_max_value, 
+            init_val=self.i_texture_opacity, 
+            width=self.PARAM_COMPONENT_WIDTH,
             title="4) Texture opacity: <current_value>%", 
-            subtitle="- Give the texture a translucent effect by decreasing its opacity", is_set_width_to_parent=True, bg_color=color)
+            subtitle="- Give the texture a translucent effect by decreasing its opacity", 
+            is_set_width_to_parent=True, 
+            bg_color=color
+        )
         self.texture_opacity_slider.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.texture_opacity_slider, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
         self.add_between_padding(self.param_frame, self.param_vis_manager)
@@ -520,19 +694,30 @@ class ParameterUI:
         # 5) Initial texture width
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.rect_width_slider = SingleSlider(self.param_frame, min_val=10, max_val=200, init_val=20, width=self.PARAM_COMPONENT_WIDTH, 
+        self.rect_width_slider = SingleSlider(self.param_frame, 
+            min_val=self.i_initial_texture_width_min_value, 
+            max_val=self.i_initial_texture_width_max_value, 
+            init_val=self.i_initial_texture_width, 
+            width=self.PARAM_COMPONENT_WIDTH, 
             title="5) Initial texture size: <current_value> pixels", 
-            subtitle="- Influences size of texture when it is initially created", is_set_width_to_parent=True, bg_color=color)
+            subtitle="- Influences size of texture when it is initially created", 
+            is_set_width_to_parent=True, 
+            bg_color=color)
         self.rect_width_slider.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.rect_width_slider, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
         self.add_between_padding(self.param_frame, self.param_vis_manager)
 
 
-        # 6) Allow size of texture to vary
+        # 6) Fix size of texture
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.scaling_chk = CustomCheckbox(self.param_frame, text="6) Constrain texture dimensions to initial size", checked=True, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, 
-            is_set_width_to_parent=True, bg_color=color)
+        self.scaling_chk = CustomCheckbox(self.param_frame, 
+            text="6) Fix size of texture", 
+            checked=self.i_uniform_texture_size_bool, 
+            width=self.PARAM_COMPONENT_WIDTH, 
+            height=self.PARAM_CHECKBOX_HEIGHT, 
+            is_set_width_to_parent=True, 
+            bg_color=color)
         self.scaling_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.scaling_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
         self.add_between_padding(self.param_frame, self.param_vis_manager)
@@ -542,13 +727,28 @@ class ParameterUI:
             # 7) Show painting progress as new textures are added
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
-            self.show_pygame_chk = CustomToggleVisibilityCheckbox(self.param_frame, text="7) Display painting progress", checked=False, visibility_manager=self.param_vis_manager, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, is_set_width_to_parent=True, bg_color=color)
+            self.show_pygame_chk = CustomToggleVisibilityCheckbox(self.param_frame, 
+                text="7) Display painting progress", 
+                checked=self.i_display_painting_progress_bool, 
+                visibility_manager=self.param_vis_manager, 
+                width=self.PARAM_COMPONENT_WIDTH, 
+                height=self.PARAM_CHECKBOX_HEIGHT, 
+                is_set_width_to_parent=True, 
+                bg_color=color
+            )
             self.show_pygame_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
             self.param_vis_manager.register_widget(self.show_pygame_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
             # 7a) Show improvement of individual textures
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
-            self.rect_improve_chk = CustomCheckbox(self.param_frame, text="7a) Display placement progress", checked=False, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, is_set_width_to_parent=True, bg_color=color)
+            self.rect_improve_chk = CustomCheckbox(self.param_frame,
+                text="7a) Show improvement of individual textures", 
+                checked=self.i_display_placement_progress_bool, 
+                width=self.PARAM_COMPONENT_WIDTH, 
+                height=self.PARAM_CHECKBOX_HEIGHT, 
+                is_set_width_to_parent=True, 
+                bg_color=color
+            )
             self.rect_improve_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
             self.param_vis_manager.register_widget(self.rect_improve_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
             # 7b) Display final image after painting (conditional)
@@ -556,7 +756,14 @@ class ParameterUI:
             if file_ext in ['.png', '.jpg', '.jpeg']:
                 color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
                 self.prev_color_idx = self.widget_color_idx
-                self.display_final_chk = CustomCheckbox(self.param_frame, text="7b) Display final image after painting", checked=False, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, is_set_width_to_parent=True, bg_color=color)
+                self.display_final_chk = CustomCheckbox(self.param_frame, 
+                    text="7b) Display final image after painting", 
+                    checked=self.i_display_final_image_bool, 
+                    width=self.PARAM_COMPONENT_WIDTH, 
+                    height=self.PARAM_CHECKBOX_HEIGHT, 
+                    is_set_width_to_parent=True, 
+                    bg_color=color
+                )
                 self.display_final_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
                 self.param_vis_manager.register_widget(self.display_final_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
                 display_final_chk = self.display_final_chk
@@ -571,15 +778,30 @@ class ParameterUI:
         # 8) allow early termination of hill climb
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.premature_chk = CustomToggleVisibilityCheckbox(self.param_frame, text="8) Allow early termination of hill climbing", checked=False, 
-            visibility_manager=self.param_vis_manager, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, is_set_width_to_parent=True, bg_color=color)
+        self.premature_chk = CustomToggleVisibilityCheckbox(self.param_frame,
+            text="8) Allow early termination of hill climbing", 
+            checked=self.i_allow_early_termination_bool, 
+            visibility_manager=self.param_vis_manager, 
+            width=self.PARAM_COMPONENT_WIDTH, 
+            height=self.PARAM_CHECKBOX_HEIGHT, 
+            is_set_width_to_parent=True, 
+            bg_color=color
+        )
         self.premature_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.premature_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
         # 8a) Terminate after n iterations
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.fail_threshold_slider = SingleSlider(self.param_frame, min_val=20, max_val=100, init_val=100, width=self.PARAM_COMPONENT_WIDTH, height=50, 
-            subtitle="- Terminate after <current_value> failed iterations where there is no improvement", is_set_width_to_parent=True, bg_color=color)
+        self.fail_threshold_slider = SingleSlider(self.param_frame, 
+            min_val=self.i_failed_iterations_threshold_min_value, 
+            max_val=self.i_failed_iterations_threshold_max_value, 
+            init_val=self.i_failed_iterations_threshold, 
+            width=self.PARAM_COMPONENT_WIDTH, 
+            height=50, 
+            subtitle="- Terminate after <current_value> failed iterations where there is no improvement", 
+            is_set_width_to_parent=True, 
+            bg_color=color
+        )
         self.fail_threshold_slider.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.fail_threshold_slider, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
         self.add_between_padding(self.param_frame, self.param_vis_manager)
@@ -590,7 +812,15 @@ class ParameterUI:
         # 9) Enable vector field
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.vector_field_chk = CustomToggleVisibilityCheckbox(self.param_frame, text="9) Enable vector field", checked=False, visibility_manager=self.param_vis_manager, width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT, is_set_width_to_parent=True, bg_color=color)
+        self.vector_field_chk = CustomToggleVisibilityCheckbox(self.param_frame, 
+            text="9) Enable vector field", 
+            checked=self.i_enable_vector_field_bool, 
+            visibility_manager=self.param_vis_manager, 
+            width=self.PARAM_COMPONENT_WIDTH, 
+            height=self.PARAM_CHECKBOX_HEIGHT, 
+            is_set_width_to_parent=True, 
+            bg_color=color
+        )
         self.vector_field_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.vector_field_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
 
@@ -631,24 +861,31 @@ class ParameterUI:
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
             self.output_size_slider = SingleSlider(
-                self.output_frame, min_val=800, max_val=4000, init_val=1200,
+                self.output_frame, 
+                min_val=self.i_output_image_size_min_value, 
+                max_val=self.i_output_image_size_max_value, 
+                init_val=self.i_output_image_size,
                 width=self.PARAM_COMPONENT_WIDTH,
                 title="1) Output image size: <current_value> px", subtitle="- Render the output in a higher resolution", 
-                is_set_width_to_parent=True, bg_color=color
+                is_set_width_to_parent=True,
+                bg_color=color
             )
             self.output_size_slider.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
             self.output_vis_manager.register_widget(self.output_size_slider, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
             self.add_between_padding(self.output_frame, self.output_vis_manager)
 
 
-            # 2) Name of output image
+            # 2) Output image name
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx + 1, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
-            self.image_name_input = CustomTextInput(
-                self.output_frame, width=self.PARAM_COMPONENT_WIDTH,
-                title="2) Name of output image", subtitle="- Image will be saved to output folder when algorithm terminates", is_set_width_to_parent=True, bg_color=color
+            self.image_name_input = CustomTextInput(self.output_frame, 
+                width=self.PARAM_COMPONENT_WIDTH,
+                title="2) Name of output image", 
+                subtitle="- Image will be saved to output folder when algorithm terminates", 
+                is_set_width_to_parent=True, 
+                bg_color=color
             )
-            self.image_name_input.set("image_output")
+            self.image_name_input.set(self.i_output_image_name_string)
             self.image_name_input.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
             self.output_vis_manager.register_widget(self.image_name_input, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
             self.add_between_padding(self.output_frame, self.output_vis_manager)
@@ -656,22 +893,27 @@ class ParameterUI:
             # 3) Create GIF progress Checkbox
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
-            self.create_gif_chk = CustomToggleVisibilityCheckbox(
-                self.output_frame, text="3) Create GIF of painting progress", checked=False,
-                width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT,
-                is_set_width_to_parent=True, bg_color=color,
+            self.create_gif_chk = CustomToggleVisibilityCheckbox(self.output_frame, 
+                text="3) Create GIF of painting progress", 
+                checked=self.i_create_gif_of_painting_progress_bool,
+                width=self.PARAM_COMPONENT_WIDTH, 
+                height=self.PARAM_CHECKBOX_HEIGHT,
+                is_set_width_to_parent=True, 
+                bg_color=color,
                 visibility_manager=self.output_vis_manager
             )
             self.create_gif_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
             self.output_vis_manager.register_widget(self.create_gif_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
-            # 3i) GIF Filename Input
+            # 3i) Name of painting progress GIF
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx + 1, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
             self.gif_name_input = CustomTextInput(
-                self.output_frame, width=self.PARAM_COMPONENT_WIDTH, 
-                title="3a) Enter GIF filename", subtitle="- Gif will be saved to output folder when algorithm terminates", is_set_width_to_parent=True, bg_color=color
+                self.output_frame, 
+                width=self.PARAM_COMPONENT_WIDTH, 
+                title="3a) Enter GIF filename", 
+                subtitle="- Gif will be saved to output folder when algorithm terminates", is_set_width_to_parent=True, bg_color=color
             )
-            self.gif_name_input.set("gif_output")
+            self.gif_name_input.set(self.i_name_of_painting_progress_gif_string)
             self.gif_name_input.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
             self.output_vis_manager.register_widget(self.gif_name_input, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS}, controller=self.create_gif_chk)
             # Set controlled widgets for the checkbox
@@ -681,7 +923,7 @@ class ParameterUI:
 
 
 
-        # Sections 8: GIF Settings (for .gif)
+        # tab2 GIF Settings (for target with .gif)
         elif file_ext == '.gif':
             self.add_between_padding(self.output_frame, self.output_vis_manager)
             # 1) Limit number of frames painted in original GIF.
@@ -699,25 +941,33 @@ class ParameterUI:
             self.output_vis_manager.register_widget(self.frames_in_gif_slider, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
             self.add_between_padding(self.output_frame, self.output_vis_manager)
 
-            # Painted GIF Filename Input
+            # A) Name of painted gif (a new gif where we paint all frames of target gif)
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx + 1, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
             self.painted_gif_name_input = CustomTextInput(
-                self.output_frame, width=self.PARAM_COMPONENT_WIDTH,
-                title="2) Painted GIF filename", subtitle=None, is_set_width_to_parent=True, bg_color=color
+                self.output_frame, 
+                width=self.PARAM_COMPONENT_WIDTH,
+                title="2) Painted GIF filename", 
+                subtitle=None, 
+                is_set_width_to_parent=True, 
+                bg_color=color
             )
-            self.painted_gif_name_input.set("painted_gif_output")
+            self.painted_gif_name_input.set(self.i_painted_gif_name_string)
             self.painted_gif_name_input.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
             self.output_vis_manager.register_widget(self.painted_gif_name_input, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
             self.add_between_padding(self.output_frame, self.output_vis_manager)
 
-            # Multiprocessing Checkbox
+            # B) Multiprocessing Checkbox
             color, self.widget_color_idx = self.get_next_color(self.widget_color_idx + 1, self.prev_color_idx)
             self.prev_color_idx = self.widget_color_idx
             self.multiprocessing_chk = CustomCheckbox(
-                self.output_frame, text="3) Enable multiprocessing for batch frame processing", checked=False,
-                width=self.PARAM_COMPONENT_WIDTH, height=self.PARAM_CHECKBOX_HEIGHT,
-                is_set_width_to_parent=True, bg_color=color
+                self.output_frame, 
+                text="3) Enable multiprocessing for batch frame processing", 
+                checked=self.i_enable_multiprocessing_bool,
+                width=self.PARAM_COMPONENT_WIDTH, 
+                height=self.PARAM_CHECKBOX_HEIGHT,
+                is_set_width_to_parent=True, 
+                bg_color=color
             )
             self.multiprocessing_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
             self.output_vis_manager.register_widget(self.multiprocessing_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
@@ -833,8 +1083,8 @@ class ParameterUI:
         if self.file_ext in ['.png', '.jpg', '.jpeg']:
             parameters['output_image_size'] = self.output_size_slider.get()
             parameters['output_image_name'] = self.image_name_input.get()
-            parameters['create_gif'] = self.create_gif_chk.get()
-            parameters['gif_output_name'] = self.gif_name_input.get() if self.create_gif_chk.get() else None
+            parameters['create_gif_of_painting_progress'] = self.create_gif_chk.get()
+            parameters['painting_progress_gif_name'] = self.gif_name_input.get() if self.create_gif_chk.get() else None
         elif self.file_ext == '.gif':
             parameters['num_frames_to_paint'] = self.frames_in_gif_slider.get()
             parameters['painted_gif_name'] = self.painted_gif_name_input.get()
@@ -844,9 +1094,9 @@ class ParameterUI:
 
     def run(self):
         """Start the UI main loop and return the result based on user action"""
-        self.result = None  # Reset result
+        self.returned_dict_command = None  # Reset result
         self.root.mainloop()  # Run the Tkinter main loop
-        return self.result  # Return the result set by button actions or closing
+        return self.returned_dict_command  # Return the result set by button actions or closing
 
         # modify the run method and the methods inside param ui to return values in 3 cases:
         # Case 1: User closed the "X" button
@@ -896,17 +1146,17 @@ def get_command_from_parameter_ui(target, target_gif_frames=None):
 # in other file...
 if __name__ == "__main__":
 
-    path_of_target = "C:\\Git Repos\\hill-climb-painter\\readme_stuff\\shrek_original.gif"
-    gif_frames_full_filepaths = ['C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0001.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0002.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0003.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0004.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0005.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0006.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0007.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0008.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0009.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0010.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0011.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0012.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0013.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0014.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0015.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0016.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0017.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0018.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0019.png']
+    # path_of_target = "C:\\Git Repos\\hill-climb-painter\\readme_stuff\\shrek_original.gif"
+    # gif_frames_full_filepaths = ['C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0001.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0002.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0003.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0004.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0005.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0006.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0007.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0008.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0009.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0010.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0011.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0012.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0013.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0014.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0015.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0016.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0017.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0018.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0019.png']
 
-    command = get_command_from_parameter_ui(path_of_target, target_gif_frames=gif_frames_full_filepaths)
-    print(command)
+    # command = get_command_from_parameter_ui(path_of_target, target_gif_frames=gif_frames_full_filepaths)
+    # print(command)
 
     
-#     path_of_target = "C:\\Git Repos\\hill-climb-painter\\target_image\\cat.jpg"
+    path_of_target = "C:\\Git Repos\\hill-climb-painter\\target_image\\cat.jpg"
 
-#     ui = ParameterUI(target_filepath=path_of_target, gif_frames_full_filepath_list=None)
-#     ui.run()
+    ui = ParameterUI(target_filepath=path_of_target, gif_frames_full_filepath_list=None)
+    ui.run()
     
 
     # quit()

@@ -1,6 +1,6 @@
-from target_texture_select_ui import TargetTextureSelectorUI
+from user_interface.target_texture_select_ui import TargetTextureSelectorUI
 from file_operations import *
-from parameter_ui import *
+from user_interface.parameter_ui import *
 from utilities import extract_gif_frames_to_output_folder_and_get_approx_fps 
 
 
@@ -79,6 +79,8 @@ def get_target_and_textures(is_prompt_user_before_quit=False):
 
 
 if __name__ == "__main__":
+
+    print(f"My __name__ is: {__name__}")
         
     target_filepath, texture_filepath_list, original_gif_frames_file_path_list = get_target_and_textures(is_prompt_user_before_quit=True)
     print("\n")

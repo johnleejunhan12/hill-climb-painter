@@ -186,7 +186,7 @@ class OrderPreservingDemo:
         
         # Import your custom components
         try:
-            from tkinter_components import RangeSlider, SingleSlider, CustomTextInput
+            from user_interface.tkinter_components import RangeSlider, SingleSlider, CustomTextInput
             
             # Advanced components (will be controlled by first checkbox)
             self.price_slider = RangeSlider(

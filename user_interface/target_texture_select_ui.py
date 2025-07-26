@@ -1,10 +1,15 @@
 import tkinter as tk
 from tkinter import ttk
-from tkinter import filedialog
 from PIL import Image, ImageTk, ImageSequence
 import os
-from select_target_ui import FileSelectorUI
-from file_operations import *
+
+try:
+    from .select_target_ui import FileSelectorUI
+except ImportError: # 
+    from select_target_ui import FileSelectorUI
+
+print(f"My __name__ is: {__name__}")
+
 
 class TargetTextureSelectorUI(tk.Tk):
     def __init__(self, is_prompt_user_before_quit=False, initial_selected_image_path=None, initial_selected_texture_paths=None):

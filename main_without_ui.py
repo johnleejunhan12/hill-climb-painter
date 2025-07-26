@@ -5,7 +5,7 @@ from utilities import *
 from rectangle import *
 from pygame_display import *
 from file_operations import *
-from select_coordinate_ui import CoordinateSelectorUI
+from user_interface.select_coordinate_ui import CoordinateSelectorUI
 from vector_field import VectorField
 from create_painted_png import CreateOutputImage
 from create_paint_progress_gif import CreateOutputGIF
@@ -51,7 +51,7 @@ is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True
 fail_threshold_before_terminating_hill_climb = 100 
 
 # 9) Enable vector field (toggle visibility checkbox)
-is_enable_vector_field = False
+is_enable_vector_field = True
 # 9i) Edit vector field equation (button)
 vector_field_function = lambda x,y: (x+y, x-y)
 # 9ii) Shift vector field origin (button)
