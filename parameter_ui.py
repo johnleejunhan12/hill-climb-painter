@@ -221,11 +221,11 @@ class ParameterUI:
     def setup_button_style(self):
         """Apply the exact style from TargetTextureSelectorUI for TButton."""
         print("Setting up button style...")
-        style = ttk.Style()
-        style.theme_use('clam')
+        self.style = ttk.Style()
+        self.style.theme_use('clam')
 
         # Button 1
-        style.configure(
+        self.style.configure(
             'button1.TButton',
             font=('Segoe UI', 13),
             padding=(0, 10),  # (horizontal_padding, vertical_padding)
@@ -234,10 +234,10 @@ class ParameterUI:
             foreground='#fff',     # White text
             focuscolor='none'
         )
-        style.map('button1.TButton', background=[('active', '#305080')])  # Darker blue when active
+        self.style.map('button1.TButton', background=[('active', '#305080')])  # Darker blue when active
 
         # Button 2
-        style.configure(
+        self.style.configure(
             'button2.TButton',
             font=('Segoe UI', 13),
             padding=(0, 10),  # (horizontal_padding, vertical_padding)
@@ -246,22 +246,11 @@ class ParameterUI:
             foreground='#fff',     # White text
             focuscolor='none'
         )
-        style.map("button2.TButton", background=[("active", "#1b5e20")]) # Darker green when active
+        self.style.map("button2.TButton", background=[("active", "#1b5e20")]) # Darker green when active
         self.button1.configure(style="button1.TButton")
         self.button2.configure(style="button2.TButton")
 
-        # Button for editing vector field
-        # style.configure(
-        #     'button_edit_vector_field.TButton',
-        #     font=('Segoe UI', 12),
-        #     padding=(0, 7),  # (horizontal_padding, vertical_padding)
-        #     relief='flat',
-        #     background='#4078c0',  # Blue background
-        #     foreground='#fff',     # White text
-        #     focuscolor='#305080'
-        # )
-        # style.map('button_edit_vector_field.TButton', background=[('active', '#305080')])  # Darker blue when active
-        style.configure(
+        self.style.configure(
             'button_edit_vector_field.TButton',
             font=('Times New Roman', 16),
             padding=(0, 8),  # (horizontal_padding, vertical_padding)
@@ -271,8 +260,24 @@ class ParameterUI:
             focuscolor='none',
             borderwidth=2
         )
-        style.map(
+        self.style.map(
             "button_edit_vector_field.TButton",
+            background=[('selected', 'white'), ('active', "#4792d3")],
+            foreground=[('selected', 'black'), ('active', 'white')],
+        )
+
+        self.style.configure(
+            'button_shift_vector_field.TButton',
+            font=('Times New Roman', 16),
+            padding=(0, 8),  # (horizontal_padding, vertical_padding)
+            relief='default',
+            background='#ffffff',  # white background
+            foreground='red',     # red text
+            focuscolor='none',
+            borderwidth=2
+        )
+        self.style.map(
+            "button_shift_vector_field.TButton",
             background=[('selected', 'white'), ('active', "#4792d3")],
             foreground=[('selected', 'black'), ('active', 'white')],
         )
@@ -621,7 +626,7 @@ class ParameterUI:
         #                                          command=self.on_shift_vector_origin, height=2)
         
         self.shift_vector_origin_btn = ttk.Button(self.param_frame, text=self.initial_choose_vector_eqn_btn_label, 
-                                                 style="button1.TButton",
+                                                 style="button_shift_vector_field.TButton",
                                                  command=self.on_shift_vector_origin)
 
 
@@ -755,23 +760,27 @@ class ParameterUI:
             if user_choosen_coords_list is not None:
                 self.list_of_coord_for_shifting_vector_field_origin = user_choosen_coords_list
                 self.is_selected_vector_field_origin = True
-                label = "Shift field center to: " + str(user_choosen_coords_list[0])
-                self.shift_vector_origin_btn.config(text=label, fg="black")
-        
+                label = "Shift origin to: " + str(user_choosen_coords_list[0])
+                self.shift_vector_origin_btn.config(text=label)
+                self.style.configure("button_shift_vector_field.TButton", foreground="black")
+
         # GIF case
         else:
             user_choosen_coords_list = create_coord_selector_UI(self.gif_frames_full_filepath_list, self.resize_shorter_side_of_target, master=self.root)
             if user_choosen_coords_list is not None:
                 self.list_of_coord_for_shifting_vector_field_origin = user_choosen_coords_list
-                label = "Shift field center to: " + str(user_choosen_coords_list[0])+", "+str(user_choosen_coords_list[1])+"..."
-                self.shift_vector_origin_btn.config(text=label, fg="black")
+                label = "Shift origin to: " + str(user_choosen_coords_list[0])+", "+str(user_choosen_coords_list[1])+"..."
+                self.shift_vector_origin_btn.config(text=label)
+                self.style.configure("button_shift_vector_field.TButton", foreground="black")
+
 
     # Adjusting computation size slider will reset the selected vector field
     def on_computation_size_slider_change(self, sliderval=None):
         self.is_selected_vector_field_origin = False
         self.list_of_coord_for_shifting_vector_field_origin = None
         self.shift_vector_origin_btn.config(text=self.initial_choose_vector_eqn_btn_label)
-        self.shift_vector_origin_btn.config(fg="red")
+        self.style.configure("button_shift_vector_field.TButton", foreground="red")
+
         
     # Opens the window for user to define vector field
     def on_edit_vector_field(self):
@@ -791,6 +800,7 @@ class ParameterUI:
             result = create_vector_field_visualizer(custom_presets, custom_grid_sizes, master=self.root)
         else:
             result = create_vector_field_visualizer(custom_presets, custom_grid_sizes, master=self.root, initial_f_string=self.f_string, initial_g_string=self.g_string)
+
         if result is not None:
             function_string = result[0]
             # Update button text with the returned string
@@ -912,8 +922,8 @@ def get_command_from_parameter_ui(target, target_gif_frames=None):
 if __name__ == "__main__":
 
     path_of_target = "C:\\Git Repos\\hill-climb-painter\\readme_stuff\\shrek_original.gif"
-    gif_frames_full_filepaths = ['C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0001.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0002.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0003.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0004.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0005.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0006.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0007.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0008.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0009.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0010.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0011.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0012.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0013.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0014.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0015.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0016.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0017.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0018.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0019.png']
-    
+    gif_frames_full_filepaths = ['C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0001.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0002.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0003.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0004.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0005.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0006.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0007.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0008.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0009.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0010.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0011.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0012.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0013.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0014.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0015.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0016.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0017.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0018.png', 'C:\\Git Repos\\hill-climb-painter\\original_gif_frames\\shrek_painted_frame_0019.png']
+
     command = get_command_from_parameter_ui(path_of_target, target_gif_frames=gif_frames_full_filepaths)
     print(command)
 

@@ -132,8 +132,50 @@ class CoordinateSelectorUI:
         self.window_width = self.max_width + 40
         self.window_height = self.max_height + 220
     
+    def _setup_style(self):
+        self.style = ttk.Style(self.root)
+        self.style.theme_use('clam')
+        
+        # Base button style
+        self.style.configure('TButton', font=('Segoe UI', 12), padding=0, relief='flat', 
+                           background='#4078c0', foreground='#fff', focuscolor="none")
+        self.style.map('TButton', background=[('active', '#305080')])
+        
+        # Frame style
+        self.style.configure('TFrame', background='#f5f6fa')
+        
+        # Red button style
+        self.style.configure("Red.TButton", background="#d32f2f", foreground="#fff", 
+                           font=('Arial', 12, 'bold'), padding=(20, 10))
+        self.style.map("Red.TButton", background=[("active", "#b71c1c")])
+        
+        # Grey button style (for disabled state)
+        self.style.configure("Grey.TButton", background="#bdbdbd", foreground="#fff",
+                           font=('Arial', 12, 'bold'), padding=(20, 10))
+        self.style.map("Grey.TButton", background=[("active", "#9e9e9e")])
+        
+        # Green button style
+        self.style.configure("Green.TButton", background="#388e3c", foreground="#fff",
+                           font=('Arial', 12, 'bold'), padding=(20, 10))
+        self.style.map("Green.TButton", background=[("active", "#1b5e20")])
+        
+        # Disabled Green button style
+        self.style.configure("DisabledGreen.TButton", background="#a5d6a7", foreground="#fff",
+                           font=('Arial', 12, 'bold'), padding=(20, 10))
+        
+        # Replay button styles
+        self.style.configure("ReplayGreen.TButton", background="#388e3c", foreground="#fff",
+                           font=('Arial', 12, 'bold'), padding=(20, 10))
+        self.style.map("ReplayGreen.TButton", background=[("active", "#1b5e20")])
+        
+        self.style.configure("ReplayRed.TButton", background="#d32f2f", foreground="#fff",
+                           font=('Arial', 12, 'bold'), padding=(20, 10))
+        self.style.map("ReplayRed.TButton", background=[("active", "#b71c1c")])
+
     def _setup_ui(self):
         """Set up all the UI components"""
+        self._setup_style()
+
         # Create main frame
         self.main_frame = tk.Frame(self.root)
         self.main_frame.pack(padx=10, pady=10)
@@ -182,35 +224,34 @@ class CoordinateSelectorUI:
         
 
         #################################################################
-        button_frame = tk.Frame(self.main_frame, bg="#f7f7fa")
-        button_frame.pack(pady=(0, 12))
-        self.confirm_button = tk.Button(
+        # Button frame with grid configuration
+        button_frame = tk.Frame(self.root, bg="#f0f2f5")
+        button_frame.pack(fill="x")
+        
+        # Configure grid columns to expand equally
+        button_frame.grid_columnconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(1, weight=1)
+
+        self.confirm_button = ttk.Button(
             button_frame,
             text="Confirm Selection",
             command=self._confirm_selection,
-            state=tk.DISABLED,
-            bg='green',
-            fg='white',
-            font=('Arial', 12, 'bold'),
-            activebackground='#2ecc40',
-            activeforeground='white',
-            height=2,
-            bd=0,
+            style='DisabledGreen.TButton',  # Start with disabled style
+            state=tk.DISABLED,  # Initially disabled until a coordinate is selected
+            padding=(20, 15) # width # height
         )
-        self.confirm_button.grid(row=0, column=0, sticky="nsew", padx=5)
-        self.clear_button = tk.Button(
+
+        self.clear_button = ttk.Button(
             button_frame,
             text="Clear" if self.is_single_image else "Clear all previous selections",
             command=self._clear_all_selections,
-            bg='red',
-            fg='white',
-            font=('Arial', 12, 'bold'),
-            activebackground='#e74c3c',
-            activeforeground='white',
-            height=2,
-            bd=0,
+            style='Red.TButton',
+            padding=(20, 15)
+
         )
-        self.clear_button.grid(row=0, column=1, sticky="nsew", padx=5)
+
+        self.confirm_button.grid(row=0, column=1, sticky="nsew", padx=5)
+        self.clear_button.grid(row=0, column=0, sticky="nsew", padx=5)
 
         # Make each column the same weight and part of the same uniform group
         button_frame.grid_columnconfigure(0, weight=1, uniform="group1")
@@ -283,8 +324,10 @@ class CoordinateSelectorUI:
         self.image_height = current_image.height
         self.selected_x = None
         self.selected_y = None
-        self.confirm_button.config(state=tk.DISABLED, bg='green')
         
+        # Update confirm button to disabled state
+        self.confirm_button.config(state=tk.DISABLED, style='DisabledGreen.TButton')
+
         # Only show image count for multiple images
         if not self.is_single_image:
             self.coord_label.config(text=f"Image {self.current_image_index + 1}/{len(self.image_paths)}")
@@ -324,7 +367,9 @@ class CoordinateSelectorUI:
         )
         if hasattr(self, 'title_label'):
             self.title_label.config(text=f"Shift vector field origin to ({x}, {y})")
-        self.confirm_button.config(state=tk.NORMAL, bg='green')
+        
+        # Enable confirm button and change to green style
+        self.confirm_button.config(state=tk.NORMAL, style='Green.TButton')
     
     def _on_left_click(self, event):
         """Handle left mouse button click (initial press)"""
@@ -458,11 +503,24 @@ class CoordinateSelectorUI:
     
     def _set_selection_window_state(self, enabled: bool):
         """Enable or disable all controls in the selection window"""
-        state = tk.NORMAL if enabled else tk.DISABLED
-        self.confirm_button.config(state=state)
-        self.clear_button.config(state=state)
+        if enabled:
+            # Re-enable buttons with appropriate styles
+            if self.selected_x is not None and self.selected_y is not None:
+                self.confirm_button.config(state=tk.NORMAL, style='Green.TButton')
+            else:
+                self.confirm_button.config(state=tk.DISABLED, style='DisabledGreen.TButton')
+            self.clear_button.config(state=tk.NORMAL, style='Red.TButton')
+        else:
+            # Disable buttons with grey style
+            self.confirm_button.config(state=tk.DISABLED, style='Grey.TButton')
+            self.clear_button.config(state=tk.DISABLED, style='Grey.TButton')
+            
+        # Handle slider
         if hasattr(self, 'delay_slider'):
+            state = tk.NORMAL if enabled else tk.DISABLED
             self.delay_slider.config(state=state)
+            
+        # Handle canvas bindings
         if not enabled:
             self.canvas.unbind("<Button-1>")
             self.canvas.unbind("<B1-Motion>")
@@ -489,12 +547,8 @@ class CoordinateSelectorUI:
         self.replay_window.title("Replay")
         self.replay_window.protocol("WM_DELETE_WINDOW", self._on_replay_close)
         
-
-
-
         # set min height and min width
         self.replay_window.minsize(max(self.window_width, 590), max(self.window_height+20, 250))
-
 
         # Center the replay window
         center_window(self.replay_window, max(self.window_width, 590), max(self.window_height+20, 250))
@@ -514,39 +568,34 @@ class CoordinateSelectorUI:
             bg='white'
         )
         self.replay_canvas.pack(padx=10, pady=10)
+        
         ####################################################################
-        button_frame = tk.Frame(self.replay_window, bg="#f7f7fa")
+        # Button frame with grid configuration
+        button_frame = tk.Frame(self.replay_window, bg="#f0f2f5")
+        button_frame.pack(fill="x")
+        
+        # Configure grid columns to expand equally
+        button_frame.grid_columnconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(1, weight=1)
+
         button_frame.pack(pady=10)
-        confirm_all_btn = tk.Button(
+        
+        confirm_all_btn = ttk.Button(
             button_frame,
             text="Confirm all",
-            bg="green",
-            fg="white",
-            font=("Arial", 12, "bold"),            
-            activebackground='#2ecc40',
-            activeforeground='white',
-            height=2,
-            bd=0,
+            style="ReplayGreen.TButton",
             command=self._on_replay_confirm_all
         )
-        confirm_all_btn.grid(row=0, column=0, sticky="nsew", padx=5)
-        reset_all_btn = tk.Button(
+
+        reset_all_btn = ttk.Button(
             button_frame,
             text="Reset all",
-            bg="red",
-            fg="white",
-            font=('Arial', 12, 'bold'),
-            activebackground='#e74c3c',
-            activeforeground='white',
-            height=2,
-            bd=0,
+            style="ReplayRed.TButton",
             command=self._on_replay_reset_all
         )
-        reset_all_btn.grid(row=0, column=1, sticky="nsew", padx=5)
-
-        # Make each column the same weight and part of the same uniform group
-        button_frame.grid_columnconfigure(0, weight=1, uniform="group1")
-        button_frame.grid_columnconfigure(1, weight=1, uniform="group1")
+        
+        reset_all_btn.grid(row=0, column=0, padx=(5, 5), pady=5, ipadx=20, ipady=5, sticky="ew")
+        confirm_all_btn.grid(row=0, column=1, padx=(5, 5), pady=5, ipadx=20, ipady=5, sticky="ew")
         #####################################################################
 
         slider_frame = tk.Frame(self.replay_window, bg="#f7f7fa")
@@ -671,25 +720,9 @@ def create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_o
     return coordinates
 
 # Example usage
-# if __name__ == "__main__":
-#     filepaths_of_frames_or_image = ["target_image/cat.jpg", "target_image/circles.png", "target_image/dark.png"]
-#     coords = create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_of_target=400, master=None)
-#     print(coords)
-
-
-# # Example usage
-# if __name__ == "__main__":
-#     filepaths_of_frames_or_image = ["target_image/cat.jpg", "target_image/circles.png", "target_image/dark.png"]
-#     coords = create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_of_target=400, master=None)
-#     print(coords)
-
-
-
-
-# Example usage
 if __name__ == "__main__":
     filepaths_of_frames_or_image = ["target_image/cat.jpg", "target_image/circles.png", "target_image/dark.png"]
-    filepaths_of_frames_or_image = ['C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0001.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0002.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0003.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0004.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0005.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0006.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0007.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0008.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0009.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0010.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0011.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0012.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0013.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0014.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0015.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0016.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0017.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0018.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0019.png']
+    # filepaths_of_frames_or_image = ['C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0001.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0002.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0003.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0004.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0005.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0006.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0007.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0008.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0009.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0010.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0011.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0012.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0013.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0014.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0015.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0016.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0017.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0018.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0019.png']
 
     # filepaths_of_frames_or_image = "target_image/chameleon.png"
 
