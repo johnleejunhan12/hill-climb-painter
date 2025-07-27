@@ -100,7 +100,7 @@ if __name__ == "__main__":
         # Case 2: User reselects target and/or texture
         elif command == "reselect_target_texture":
             print("User wants to reselect target and texture")
-            new_target_filepath, texture_filepath_list, original_gif_frames_file_path_list = get_target_and_textures(is_prompt_user_before_quit=True)
+            target_filepath, texture_filepath_list, original_gif_frames_file_path_list = get_target_and_textures(is_prompt_user_before_quit=True)
 
         # Case 3: User runs the hill climbing algorithm
         elif command == "run":

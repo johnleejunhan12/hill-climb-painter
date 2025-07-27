@@ -272,6 +272,8 @@ class CustomToggleVisibilityCheckbox(tk.Canvas):
         # Auto-scroll when programmatically revealing widgets
         if not was_checked and self.checked:
             self._scroll_to_show_revealed_content()
+
+
 class RangeSlider(tk.Canvas):
     def __init__(self, master, min_val=0, max_val=100, init_min=None, init_max=None, width=300, height=None, command=None, title=None, subtitle=None, title_size=13, subtitle_size=10, bg_color='white', is_set_width_to_parent=False, show_value_labels=False, **kwargs):
         self._line_spacing = 6  # px between lines in title/subtitle (moved to top to avoid AttributeError)
@@ -419,47 +421,55 @@ class RangeSlider(tk.Canvas):
             self.active_thumb = 'max'
             thumb_hit = True
         
-        # If not clicking on a thumb, move the nearest thumb to the click position
-        if not thumb_hit:
+        # If thumbs are overlapping or very close, prioritize based on click direction
+        if not thumb_hit and abs(x1 - x2) <= self.thumb_radius * 2:
             click_value = self._pos_to_value(x)
-            
-            # Determine which thumb is closer to the click
+            if click_value >= self.val_max:  # Click to the right, move max thumb
+                self.active_thumb = 'max'
+                self.val_max = min(click_value, self.max_val)
+            elif click_value <= self.val_min:  # Click to the left, move min thumb
+                self.active_thumb = 'min'
+                self.val_min = max(click_value, self.min_val)
+            else:
+                # If click is between overlapping thumbs, choose based on direction
+                if x > x1:  # Click right of center, move max
+                    self.active_thumb = 'max'
+                    self.val_max = min(click_value, self.max_val)
+                else:  # Click left of center, move min
+                    self.active_thumb = 'min'
+                    self.val_min = max(click_value, self.min_val)
+        
+        # If not clicking on a thumb and thumbs are not overlapping
+        if not thumb_hit and abs(x1 - x2) > self.thumb_radius * 2:
+            click_value = self._pos_to_value(x)
             dist_to_min = abs(click_value - self.val_min)
             dist_to_max = abs(click_value - self.val_max)
             
             if dist_to_min <= dist_to_max:
-                # Move min thumb, but ensure it doesn't go beyond max
                 if click_value <= self.val_max:
                     self.val_min = max(click_value, self.min_val)
                     self.active_thumb = 'min'
             else:
-                # Move max thumb, but ensure it doesn't go below min
                 if click_value >= self.val_min:
                     self.val_max = min(click_value, self.max_val)
                     self.active_thumb = 'max'
             
-            # Redraw and trigger callback
-            self._draw_slider()
-            if self.command:
-                self.command(self.val_min, self.val_max)
+        # Redraw and trigger callback
+        self._draw_slider()
+        if self.command:
+            self.command(self.val_min, self.val_max)
 
     def _on_drag(self, event):
         if not self.active_thumb:
             return
         x = min(max(event.x, self.pad), self.width - self.pad)
         value = self._pos_to_value(x)
+        
         if self.active_thumb == 'min':
-            if value >= self.val_max:
-                value = self.val_max
-            if value < self.min_val:
-                value = self.min_val
-            self.val_min = value
+            self.val_min = max(min(value, self.val_max), self.min_val)
         elif self.active_thumb == 'max':
-            if value <= self.val_min:
-                value = self.val_min
-            if value > self.max_val:
-                value = self.max_val
-            self.val_max = value
+            self.val_max = min(max(value, self.val_min), self.max_val)
+        
         self._draw_slider()
         if self.command:
             self.command(self.val_min, self.val_max)
@@ -480,7 +490,6 @@ class RangeSlider(tk.Canvas):
         self.val_min = min_val
         self.val_max = max_val
         self._draw_slider()
-
 class SingleSlider(tk.Canvas):
     def __init__(self, master, min_val=0, max_val=100, init_val=None, width=300, height=None, command=None, title=None, subtitle=None, title_size=13, subtitle_size=10, bg_color='white', is_set_width_to_parent=False, show_value_labels=False, **kwargs):
         self._line_spacing = 4  # px between lines in title/subtitle

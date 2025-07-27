@@ -23,9 +23,9 @@ except ImportError:
 
 
 try:
-    from .read_write_parameter_json import read_parameter_json
+    from .read_write_parameter_json import *
 except ImportError:
-    from read_write_parameter_json import read_parameter_json
+    from read_write_parameter_json import *
 
 def count_frames_in_gif(filepath):
     """
@@ -123,8 +123,6 @@ class ParameterUI:
         self.widget_color_idx = 0
         self.prev_color_idx = None
         
-        # Shift vector field origin attribute
-        self.is_selected_vector_field_origin = False
 
         # Initialize the param dict to be returned
         self.returned_dict_command = None
@@ -136,25 +134,21 @@ class ParameterUI:
         # Initialize the UI
         self._create_ui()
 
-
-
-
-
     def create_initial_params(self):
         """
         Create initial parameters from the param_dict.
         """
-        self.param_dict = read_parameter_json()
-        if self.param_dict is None:
+        self.param_dict_from_json_file = read_parameter_json()
+        if self.param_dict_from_json_file is None:
             raise ValueError("Failed to read parameters.json or it is empty.")
         def get_value(key, value_key='value', assert_type=None):
             """
             Helper function to get value from param_dict with a default.
             Issues a warning only if the key or 'value' field is missing.
             """
-            if key not in self.param_dict:
+            if key not in self.param_dict_from_json_file:
                 raise KeyError(f"Key '{key}' is missing in parameters.json.")
-            parameter = self.param_dict[key]
+            parameter = self.param_dict_from_json_file[key]
             if value_key not in parameter:
                 raise KeyError(f"'{value_key}' field is missing in parameters.json for key '{key}'.")
             result = parameter[value_key]
@@ -213,7 +207,6 @@ class ParameterUI:
         # 9) Enable vector field
         self.i_enable_vector_field_bool = get_value("enable_vector_field", assert_type=bool)
 
-
         # 9.i) Edit vector field button
         self.i_vector_field_f_string = get_value("vector_field_f", assert_type=str)
         self.i_vector_field_g_string = get_value("vector_field_g", assert_type=str)
@@ -233,7 +226,7 @@ class ParameterUI:
         self.i_vector_field_origin_shift_list_of_coords = get_value("vector_field_origin_shift", assert_type=list)
         self.target_previous_height = get_value("vector_field_origin_shift", "target_previous_height", assert_type=int)
         self.target_previous_width = get_value("vector_field_origin_shift", "target_previous_width", assert_type=int)
-        self.target_prev_extention = get_value("vector_field_origin_shift", "target_prev_extention", assert_type=str)
+        self.target_prev_extention = get_value("vector_field_origin_shift", "target_previous_extention", assert_type=str)
 
         # Check if the target image dimensions match the previous dimensions and has the same extention.
         self.target_width, self.target_height = get_image_dimensions(self.target_filepath)
@@ -243,6 +236,7 @@ class ParameterUI:
               self.target_prev_extention, self.target_previous_height, self.target_previous_width)
         
         self.is_shift_origin_coord_selected = True
+
         # If the target image dimensions match the previous dimensions and has the same extention
         if self.is_same_target_ext_and_dimension:
             # Check if the list of coordinates is still valid
@@ -261,7 +255,10 @@ class ParameterUI:
             print("Target image dimensions have changed or extention has changed, resetting the list of coordinates for shifting vector field origin")
             self.list_of_coord_for_shifting_vector_field_origin = [[]]  # Reset to empty list
             self.is_shift_origin_coord_selected = False
-
+        
+        if self.list_of_coord_for_shifting_vector_field_origin == [[]]: # Case where parameter json contains [[]]
+            self.is_shift_origin_coord_selected = False
+            
         if self.is_shift_origin_coord_selected:
             self.initial_choose_vector_eqn_btn_label = \
                 f"Shift origin to {str(tuple(self.list_of_coord_for_shifting_vector_field_origin[0]))}" if self.file_ext != ".gif" else f"Shift origin to {str(tuple(self.list_of_coord_for_shifting_vector_field_origin[0]))}, {str(tuple(self.list_of_coord_for_shifting_vector_field_origin[1]))}, ..."
@@ -287,8 +284,6 @@ class ParameterUI:
         self.i_painted_gif_name_string = get_value("painted_gif_name", assert_type=str)
         # B) Multiprocessing checkbox
         self.i_enable_multiprocessing_bool = get_value("enable_multiprocessing", assert_type=bool)
-
-
 
     def apply_modern_notebook_style(self):
         """Apply modern styling to the ttk.Notebook and remove dotted focus line from tabs"""
@@ -436,7 +431,6 @@ class ParameterUI:
         between_padding.pack(fill='x')
         vis_manager.register_widget(between_padding, {'fill': 'x'})
 
-
     def setup_button_style(self):
         """Apply the exact style from TargetTextureSelectorUI for TButton."""
         self.style = ttk.Style()
@@ -500,8 +494,6 @@ class ParameterUI:
             foreground=[('selected', 'black'), ('active', 'black')],
         )
 
-
-
     def _create_ui(self):
         """Create the main UI elements"""
         self.root = tk.Tk()
@@ -561,15 +553,16 @@ class ParameterUI:
         padx,pady=1,0
         self.button1 = ttk.Button(self.dual_button_frame, text="Select target and texture", command=self.on_select_target_texture) 
         self.button1.grid(row=0, column=0, sticky="nsew", padx=padx, pady=pady)
-        self.button2 = ttk.Button(self.dual_button_frame, text="Submit", command=self.on_submit_button_press, state="normal" if self.is_shift_origin_coord_selected else "disabled")
+        self.button2 = ttk.Button(self.dual_button_frame, text="Submit", command=self.on_submit_button_press, 
+                                  state="normal" if self.is_shift_origin_coord_selected else "disabled")
+        if not self.i_enable_vector_field_bool:
+            self.button2.configure(state="normal")
         self.button2.grid(row=0, column=1, sticky="nsew", padx=padx, pady=pady)
 
         self.setup_button_style()
 
         self.dual_button_frame.grid_columnconfigure(0, weight=1, uniform="group1")
         self.dual_button_frame.grid_columnconfigure(1, weight=1, uniform="group1")
-
-
 
     def on_closing(self):
         """Handle the window close event with a modern confirmation dialog"""
@@ -661,11 +654,11 @@ class ParameterUI:
         dialog.grab_set()
         dialog.transient(self.root)
 
-
-
     def confirm_exit(self, dialog):
         """Set result for window close and destroy the dialog and root"""
         self.returned_dict_command = {"command": "user_closed_param_ui_window"}
+        # write the new parameters to parameters.json
+        self.save_parameters()
         dialog.destroy()
         self.root.quit()  # Exit mainloop
         self.root.destroy()  # Destroy window
@@ -673,11 +666,15 @@ class ParameterUI:
     def on_select_target_texture(self):
         """Handle 'Select target and texture' button press"""
         self.returned_dict_command = {"command": "reselect_target_texture"}
+        # write the new parameters to parameters.json
+        self.save_parameters()
         self.root.quit()  # Exit mainloop
         self.root.destroy()  # Destroy window
     def on_submit_button_press(self):
         """Handle 'Submit' button press"""
         self.returned_dict_command = {"command": "run", "parameters": self.get_parameters()}
+        # write the new parameters to parameters.json
+        self.save_parameters()
         self.root.quit()  # Exit mainloop
         self.root.destroy()  # Destroy window
     # Tab 1
@@ -1047,59 +1044,52 @@ class ParameterUI:
             self.output_vis_manager.register_widget(self.multiprocessing_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
             self.add_between_padding(self.output_frame, self.output_vis_manager)
     
-
     ################ Enable vector field checkbox #################
     def on_vector_field_checkbox_change(self, state=None):
         """Handle changes to the vector field checkbox"""
-        if self.vector_field_chk.get():
-            # If vector field is enabled, check if origin coordinates are selected
-            if not self.is_selected_vector_field_origin:
-                self.button2.config(state="disabled")  # Disable the submit button if vector field is enabled and origin(s) not selected
-                self.style.configure("button_shift_vector_field.TButton", foreground="red")
-        else:
-            # If vector field is disabled, enable the submit button
+        if state == False: # Vector field is not enabled
             self.button2.config(state="normal")
 
-
+        else: # Vector field is enabled
+            # Check if shift origin coordinates are selected
+            if not self.is_shift_origin_coord_selected:
+                self.button2.config(state="disabled")  # Disable the submit button if vector field is enabled and origin(s) not selected
+                self.style.configure("button_shift_vector_field.TButton", foreground="red")
+            
     ############### Vector field buttons #################
     def on_shift_vector_origin(self):
         print("Opens the window to get list of (x,y) coordinates")
         # prereq: either gif frames Or target image
         self.resize_shorter_side_of_target = self.computation_size_slider.get()
 
-        # Non GIF case
-        if self.file_ext != ".gif":
+        if self.file_ext != ".gif":  # Non GIF case
             user_choosen_coords_list = create_coord_selector_UI(self.target_filepath, self.resize_shorter_side_of_target, master=self.root)
-            if user_choosen_coords_list is not None:
-                self.list_of_coord_for_shifting_vector_field_origin = user_choosen_coords_list
-                self.is_selected_vector_field_origin = True
-                label = "Shift origin to: " + str(tuple(user_choosen_coords_list[0]))
-                self.shift_vector_origin_btn.config(text=label)
-                self.style.configure("button_shift_vector_field.TButton", foreground="black")
-                self.button2.config(state="normal")  # Enable the submit button
-                
-
-        # GIF case
-        else:
+            label = "Shift origin to: " + str(tuple(user_choosen_coords_list[0]))
+        
+        else: # GIF case
             user_choosen_coords_list = create_coord_selector_UI(self.gif_frames_full_filepath_list, self.resize_shorter_side_of_target, master=self.root)
-            if user_choosen_coords_list is not None:
-                self.list_of_coord_for_shifting_vector_field_origin = user_choosen_coords_list
-                label = "Shift origin to: " + str(tuple(user_choosen_coords_list[0]))+", "+str(tuple(user_choosen_coords_list[1]))+"..."
-                self.shift_vector_origin_btn.config(text=label)
-                self.style.configure("button_shift_vector_field.TButton", foreground="black")
-                self.button2.config(state="normal")  # Enable the submit button
+            label = "Shift origin to: " + str(tuple(user_choosen_coords_list[0]))+", "+str(tuple(user_choosen_coords_list[1]))+"..."
 
+        # If UI returns coordinates
+        if user_choosen_coords_list is not None:
+            # Update the current state of UI
+            self.list_of_coord_for_shifting_vector_field_origin = user_choosen_coords_list
+            self.is_shift_origin_coord_selected = True
+            # Update select vector shift origin button text and text color
+            self.shift_vector_origin_btn.config(text=label)
+            self.style.configure("button_shift_vector_field.TButton", foreground="black")
+            # Enable submit button
+            self.button2.config(state="normal")
 
     # Adjusting computation size slider will reset the selected vector field
     def on_computation_size_slider_change(self, sliderval=None):
-        self.is_selected_vector_field_origin = False
+        self.is_shift_origin_coord_selected = False
         self.list_of_coord_for_shifting_vector_field_origin = [[]]
         self.shift_vector_origin_btn.config(text=self.initial_choose_vector_eqn_btn_label)
         self.style.configure("button_shift_vector_field.TButton", foreground="red")
-        if self.vector_field_chk.get() == True and self.is_shift_origin_coord_selected:
+        if self.vector_field_chk.get() == True and not self.is_shift_origin_coord_selected:
             self.button2.config(state="disabled") # disable the submit button if vector field is enabled and origin(s) not selected
 
-        
     # Opens the window for user to define vector field
     def on_edit_vector_field(self):
         custom_presets = {
@@ -1166,7 +1156,7 @@ class ParameterUI:
             parameters['output_image_size'] = self.output_size_slider.get()
             parameters['output_image_name'] = self.image_name_input.get()
             parameters['create_gif_of_painting_progress'] = self.create_gif_chk.get()
-            parameters['painting_progress_gif_name'] = self.gif_name_input.get() if self.create_gif_chk.get() else None
+            parameters['painting_progress_gif_name'] = self.gif_name_input.get() if self.create_gif_chk.get() else ""
         elif self.file_ext == '.gif':
             parameters['num_frames_to_paint'] = self.frames_in_gif_slider.get()
             parameters['painted_gif_name'] = self.painted_gif_name_input.get()
@@ -1174,21 +1164,72 @@ class ParameterUI:
 
         return parameters
 
+    def save_parameters(self):
+        """
+        Save the current parameters to a JSON file.
+        """
+        user_selected_parameters = self.get_parameters()
+
+        json_parameters = self.param_dict_from_json_file
+
+        parameter_keys = [
+            "computation_size",
+            "num_textures",
+            # "hill_climb_min_iterations",
+            # "hill_climb_max_iterations",
+            "texture_opacity",
+            "initial_texture_width",
+            "uniform_texture_size",
+            "allow_early_termination",
+            "failed_iterations_threshold",
+            "enable_vector_field",
+            "vector_field_f",
+            "vector_field_g",
+            # "vector_field_function",
+            "vector_field_origin_shift",
+            "display_painting_progress",
+            "display_placement_progress",
+            "display_final_image",
+            "output_image_size",
+            "output_image_name",
+            "create_gif_of_painting_progress",
+            "painting_progress_gif_name",
+            # "num_frames_to_paint",
+            "painted_gif_name",
+            "enable_multiprocessing"
+        ]
+
+        # Save user selected parameters
+        for param_key in parameter_keys:
+            param_value = user_selected_parameters.get(param_key, "Key not present")
+            if param_value == "Key not present":
+                print("Key not present", "\n")
+                continue
+            else:
+                json_parameters[param_key]["value"] = param_value
+        # Handle case of num_hill_climb_iteration dual slider parameters
+        json_parameters["num_hill_climb_iterations"]["current_lower_value"] = user_selected_parameters['hill_climb_min_iterations']
+        json_parameters["num_hill_climb_iterations"]["current_lower_value"] = user_selected_parameters['hill_climb_max_iterations']
+
+
+        # Save image dimensions and name of file extention
+        json_parameters["vector_field_origin_shift"]["target_previous_height"] = self.target_height
+        json_parameters["vector_field_origin_shift"]["target_previous_width"] = self.target_width
+        json_parameters["vector_field_origin_shift"]["target_previous_extention"] = self.file_ext
+
+
+        print("Saving parameters to JSON file:", json_parameters)
+        # dump to json 
+        write_parameter_json(json_parameters)
+
+
+
     def run(self):
         """Start the UI main loop and return the result based on user action"""
         self.returned_dict_command = None  # Reset result
         self.root.mainloop()  # Run the Tkinter main loop
         return self.returned_dict_command  # Return the result set by button actions or closing
 
-        # modify the run method and the methods inside param ui to return values in 3 cases:
-        # Case 1: User closed the "X" button
-        # return {"command":"user_closed_param_ui_window"}
-
-        # Case 2: User pressed button1 (Select target and texture button)
-        # return {"command":"reselect_target_texture"}
-
-        # Case 3: User pressed button2 (Submit button)
-        # return {"command":"run", "parameters":<parameter dictionary obtained>}
 
 def get_command_from_parameter_ui(target, target_gif_frames=None):
     """
@@ -1207,25 +1248,8 @@ def get_command_from_parameter_ui(target, target_gif_frames=None):
     result = ui.run()
     return result
 
-# def get_command_from_parameter_ui(target, texture):
-#     # Initialises the GUI and returns its output
-#     # init gui
-#     # call its run method to get output
-#     # return output
 
 
-# Inside another file:
-# import get_command_from_parameter_ui from parameter_ui
-
-# get_command_from_parameter_ui("C:\\Git Repos\\hill-climb-painter\\readme_stuff\\shrek_original.gif", 
-#                               ['C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0001.png'])
-
-
-# Take a look at the run method and clarify requirements before coding
-
-
-
-# in other file...
 if __name__ == "__main__":
 
     # path_of_target = "C:\\Git Repos\\hill-climb-painter\\readme_stuff\\shrek_original.gif"
@@ -1265,7 +1289,9 @@ if __name__ == "__main__":
     ]
 
     result = get_command_from_parameter_ui(path_of_target, target_gif_frames=gif_frames_full_filepaths)
-    print(result)
+
+    for k,v in result["parameters"].items():
+        print(f"{k}: {v}\n")
 
     # print(result["parameters"]["vector_field_function"])
 

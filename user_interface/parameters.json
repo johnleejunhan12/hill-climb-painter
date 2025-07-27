@@ -1,83 +1,164 @@
 {
-  "computation_size": {
-    "value": 300,
-    "min_value": 100,
-    "max_value": 500
-  },
-  "num_textures": {
-    "value": 500,
-    "min_value": 100,
-    "max_value": 1000
-  },
-  "num_hill_climb_iterations": {
-    "current_lower_value": 5,
-    "current_upper_value": 50,
-    "min_value": 1,
-    "max_value": 500
-  },
-  "texture_opacity": {
-    "value": 100,
-    "min_value": 50,
-    "max_value": 100
-  },
-  "initial_texture_width": {
-    "value": 100,
-    "min_value": 10,
-    "max_value": 200
-  },
-  "uniform_texture_size": {
-    "value": true
-  },
-  "allow_early_termination": {
-    "value": true
-  },
-  "failed_iterations_threshold": {
-    "value": 100,
-    "min_value": 1,
-    "max_value": 300
-  },
-  "enable_vector_field": {
-    "value": true
-  },
-  "vector_field_f": {
-    "value": "x-3*y/(x**2 + y**2 + 1)"
-  },
-  "vector_field_g": {
-    "value": "3*y-x"
-  },
-  "vector_field_origin_shift": {
-    "value": [[160, 119], [157, 117], [157, 117], [157, 117], [157, 117], [157, 117], [157, 117], [157, 117], [155, 129], [154, 138], [154, 140], [155, 142], [164, 153], [193, 169], [218, 178], [226, 182], [243, 186], [262, 187], [271, 184], [280, 173]],
-    "target_previous_height": 189,
-    "target_previous_width": 219,
-    "target_prev_extention": ".png"
-  },
-  "display_painting_progress": {
-    "value": true
-  },
-  "display_placement_progress": {
-    "value": false
-  },
-  "display_final_image": {
-    "value": false
-  },
-  "output_image_size": {
-    "value": 1000,
-    "min_value": 500,
-    "max_value": 4000
-  },
-  "output_image_name": {
-    "value": "painted_image_output"
-  },
-  "create_gif_of_painting_progress": {
-    "value": false
-  },
-  "painting_progress_gif_name": {
-    "value": "painting_progress_gif"
-  },
-  "painted_gif_name": {
-    "value": "painted_gif_output"
-  },
-  "enable_multiprocessing": {
-    "value": false
-  }
+    "computation_size": {
+        "value": 334,
+        "min_value": 100,
+        "max_value": 500
+    },
+    "num_textures": {
+        "value": 291,
+        "min_value": 100,
+        "max_value": 1000
+    },
+    "num_hill_climb_iterations": {
+        "current_lower_value": 50,
+        "current_upper_value": 50,
+        "min_value": 1,
+        "max_value": 500
+    },
+    "texture_opacity": {
+        "value": 100,
+        "min_value": 50,
+        "max_value": 100
+    },
+    "initial_texture_width": {
+        "value": 94,
+        "min_value": 10,
+        "max_value": 200
+    },
+    "uniform_texture_size": {
+        "value": true
+    },
+    "allow_early_termination": {
+        "value": true
+    },
+    "failed_iterations_threshold": {
+        "value": 300,
+        "min_value": 1,
+        "max_value": 300
+    },
+    "enable_vector_field": {
+        "value": true
+    },
+    "vector_field_f": {
+        "value": "-x+y"
+    },
+    "vector_field_g": {
+        "value": "-x-y"
+    },
+    "vector_field_origin_shift": {
+        "value": [
+            [
+                152,
+                218
+            ],
+            [
+                150,
+                214
+            ],
+            [
+                150,
+                214
+            ],
+            [
+                150,
+                214
+            ],
+            [
+                150,
+                214
+            ],
+            [
+                152,
+                210
+            ],
+            [
+                157,
+                188
+            ],
+            [
+                164,
+                167
+            ],
+            [
+                188,
+                143
+            ],
+            [
+                245,
+                124
+            ],
+            [
+                259,
+                140
+            ],
+            [
+                219,
+                202
+            ],
+            [
+                162,
+                182
+            ],
+            [
+                181,
+                133
+            ],
+            [
+                218,
+                137
+            ],
+            [
+                215,
+                171
+            ],
+            [
+                182,
+                166
+            ],
+            [
+                212,
+                130
+            ],
+            [
+                243,
+                144
+            ],
+            [
+                217,
+                162
+            ]
+        ],
+        "target_previous_height": 189,
+        "target_previous_width": 219,
+        "target_previous_extention": ".gif"
+    },
+    "display_painting_progress": {
+        "value": false
+    },
+    "display_placement_progress": {
+        "value": true
+    },
+    "display_final_image": {
+        "value": true
+    },
+    "output_image_size": {
+        "value": 2682,
+        "min_value": 500,
+        "max_value": 4000
+    },
+    "output_image_name": {
+        "value": "painted_image_output"
+    },
+    "create_gif_of_painting_progress": {
+        "value": false
+    },
+    "painting_progress_gif_name": {
+        "value": ""
+    },
+    "painted_gif_name": {
+        "value": "painted_gif_output"
+    },
+    "enable_multiprocessing": {
+        "value": true
+    }
 }

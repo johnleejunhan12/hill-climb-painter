@@ -506,7 +506,7 @@ class CoordinateSelectorUI:
         if not self.is_single_image:
             self.instruction_label = ttk.Label(
                 self.main_frame,
-                text="Hold right click for faster selection. Press 'Reset all previous selections' to start over.",
+                text="Hold right click for faster selection. Press 'Reset All' to start over.",
                 font=('Arial', WindowConfig.SUBTITLE_FONT_SIZE, 'italic'),
                 foreground='blue',
                 background="#f7f7fa"
@@ -568,7 +568,7 @@ class CoordinateSelectorUI:
         # Create buttons with equal spacing
         self.clear_button = ttk.Button(
             button_frame,
-            text="Clear" if self.is_single_image else "Reset all previous selections",
+            text="Clear" if self.is_single_image else "Reset All",
             command=self._clear_all_selections,
             style='Red.TButton'
         )
@@ -984,7 +984,7 @@ def create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_o
 if __name__ == "__main__":
     filepaths_of_frames_or_image = ["target_image/cat.jpg", "target_image/circles.png", "target_image/dark.png"]
 
-    filepaths_of_frames_or_image = "target_image/chameleon.png"
+    # filepaths_of_frames_or_image = "target_image/chameleon.png"
 
     coords = create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_of_target=265, master=None)
-    print(coords)
+    print(coords)   
