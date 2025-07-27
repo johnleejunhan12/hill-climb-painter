@@ -152,7 +152,7 @@ class TargetTextureSelectorUI(tk.Tk):
                 '.png',
                 is_select_multiple_files=True,
                 window_title="Select texture(s)",
-                custom_filepath=os.path.join(os.path.dirname(__file__), 'texture_presets')
+                custom_filepath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'texture_presets')
             )
             paths = selector_single.select_file()
             if isinstance(paths, str):

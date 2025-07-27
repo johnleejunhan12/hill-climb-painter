@@ -4,7 +4,7 @@ from user_interface.parameter_ui import *
 from utilities import extract_gif_frames_to_output_folder_and_get_approx_fps 
 
 
-def get_target_and_textures(is_prompt_user_before_quit=False):
+def get_target_and_textures():
     # 1) Create target and texture folders, will not be modified if already exist
     target_folder_fullpath = create_folder("target")
     texture_folder_fullpath = create_folder("texture")
@@ -23,7 +23,7 @@ def get_target_and_textures(is_prompt_user_before_quit=False):
     else:
         initial_texture_list = get_image_file_paths(texture_folder_fullpath)
 
-    select_target_and_texture_ui = TargetTextureSelectorUI(is_prompt_user_before_quit = is_prompt_user_before_quit,
+    select_target_and_texture_ui = TargetTextureSelectorUI(is_prompt_user_before_quit = True,
                                                            initial_selected_image_path=initial_target_filepath,
                                                            initial_selected_texture_paths=initial_texture_list)
     
@@ -59,11 +59,12 @@ def get_target_and_textures(is_prompt_user_before_quit=False):
         clear_folder_contents(original_gif_frames_full_folder_path)
         clear_folder_contents(painted_gif_frames_full_folder_path)
 
-        # Export gif frames as png file into the original_gif_frames folder and find the approximate fps of the gif.
+        # Export all gif frames as png file into the original_gif_frames folder and find the approximate fps of the gif.
         # If max_number_of_extracted_frames is lesser than number of frames in the gif, approx_fps will be smaller than the number of frames in gif to keep total duration roughly the same
+        
         approx_fps = extract_gif_frames_to_output_folder_and_get_approx_fps(
             full_path_to_gif=target,
-            max_number_of_extracted_frames=10000000000,
+            max_number_of_extracted_frames=10000000000,   # max number of frames as parameter (we want all the frames)
             output_folder=original_gif_frames_full_folder_path
         )
 
@@ -78,18 +79,26 @@ def get_target_and_textures(is_prompt_user_before_quit=False):
     return target, textures, original_gif_frames
 
 
+def run_painting_algorithm(param_dict):
+    print(param_dict)
+    # for k,v in param_dict.items():
+    #     print(k, v)
+    quit()
+
+
 if __name__ == "__main__":
 
     print(f"My __name__ is: {__name__}")
+
         
-    target_filepath, texture_filepath_list, original_gif_frames_file_path_list = get_target_and_textures(is_prompt_user_before_quit=True)
+    TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST = get_target_and_textures()
     print("\n")
-    print('target_filepath  ',target_filepath)
-    print('texture_filepath_list    ', texture_filepath_list)
-    print('original_gif_frames_file_path_list   ', original_gif_frames_file_path_list) # original_gif_frames_file_path_list might be None 
+    print('TARGET_FILEPATH  ',TARGET_FILEPATH)
+    print('TEXTURE_FILEPATH_LIST    ', TEXTURE_FILEPATH_LIST)
+    print('ORIGINAL_GIF_FRAMES_FILE_PATH_LIST   ', ORIGINAL_GIF_FRAMES_FILE_PATH_LIST) # original_gif_frames_file_path_list might be None 
 
     while True:
-        ui_return_value = get_command_from_parameter_ui(target_filepath, target_gif_frames=original_gif_frames_file_path_list)
+        ui_return_value = get_command_from_parameter_ui(TARGET_FILEPATH, target_gif_frames=ORIGINAL_GIF_FRAMES_FILE_PATH_LIST)
         command = ui_return_value["command"]
 
         # Case 1: User exit parameter UI
@@ -100,14 +109,13 @@ if __name__ == "__main__":
         # Case 2: User reselects target and/or texture
         elif command == "reselect_target_texture":
             print("User wants to reselect target and texture")
-            target_filepath, texture_filepath_list, original_gif_frames_file_path_list = get_target_and_textures(is_prompt_user_before_quit=True)
+            TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST = get_target_and_textures()
 
         # Case 3: User runs the hill climbing algorithm
         elif command == "run":
-            print("Run hill climb algo with params")
+            print("Run hill climb algo with params\n")
             parameters = ui_return_value["parameters"]
-            for k,v in parameters.items():
-                print(k,v)
+            run_painting_algorithm(parameters)
 
         # Case 4: Error
         else:

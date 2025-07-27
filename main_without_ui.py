@@ -1,6 +1,5 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from numpy.ma.core import ones_like, zeros_like
 from utilities import *
 from rectangle import *
 from pygame_display import *
@@ -20,7 +19,7 @@ is_print_hill_climb_progress_in_console = False
 
 # Parameter tab:
 # 1) Computation size (single slider)
-resize_target_shorter_side_of_target = 200
+resize_target_shorter_side_of_target = 500
 
 # 2) Add N textures (single slider)
 num_shapes_to_draw = 1000 # range between 100 and 5000 in slider widget
@@ -53,7 +52,10 @@ fail_threshold_before_terminating_hill_climb = 100
 # 9) Enable vector field (toggle visibility checkbox)
 is_enable_vector_field = True
 # 9i) Edit vector field equation (button)
-vector_field_function = lambda x,y: (x+y, x-y)
+# vector_field_function = lambda x,y: (x+y, x-y)
+from user_interface.vector_field_equation_ui import VectorFieldVisualizer
+vector_field_function = VectorFieldVisualizer.get_function_from_string_equations("-x", "-y")
+
 # 9ii) Shift vector field origin (button)
 field_center_x, field_center_y = 0,0
 
@@ -81,7 +83,7 @@ recreate_number_of_frames_in_original_gif = N
 gif_painting_of_target_gif = "painted_gif_output"
 
 # 3) Enable multiprocessing for batch frame processing 
-is_enable_multiprocessing_for_batch_frame_processing = True # ensures pygame display is not shown if set to true
+is_enable_multiprocessing_for_batch_frame_processing = False # ensures pygame display is not shown if set to true
 
 
 

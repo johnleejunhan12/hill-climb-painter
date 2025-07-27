@@ -1,11 +1,11 @@
 {
     "computation_size": {
-        "value": 334,
+        "value": 263,
         "min_value": 100,
         "max_value": 500
     },
     "num_textures": {
-        "value": 291,
+        "value": 557,
         "min_value": 100,
         "max_value": 1000
     },
@@ -21,18 +21,18 @@
         "max_value": 100
     },
     "initial_texture_width": {
-        "value": 94,
+        "value": 146,
         "min_value": 10,
         "max_value": 200
     },
     "uniform_texture_size": {
-        "value": true
+        "value": false
     },
     "allow_early_termination": {
         "value": true
     },
     "failed_iterations_threshold": {
-        "value": 300,
+        "value": 108,
         "min_value": 1,
         "max_value": 300
     },
@@ -48,92 +48,16 @@
     "vector_field_origin_shift": {
         "value": [
             [
-                152,
-                218
-            ],
-            [
-                150,
-                214
-            ],
-            [
-                150,
-                214
-            ],
-            [
-                150,
-                214
-            ],
-            [
-                150,
-                214
-            ],
-            [
-                152,
-                210
-            ],
-            [
-                157,
-                188
-            ],
-            [
-                164,
-                167
-            ],
-            [
-                188,
-                143
-            ],
-            [
-                245,
-                124
-            ],
-            [
-                259,
-                140
-            ],
-            [
-                219,
-                202
-            ],
-            [
-                162,
-                182
-            ],
-            [
-                181,
-                133
-            ],
-            [
-                218,
-                137
-            ],
-            [
-                215,
-                171
-            ],
-            [
-                182,
-                166
-            ],
-            [
-                212,
-                130
-            ],
-            [
-                243,
-                144
-            ],
-            [
-                217,
-                162
+                104,
+                117
             ]
         ],
-        "target_previous_height": 189,
-        "target_previous_width": 219,
-        "target_previous_extention": ".gif"
+        "target_previous_height": 1080,
+        "target_previous_width": 1080,
+        "target_previous_extention": ".png"
     },
     "display_painting_progress": {
-        "value": false
+        "value": true
     },
     "display_placement_progress": {
         "value": true
@@ -142,7 +66,7 @@
         "value": true
     },
     "output_image_size": {
-        "value": 2682,
+        "value": 2096,
         "min_value": 500,
         "max_value": 4000
     },
@@ -159,6 +83,6 @@
         "value": "painted_gif_output"
     },
     "enable_multiprocessing": {
-        "value": true
+        "value": false
     }
 }

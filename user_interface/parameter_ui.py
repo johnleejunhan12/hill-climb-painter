@@ -98,7 +98,7 @@ class ParameterUI:
             if gif_frames_full_filepath_list is None:
                 raise AssertionError("Extention is gif but no gif frames are provided for ParameterUI")
         # Abstracted dimensions for first tab components
-        self.PARAM_COMPONENT_WIDTH = 500
+        self.PARAM_COMPONENT_WIDTH = 530
         self.PARAM_SLIDER_HEIGHT = 100
         self.PARAM_DUAL_SLIDER_HEIGHT = 115
         self.PARAM_CHECKBOX_HEIGHT = 25
@@ -258,7 +258,7 @@ class ParameterUI:
         
         if self.list_of_coord_for_shifting_vector_field_origin == [[]]: # Case where parameter json contains [[]]
             self.is_shift_origin_coord_selected = False
-            
+
         if self.is_shift_origin_coord_selected:
             self.initial_choose_vector_eqn_btn_label = \
                 f"Shift origin to {str(tuple(self.list_of_coord_for_shifting_vector_field_origin[0]))}" if self.file_ext != ".gif" else f"Shift origin to {str(tuple(self.list_of_coord_for_shifting_vector_field_origin[0]))}, {str(tuple(self.list_of_coord_for_shifting_vector_field_origin[1]))}, ..."
@@ -513,10 +513,10 @@ class ParameterUI:
             root.geometry(f"{width}x{height}+{x}+{y}")
 
         # Set window size and center it
-        window_width = 540
-        window_height = 800
+        window_width = 570
+        window_height = 850
         center_window(self.root, window_width, window_height)
-        self.root.minsize(window_width, 540)   # Set minimum window size (width, height)
+        self.root.minsize(window_width, 570)   # Set minimum window size (width, height)
         self.root.configure(bg='white')
         self.root.resizable(True, True) ################# Make window resizable? resize this?
 
@@ -695,7 +695,7 @@ class ParameterUI:
             init_val=self.i_computation_size, 
             width=self.PARAM_COMPONENT_WIDTH, 
             title="1) Computation size: <current_value> pixels", 
-            subtitle="- Increase to capture more image detail, decrease for speed\n- Slider will reset existing selection of vector field origin translation coordinates", 
+            subtitle="- Increase to capture more image detail, decrease for speed\n- Slider movement resets existing selection of vector field origin translation coordinates", 
             is_set_width_to_parent=True, 
             bg_color=color, 
             command=self.on_computation_size_slider_change
@@ -1062,14 +1062,19 @@ class ParameterUI:
         # prereq: either gif frames Or target image
         self.resize_shorter_side_of_target = self.computation_size_slider.get()
 
-        if self.file_ext != ".gif":  # Non GIF case
-            user_choosen_coords_list = create_coord_selector_UI(self.target_filepath, self.resize_shorter_side_of_target, master=self.root)
-            label = "Shift origin to: " + str(tuple(user_choosen_coords_list[0]))
-        
-        else: # GIF case
-            user_choosen_coords_list = create_coord_selector_UI(self.gif_frames_full_filepath_list, self.resize_shorter_side_of_target, master=self.root)
-            label = "Shift origin to: " + str(tuple(user_choosen_coords_list[0]))+", "+str(tuple(user_choosen_coords_list[1]))+"..."
-
+        for _ in range(1):
+            if self.file_ext != ".gif":  # Non GIF case
+                user_choosen_coords_list = create_coord_selector_UI(self.target_filepath, self.resize_shorter_side_of_target, master=self.root)
+                if user_choosen_coords_list is None:
+                    break
+                label = "Shift origin to: " + str(tuple(user_choosen_coords_list[0]))
+            
+            else: # GIF case
+                user_choosen_coords_list = create_coord_selector_UI(self.gif_frames_full_filepath_list, self.resize_shorter_side_of_target, master=self.root)
+                if user_choosen_coords_list is None:
+                    break
+                label = "Shift origin to: " + str(tuple(user_choosen_coords_list[0]))+", "+str(tuple(user_choosen_coords_list[1]))+"..."
+            
         # If UI returns coordinates
         if user_choosen_coords_list is not None:
             # Update the current state of UI
@@ -1080,15 +1085,19 @@ class ParameterUI:
             self.style.configure("button_shift_vector_field.TButton", foreground="black")
             # Enable submit button
             self.button2.config(state="normal")
+            
 
     # Adjusting computation size slider will reset the selected vector field
     def on_computation_size_slider_change(self, sliderval=None):
+        # reset selected coordinates
         self.is_shift_origin_coord_selected = False
         self.list_of_coord_for_shifting_vector_field_origin = [[]]
-        self.shift_vector_origin_btn.config(text=self.initial_choose_vector_eqn_btn_label)
+        # Make the shift vector origin button state that there are no selected coordinates
+        self.shift_vector_origin_btn.config(text="Shift origin to (?, ?)" if self.file_ext != ".gif" else "Shift origin to (?, ?), (?, ?), ...")
         self.style.configure("button_shift_vector_field.TButton", foreground="red")
+        # If Enable vector field checkbox is True and there are no coordinates selected, disable submit button
         if self.vector_field_chk.get() == True and not self.is_shift_origin_coord_selected:
-            self.button2.config(state="disabled") # disable the submit button if vector field is enabled and origin(s) not selected
+            self.button2.config(state="disabled")
 
     # Opens the window for user to define vector field
     def on_edit_vector_field(self):
