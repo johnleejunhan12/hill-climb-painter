@@ -40,16 +40,16 @@
     "value": true
   },
   "vector_field_f": {
-    "value": "x-3*y/(x**2 + y**2 + 1)"
+    "value": "x + y"
   },
   "vector_field_g": {
-    "value": "3*y-x"
+    "value": "y - x"
   },
   "vector_field_origin_shift": {
-    "value": [[160, 119], [157, 117], [157, 117], [157, 117], [157, 117], [157, 117], [157, 117], [157, 117], [155, 129], [154, 138], [154, 140], [155, 142], [164, 153], [193, 169], [218, 178], [226, 182], [243, 186], [262, 187], [271, 184], [280, 173]],
-    "target_previous_height": 189,
-    "target_previous_width": 219,
-    "target_prev_extention": ".png"
+    "value": [[]],
+    "target_previous_height": 0,
+    "target_previous_width": 0,
+    "target_prev_extention": ".jpg"
   },
   "display_painting_progress": {
     "value": true

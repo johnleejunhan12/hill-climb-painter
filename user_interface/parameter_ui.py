@@ -3,6 +3,7 @@ import tkinter as tk
 
 import os
 import warnings
+
 print("Working directory:", os.getcwd())
 
 try:
@@ -16,9 +17,9 @@ except ImportError:
     from tkinter_components import *
 
 try:
-    from .vector_field_equation_ui import create_vector_field_visualizer
+    from .vector_field_equation_ui import *
 except ImportError:
-    from vector_field_equation_ui import create_vector_field_visualizer
+    from vector_field_equation_ui import *
 
 
 try:
@@ -45,7 +46,40 @@ def count_frames_in_gif(filepath):
             pass
     return count
 
-
+def get_image_dimensions(image_path):
+    """
+    Get the width and height of an image file in pixels.
+    
+    Args:
+        image_path (str): Path to the image file (jpg, jpeg, png, or gif)
+    
+    Returns:
+        tuple: (width, height) in pixels
+        
+    Raises:
+        FileNotFoundError: If the image file doesn't exist
+        ValueError: If the file is not a supported image format
+        Exception: For other image processing errors
+    """
+    
+    # Check if file exists
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Image file not found: {image_path}")
+    
+    # Get file extension
+    _, ext = os.path.splitext(image_path.lower())
+    supported_formats = ['.jpg', '.jpeg', '.png', '.gif']
+    
+    if ext not in supported_formats:
+        raise ValueError(f"Unsupported format: {ext}. Supported formats: {supported_formats}")
+    
+    try:
+        with Image.open(image_path) as img:
+            width, height = img.size
+            return width, height
+            
+    except Exception as e:
+        raise Exception(f"Error processing image: {str(e)}")
 
 class ParameterUI:
     def __init__(self, target_filepath, gif_frames_full_filepath_list = None):
@@ -58,7 +92,6 @@ class ParameterUI:
         self.target_filepath = target_filepath
         self.gif_frames_full_filepath_list = gif_frames_full_filepath_list # will be provided if the target is gif
 
-        self.list_of_coord_for_shifting_vector_field_origin = None
         self.file_ext = os.path.splitext(self.target_filepath)[1].lower() if self.target_filepath else None # Gets the file extention
         if self.file_ext == ".gif":
             self.num_frames_in_original_gif = count_frames_in_gif(self.target_filepath)
@@ -90,23 +123,15 @@ class ParameterUI:
         self.widget_color_idx = 0
         self.prev_color_idx = None
         
-
-        self.initial_choose_vector_eqn_btn_label = "Shift origin to (?, ?)" if self.file_ext != ".gif" else "Shift origin to (?, ?), (?, ?), ..."
-
-        # Vector field function attribute
-        self.vector_field_function = lambda x, y: (-x,-y)
-        self.f_string = None
-        self.g_string = None
-
         # Shift vector field origin attribute
         self.is_selected_vector_field_origin = False
 
         # Initialize the param dict to be returned
         self.returned_dict_command = None
 
+
         # Initialize the parameters from the param_dict
         self.create_initial_params()
-
 
         # Initialize the UI
         self._create_ui()
@@ -188,14 +213,62 @@ class ParameterUI:
         # 9) Enable vector field
         self.i_enable_vector_field_bool = get_value("enable_vector_field", assert_type=bool)
 
+
+        # 9.i) Edit vector field button
         self.i_vector_field_f_string = get_value("vector_field_f", assert_type=str)
-        self.i_vector_field_f_string = get_value("vector_field_g", assert_type=str)
+        self.i_vector_field_g_string = get_value("vector_field_g", assert_type=str)
+        self.f_string = self.i_vector_field_f_string
+        self.g_string = self.i_vector_field_g_string
+        # Vector field function attribute
+        self.vector_field_function = VectorFieldVisualizer.get_function_from_string_equations(self.i_vector_field_f_string, self.i_vector_field_g_string)
+        if self.vector_field_function is None:
+            raise ValueError("Invalid vector field equations provided in parameters.json. \n" \
+            "- Please check 'vector_field_f' and 'vector_field_g' values. \n" \
+            "- Do use 'x' and 'y' as variables in the equations and use * to multiply, e.g. 'x*y' instead of 'xy'. \n" \
+            "- Ensure that the equations do not contain division by zero or other invalid operations. (x/y is fine but not x/0 or x/(y-y))\n" \
+            "- list of valid operations: +, -, *, /, **, sin, cos, tan, exp, log, sqrt, abs.\n" \
+            "- For example, valid equations are: 'x + y', 'sin(x) + cos(y)', 'x**2 + y**2', 'sqrt(abs(x + y))'.")
 
-        self.i_vector_field_origin_shift_list_of_tuples = get_value("vector_field_origin_shift", assert_type=list)
+        # 9.ii) Shift vector field origin buttons
+        self.i_vector_field_origin_shift_list_of_coords = get_value("vector_field_origin_shift", assert_type=list)
+        self.target_previous_height = get_value("vector_field_origin_shift", "target_previous_height", assert_type=int)
+        self.target_previous_width = get_value("vector_field_origin_shift", "target_previous_width", assert_type=int)
+        self.target_prev_extention = get_value("vector_field_origin_shift", "target_prev_extention", assert_type=str)
 
+        # Check if the target image dimensions match the previous dimensions and has the same extention.
+        self.target_width, self.target_height = get_image_dimensions(self.target_filepath)
+        self.is_same_target_ext_and_dimension = self.file_ext == self.target_prev_extention and self.target_previous_height == self.target_height and self.target_previous_width == self.target_width
+        
+        print(self.target_width, self.target_height, self.file_ext, 
+              self.target_prev_extention, self.target_previous_height, self.target_previous_width)
+        
+        self.is_shift_origin_coord_selected = True
+        # If the target image dimensions match the previous dimensions and has the same extention
+        if self.is_same_target_ext_and_dimension:
+            # Check if the list of coordinates is still valid
+            if self.file_ext == ".gif" and len(self.i_vector_field_origin_shift_list_of_coords) != self.num_frames_in_original_gif:
+                print("Number of coordinates do not match number of frames in the original gif, resetting the list of coordinates for shifting vector field origin")
+                self.list_of_coord_for_shifting_vector_field_origin = [[]]  # Reset to empty list
+                self.is_shift_origin_coord_selected = False
+            elif self.file_ext != ".gif" and len(self.i_vector_field_origin_shift_list_of_coords) != 1:
+                print("Target is not gif but the list of coordinates for shifting vector field origin has more than one coordinate, resetting the list of coordinates for shifting vector field origin")
+                self.list_of_coord_for_shifting_vector_field_origin = [[]]  # Reset to empty list
+                self.is_shift_origin_coord_selected = False
+            else:
+                # Use the list of coordinates from the parameters.json
+                self.list_of_coord_for_shifting_vector_field_origin = self.i_vector_field_origin_shift_list_of_coords
+        else:
+            print("Target image dimensions have changed or extention has changed, resetting the list of coordinates for shifting vector field origin")
+            self.list_of_coord_for_shifting_vector_field_origin = [[]]  # Reset to empty list
+            self.is_shift_origin_coord_selected = False
+
+        if self.is_shift_origin_coord_selected:
+            self.initial_choose_vector_eqn_btn_label = \
+                f"Shift origin to {str(tuple(self.list_of_coord_for_shifting_vector_field_origin[0]))}" if self.file_ext != ".gif" else f"Shift origin to {str(tuple(self.list_of_coord_for_shifting_vector_field_origin[0]))}, {str(tuple(self.list_of_coord_for_shifting_vector_field_origin[1]))}, ..."
+        else:
+            self.initial_choose_vector_eqn_btn_label = "Shift origin to (?, ?)" if self.file_ext != ".gif" else "Shift origin to (?, ?), (?, ?), ..."
 
         # Output tab initial parameters
-
         # 1) Output image size
         self.i_output_image_size = get_value("output_image_size", assert_type=int)
         self.i_output_image_size_min_value = get_value("output_image_size", "min_value", assert_type=int)
@@ -417,7 +490,7 @@ class ParameterUI:
             padding=(0, 8),  # (horizontal_padding, vertical_padding)
             relief='default',
             background='#ffffff',  # white background
-            foreground='red',     # red text
+            foreground='black' if self.is_shift_origin_coord_selected else 'red',     # red text
             focuscolor='none',
             borderwidth=2
         )
@@ -488,7 +561,7 @@ class ParameterUI:
         padx,pady=1,0
         self.button1 = ttk.Button(self.dual_button_frame, text="Select target and texture", command=self.on_select_target_texture) 
         self.button1.grid(row=0, column=0, sticky="nsew", padx=padx, pady=pady)
-        self.button2 = ttk.Button(self.dual_button_frame, text="Submit", command=self.on_submit_button_press)
+        self.button2 = ttk.Button(self.dual_button_frame, text="Submit", command=self.on_submit_button_press, state="normal" if self.is_shift_origin_coord_selected else "disabled")
         self.button2.grid(row=0, column=1, sticky="nsew", padx=padx, pady=pady)
 
         self.setup_button_style()
@@ -712,7 +785,7 @@ class ParameterUI:
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
         self.scaling_chk = CustomCheckbox(self.param_frame, 
-            text="6) Fix size of texture", 
+            text="6) Constrain texture size to initial size", 
             checked=self.i_uniform_texture_size_bool, 
             width=self.PARAM_COMPONENT_WIDTH, 
             height=self.PARAM_CHECKBOX_HEIGHT, 
@@ -819,7 +892,8 @@ class ParameterUI:
             width=self.PARAM_COMPONENT_WIDTH, 
             height=self.PARAM_CHECKBOX_HEIGHT, 
             is_set_width_to_parent=True, 
-            bg_color=color
+            bg_color=color,
+            command = self.on_vector_field_checkbox_change
         )
         self.vector_field_chk.pack(fill='x', pady=self.PAD_BETWEEN_ALL_COMPONENTS)
         self.param_vis_manager.register_widget(self.vector_field_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
@@ -827,7 +901,7 @@ class ParameterUI:
         # 9.i) Edit vector field
         color, self.widget_color_idx = self.get_next_color(self.widget_color_idx+1, self.prev_color_idx)
         self.prev_color_idx = self.widget_color_idx
-        self.edit_vector_btn = ttk.Button(self.param_frame, text="(f(x,y), g(x,y)) = (-x, -y)", 
+        self.edit_vector_btn = ttk.Button(self.param_frame, text=f"(f(x,y), g(x,y)) = ({self.i_vector_field_f_string}, {self.i_vector_field_g_string})", 
                                          style="button_edit_vector_field.TButton",
                                          command=self.on_edit_vector_field)
         self.edit_vector_btn.pack(fill='x', padx=(20, 0), pady=self.PAD_BETWEEN_ALL_COMPONENTS)
@@ -973,6 +1047,20 @@ class ParameterUI:
             self.output_vis_manager.register_widget(self.multiprocessing_chk, {'fill': 'x', 'pady': self.PAD_BETWEEN_ALL_COMPONENTS})
             self.add_between_padding(self.output_frame, self.output_vis_manager)
     
+
+    ################ Enable vector field checkbox #################
+    def on_vector_field_checkbox_change(self, state=None):
+        """Handle changes to the vector field checkbox"""
+        if self.vector_field_chk.get():
+            # If vector field is enabled, check if origin coordinates are selected
+            if not self.is_selected_vector_field_origin:
+                self.button2.config(state="disabled")  # Disable the submit button if vector field is enabled and origin(s) not selected
+                self.style.configure("button_shift_vector_field.TButton", foreground="red")
+        else:
+            # If vector field is disabled, enable the submit button
+            self.button2.config(state="normal")
+
+
     ############### Vector field buttons #################
     def on_shift_vector_origin(self):
         print("Opens the window to get list of (x,y) coordinates")
@@ -985,26 +1073,31 @@ class ParameterUI:
             if user_choosen_coords_list is not None:
                 self.list_of_coord_for_shifting_vector_field_origin = user_choosen_coords_list
                 self.is_selected_vector_field_origin = True
-                label = "Shift origin to: " + str(user_choosen_coords_list[0])
+                label = "Shift origin to: " + str(tuple(user_choosen_coords_list[0]))
                 self.shift_vector_origin_btn.config(text=label)
                 self.style.configure("button_shift_vector_field.TButton", foreground="black")
+                self.button2.config(state="normal")  # Enable the submit button
+                
 
         # GIF case
         else:
             user_choosen_coords_list = create_coord_selector_UI(self.gif_frames_full_filepath_list, self.resize_shorter_side_of_target, master=self.root)
             if user_choosen_coords_list is not None:
                 self.list_of_coord_for_shifting_vector_field_origin = user_choosen_coords_list
-                label = "Shift origin to: " + str(user_choosen_coords_list[0])+", "+str(user_choosen_coords_list[1])+"..."
+                label = "Shift origin to: " + str(tuple(user_choosen_coords_list[0]))+", "+str(tuple(user_choosen_coords_list[1]))+"..."
                 self.shift_vector_origin_btn.config(text=label)
                 self.style.configure("button_shift_vector_field.TButton", foreground="black")
+                self.button2.config(state="normal")  # Enable the submit button
 
 
     # Adjusting computation size slider will reset the selected vector field
     def on_computation_size_slider_change(self, sliderval=None):
         self.is_selected_vector_field_origin = False
-        self.list_of_coord_for_shifting_vector_field_origin = None
+        self.list_of_coord_for_shifting_vector_field_origin = [[]]
         self.shift_vector_origin_btn.config(text=self.initial_choose_vector_eqn_btn_label)
         self.style.configure("button_shift_vector_field.TButton", foreground="red")
+        if self.vector_field_chk.get() == True and self.is_shift_origin_coord_selected:
+            self.button2.config(state="disabled") # disable the submit button if vector field is enabled and origin(s) not selected
 
         
     # Opens the window for user to define vector field
@@ -1021,13 +1114,12 @@ class ParameterUI:
         }
         custom_grid_sizes = [10, 20, 30]
         self.root.update()
-        if self.f_string is None or self.g_string is None:
-            result = create_vector_field_visualizer(custom_presets, custom_grid_sizes, master=self.root)
-        else:
-            result = create_vector_field_visualizer(custom_presets, custom_grid_sizes, master=self.root, initial_f_string=self.f_string, initial_g_string=self.g_string)
+        print("f_string, g_string from param UI",self.f_string, self.g_string)
+        result = create_vector_field_visualizer(custom_presets, custom_grid_sizes, master=self.root, initial_f_string=self.f_string, initial_g_string=self.g_string)
 
         if result is not None:
             function_string = result[0]
+            print("Function string returned from vector field visualizer:", function_string)
             # Update button text with the returned string
             self.edit_vector_btn.configure(text=f"(f(x,y), g(x,y)) = {function_string}")
             # Update the vector field function
@@ -1035,17 +1127,7 @@ class ParameterUI:
             # update the f_string and g_string
             expr = function_string.strip("()")  # Remove the parentheses
             self.f_string, self.g_string = [part.strip() for part in expr.split(",")]  # Split by comma and strip whitespace
-
-    def on_debug_vector_field(self):
-        print(f"[DEBUG] vector_field_function id: {id(self.vector_field_function)}")
-        try:
-            print("[DEBUG] self.list_of_coord_for_shifting_vector_field_origin=", self.list_of_coord_for_shifting_vector_field_origin)
-            print(f"[DEBUG] vector_field_function(1, 1): {self.vector_field_function(1, 1)}")
             print(self.f_string, self.g_string)
-            # print(self.list_of_coord_for_shifting_vector_field_origin)
-        except Exception as e:
-            print(f"[DEBUG] Error calling vector_field_function: {e}")
-    ######################################################
 
     def get_parameters(self):
         """
@@ -1153,13 +1235,40 @@ if __name__ == "__main__":
     # print(command)
 
     
-    path_of_target = "C:\\Git Repos\\hill-climb-painter\\target_image\\cat.jpg"
+    # path_of_target = "C:\\Git Repos\\hill-climb-painter\\target_image\\cat.jpg"
+    # result = get_command_from_parameter_ui(path_of_target, target_gif_frames=None)
+    # print(result)
 
-    ui = ParameterUI(target_filepath=path_of_target, gif_frames_full_filepath_list=None)
-    ui.run()
-    
 
-    # quit()
+    path_of_target = "C:\\Git Repos\\hill-climb-painter\\readme_stuff\\shrek_original.gif"
+    gif_frames_full_filepaths = [
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0000.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0001.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0002.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0003.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0004.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0005.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0006.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0007.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0008.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0009.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0010.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0011.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0012.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0013.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0014.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0015.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0016.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0017.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0018.png",
+        "C:\\Git Repos\\hill-climb-painter\\testing_gif_frames\\shrek-somebody-ezgif.com-crop (1)_frame_0019.png"
+    ]
+
+    result = get_command_from_parameter_ui(path_of_target, target_gif_frames=gif_frames_full_filepaths)
+    print(result)
+
+    # print(result["parameters"]["vector_field_function"])
+
     # path_of_target = "C:\\Git Repos\\hill-climb-painter\\readme_stuff\\shrek_original.gif"
     # gif_frames_full_filepaths = ['C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0000.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0001.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0002.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0003.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0004.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0005.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0006.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0007.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0008.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0009.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0010.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0011.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0012.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0013.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0014.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0015.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0016.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0017.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0018.png', 'C:\\Git Repos\\hill-climb-painter\\texture\\shrek_original_frame_0019.png']
     

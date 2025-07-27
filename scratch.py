@@ -40,9 +40,11 @@
 
         # 9.i) Edit vector field and # 9.ii) Shift vector field origin buttons
         self.i_vector_field_f_string = get_value("vector_field_f", assert_type=str)
-        self.i_vector_field_f_string = get_value("vector_field_g", assert_type=str)
+        self.i_vector_field_g_string = get_value("vector_field_g", assert_type=str)
+        
 
-        self.i_vector_field_origin_shift_list_of_tuples = get_value("vector_field_origin_shift", assert_type=list)
+        # (done)
+        # self.i_vector_field_origin_shift_list_of_tuples = get_value("vector_field_origin_shift", assert_type=list)
 
 
         # # (done)

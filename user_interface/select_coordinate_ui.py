@@ -706,7 +706,7 @@ class CoordinateSelectorUI:
 
     def _confirm_selection_if_last_image(self):
         if self.selected_x is not None and self.selected_y is not None:
-            self.selected_coordinates.append((self.selected_x, self.selected_y))
+            self.selected_coordinates.append([self.selected_x, self.selected_y])
             if self.current_image_index == len(self.image_paths) - 1:
                 if len(self.image_paths) > 1:
                     self._show_replay_window()
@@ -722,7 +722,7 @@ class CoordinateSelectorUI:
 
     def _confirm_selection(self):
         if self.selected_x is not None and self.selected_y is not None:
-            self.selected_coordinates.append((self.selected_x, self.selected_y))
+            self.selected_coordinates.append([self.selected_x, self.selected_y])
             if self.current_image_index == len(self.image_paths) - 1:
                 if len(self.image_paths) > 1:
                     self._show_replay_window()
@@ -966,7 +966,8 @@ class CoordinateSelectorUI:
         self.replay_fps = fps
         self.replay_fps_value_label.config(text=f"{fps:.1f} FPS")
 
-    def run(self) -> Union[Tuple[int, int], List[Tuple[int, int]]]:
+    def run(self): 
+        """Run the coordinate selection UI, returns list of list of coordinates or None if closed without selection."""
         self.root.mainloop()
         if not self.window_closed_properly:
             print("user closed window, return None")
@@ -983,7 +984,7 @@ def create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_o
 if __name__ == "__main__":
     filepaths_of_frames_or_image = ["target_image/cat.jpg", "target_image/circles.png", "target_image/dark.png"]
 
-    # filepaths_of_frames_or_image = "target_image/chameleon.png"
+    filepaths_of_frames_or_image = "target_image/chameleon.png"
 
     coords = create_coord_selector_UI(filepaths_of_frames_or_image, resize_shorter_side_of_target=265, master=None)
     print(coords)

@@ -162,6 +162,7 @@ class VectorFieldVisualizer:
         self.f_entry = ttk.Entry(input_frame, font=('Segoe UI', 12), style='Modern.TEntry')
         self.f_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), pady=5)
         # Set initial f string if provided, otherwise use preset
+        print("Using initial f string:", self.initial_f_string)
         if self.initial_f_string is not None:
             self.f_entry.insert(0, self.initial_f_string)
         else:
@@ -515,6 +516,131 @@ class VectorFieldVisualizer:
             plt.close(self.fig)
         self.root.quit()
         self.root.destroy()
+
+
+    @staticmethod
+    def get_function_from_string_equations(f_eqn_string, g_eqn_string):
+        """
+        Create a Python function for a vector field from string equations.
+        
+        Parameters:
+        f_eqn_string: str
+            Mathematical expression for f(x,y)
+        g_eqn_string: str
+            Mathematical expression for g(x,y)
+        
+        Returns:
+        function or None:
+            A function that takes x, y (scalar or array-like) and returns (p, q) where
+            p = f(x,y) and q = g(x,y). Returns None if either expression is invalid.
+        """
+        # Initialize SymPy symbols
+        x, y = sp.symbols('x y', real=True)
+        
+        # Validate inputs
+        try:
+            f_text = f_eqn_string.strip() if f_eqn_string else ""
+            g_text = g_eqn_string.strip() if g_eqn_string else ""
+            
+            if not f_text or not g_text:
+                return None
+            
+            # Define allowed symbols and functions
+            allowed_symbols = {x, y}
+            allowed_functions = ['sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 
+                               'sinh', 'cosh', 'tanh', 'asin', 'acos', 'atan',
+                               'abs', 'sign', 'floor', 'ceiling']
+            
+            # Create safe namespace
+            safe_dict = {func: getattr(sp, func) for func in allowed_functions if hasattr(sp, func)}
+            safe_dict.update({'x': x, 'y': y, 'pi': sp.pi, 'e': sp.E})
+            
+            # Parse expressions
+            f_expr = sympify(f_text, locals=safe_dict)
+            g_expr = sympify(g_text, locals=safe_dict)
+            
+            # Check if expressions contain only allowed symbols
+            f_symbols = f_expr.free_symbols
+            g_symbols = g_expr.free_symbols
+            
+            if not (f_symbols <= allowed_symbols) or not (g_symbols <= allowed_symbols):
+                return None
+            
+            # Convert to numerical functions
+            f_func = lambdify([x, y], f_expr, 'numpy')
+            g_func = lambdify([x, y], g_expr, 'numpy')
+            
+            # Test evaluation with sample values
+            try:
+                x_array = np.array([0.1])
+                y_array = np.array([0.1])
+                p = f_func(x_array, y_array)
+                q = g_func(x_array, y_array)
+                if not (np.isscalar(p) or isinstance(p, np.ndarray)) or not (np.isscalar(q) or isinstance(q, np.ndarray)):
+                    return None
+            except Exception:
+                return None
+                
+            # Create the vector field function
+            def vector_field_function(x, y):
+                """
+                Vector field function that returns (f(x,y), g(x,y))
+                
+                Parameters:
+                x, y: float or array-like
+                    Input coordinates
+                    
+                Returns:
+                tuple: (p, q) where p = f(x,y) and q = g(x,y)
+                       Returns (0, 0) for undefined values
+                """
+                try:
+                    # Convert inputs to numpy arrays
+                    x_array = np.asarray(x, dtype=float)
+                    y_array = np.asarray(y, dtype=float)
+                    
+                    # Evaluate functions
+                    p = f_func(x_array, y_array)
+                    q = g_func(x_array, y_array)
+                    
+                    # Handle scalar results
+                    if np.isscalar(p):
+                        p = np.array([p])
+                    if np.isscalar(q):
+                        q = np.array([q])
+                    
+                    # Replace invalid values with zeros
+                    p = np.where(np.isfinite(p), p, 0)
+                    q = np.where(np.isfinite(q), q, 0)
+                    
+                    # Return appropriate format based on input
+                    if np.isscalar(x) and np.isscalar(y):
+                        return float(p[0]), float(q[0])
+                    else:
+                        return p, q
+                        
+                except Exception:
+                    # Return zeros for any evaluation error
+                    if np.isscalar(x) and np.isscalar(y):
+                        return 0.0, 0.0
+                    else:
+                        return np.zeros_like(x), np.zeros_like(y)
+            
+            # Add metadata to the function
+            vector_field_function.f_expression = str(f_expr)
+            vector_field_function.g_expression = str(g_expr)
+            
+            return vector_field_function
+            
+        except Exception:
+            return None
+
+    @staticmethod
+    def check_validity_of_string_equation(f_eqn_string, g_eqn_string):
+        if VectorFieldVisualizer.get_function_from_string_equations(f_eqn_string, g_eqn_string) is not None:
+            return True
+        else:
+            return False
 
 
 def create_vector_field_visualizer(presets=None, sq_grid_size=None, master=None, initial_f_string=None, initial_g_string=None):
