@@ -37,7 +37,7 @@
         "max_value": 300
     },
     "enable_vector_field": {
-        "value": true
+        "value": false
     },
     "vector_field_f": {
         "value": "-x+y"
@@ -47,10 +47,7 @@
     },
     "vector_field_origin_shift": {
         "value": [
-            [
-                104,
-                117
-            ]
+            []
         ],
         "target_previous_height": 1080,
         "target_previous_width": 1080,
@@ -83,6 +80,6 @@
         "value": "painted_gif_output"
     },
     "enable_multiprocessing": {
-        "value": false
+        "value": true
     }
 }

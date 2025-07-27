@@ -81,9 +81,11 @@ def get_target_and_textures():
 
 def run_painting_algorithm(param_dict):
     print(param_dict)
-    # for k,v in param_dict.items():
-    #     print(k, v)
+    for k,v in param_dict.items():
+        print(k, v)
     quit()
+
+    painter = Painter(param_dict, TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST)
 
 
 if __name__ == "__main__":
