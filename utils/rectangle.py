@@ -2,7 +2,7 @@ import numpy as np
 import numba as nb
 from numba import prange
 import matplotlib.pyplot as plt
-from utilities import clamp_int
+from utils.utilities import clamp_int
 
 
 def create_random_rectangle(canvas_height, canvas_width, texture_height, texture_width, vector_field, custom_rectangle_width=200):

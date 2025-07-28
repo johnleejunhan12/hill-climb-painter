@@ -36,8 +36,29 @@ class CreateOutputGIF:
     def _gif_writer_process(self):
         """
         Process function that runs in separate process to write GIF frames.
+        Handles duplicate filenames by appending " - Copy (n)" suffixes similar to Windows.
         """
-        gif_path = os.path.join("output", f"{self.gif_file_name}.gif")
+        # Create output directory if it doesn't exist
+        os.makedirs("output", exist_ok=True)
+        
+        # Generate base filename without extension
+        base_name = self.gif_file_name
+        if base_name.lower().endswith('.gif'):
+            base_name = base_name[:-4]
+        
+        # Determine the final filename with copy numbering if needed
+        gif_filename = f"{base_name}.gif"
+        counter = 0
+        gif_path = os.path.join("output", gif_filename)
+        
+        while os.path.exists(gif_path):
+            counter += 1
+            if counter == 1:
+                gif_filename = f"{base_name} - Copy.gif"
+            else:
+                gif_filename = f"{base_name} - Copy ({counter}).gif"
+            gif_path = os.path.join("output", gif_filename)
+        
         frames = []
         
         try:

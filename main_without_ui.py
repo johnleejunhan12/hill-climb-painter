@@ -1,14 +1,14 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from utilities import *
-from rectangle import *
+from utils.utilities import *
+from utils.rectangle import *
 from pygame_display import *
-from file_operations import *
+from utils.file_operations import *
 from user_interface.select_coordinate_ui import CoordinateSelectorUI
-from vector_field import VectorField
-from create_painted_png import CreateOutputImage
-from create_paint_progress_gif import CreateOutputGIF
-from numba_warmup import warmup_numba
+from utils.vector_field import VectorField
+from utils.create_painted_png import CreateOutputImage
+from utils.create_paint_progress_gif import CreateOutputGIF
+from utils.numba_warmup import warmup_numba
 import random
 
 import cProfile
@@ -19,10 +19,10 @@ is_print_hill_climb_progress_in_console = False
 
 # Parameter tab:
 # 1) Computation size (single slider)
-resize_target_shorter_side_of_target = 500
+resize_target_shorter_side_of_target = 200
 
 # 2) Add N textures (single slider)
-num_shapes_to_draw = 1000 # range between 100 and 5000 in slider widget
+num_shapes_to_draw = 50 # range between 100 and 5000 in slider widget
 
 # 3) Num of hill climb iterations (dual slider)
 min_hill_climb_iterations = 20 
@@ -68,7 +68,7 @@ desired_length_of_longer_side_in_painted_image = 1200 # slider between 800 and 4
 image_name = "image_output" 
 
 # 3) Create GIF of painting progress (toggle visibility checkbox)
-is_create_painting_progress_gif = False # checkbox, description is "creates gif of painting progress"
+is_create_painting_progress_gif = False  # checkbox, description is "creates gif of painting progress"
 # 3.i) GIF filename
 painting_proress_gif_name = "gif_output"
 
@@ -83,7 +83,7 @@ recreate_number_of_frames_in_original_gif = N
 gif_painting_of_target_gif = "painted_gif_output"
 
 # 3) Enable multiprocessing for batch frame processing 
-is_enable_multiprocessing_for_batch_frame_processing = False # ensures pygame display is not shown if set to true
+is_enable_multiprocessing_for_batch_frame_processing = True # ensures pygame display is not shown if set to true is_create_painting_progress_gif must be false too
 
 
 

@@ -1,7 +1,7 @@
 from user_interface.target_texture_select_ui import TargetTextureSelectorUI
-from file_operations import *
+from utils.file_operations import *
 from user_interface.parameter_ui import *
-from utilities import extract_gif_frames_to_output_folder_and_get_approx_fps 
+from utils.utilities import extract_gif_frames_to_output_folder_and_get_approx_fps 
 
 
 def get_target_and_textures():

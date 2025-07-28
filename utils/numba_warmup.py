@@ -1,6 +1,6 @@
 import time
-from rectangle import *
-from utilities import *
+from utils.rectangle import *
+from utils.utilities import *
 
 def warmup_numba():
     print("Warming up numba functions")

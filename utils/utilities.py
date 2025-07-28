@@ -60,48 +60,63 @@ def get_height_width_of_array(image_array):
     height, width = image_array.shape[:2]
     return int(height), int(width)
 
-# Export image functions 
+import os
+import numpy as np
+from PIL import Image
+from datetime import datetime
+
 def save_rgba_array_as_png(rgba_array, name_of_png, output_full_folder_path, is_append_datetime=True):
     """
     Save a normalized RGBA numpy array as a PNG file in the specified folder.
-         
+    Handles duplicate filenames by appending " - Copy (n)" suffixes similar to Windows.
+    
     Parameters:
         rgba_array (np.ndarray): A numpy array of shape (height, width, 4) with
                                 dtype=np.float32, values normalized to [0, 1]
         name_of_png (str): Name of the output PNG file (with or without .png extension)
         output_full_folder_path (str): The folder path where the PNG should be saved
         is_append_datetime (bool): If True, appends datetime to filename to ensure uniqueness.
-                               If False, uses original filename and overwrites existing files.
+                               If False, uses original filename with copy numbering if needed.
     """
     # Create output folder if it doesn't exist
     os.makedirs(output_full_folder_path, exist_ok=True)
-         
+    
     # Remove .png extension if present to work with base name
-    if name_of_png.endswith('.png'):
+    if name_of_png.lower().endswith('.png'):
         base_name = name_of_png[:-4]
     else:
         base_name = name_of_png
-         
+    
     # Generate final filename based on append_datetime setting
     if is_append_datetime:
         # Generate timestamp string (YYYYMMDD_HHMMSS_microseconds)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         final_filename = f"{base_name}_{timestamp}.png"
     else:
-        # Use original filename (will overwrite if exists)
+        # Handle potential duplicates with copy numbering
         final_filename = base_name + '.png'
-         
+        counter = 0
+        full_output_path = os.path.join(output_full_folder_path, final_filename)
+        
+        while os.path.exists(full_output_path):
+            counter += 1
+            if counter == 1:
+                final_filename = f"{base_name} - Copy.png"
+            else:
+                final_filename = f"{base_name} - Copy ({counter}).png"
+            full_output_path = os.path.join(output_full_folder_path, final_filename)
+    
     # Construct full output path
     full_output_path = os.path.join(output_full_folder_path, final_filename)
-         
+    
     # Convert normalized float32 array to uint8 (0-255 range)
     rgba_uint8 = (rgba_array * 255).astype(np.uint8)
-         
+    
     # Create PIL Image from array and save
     image = Image.fromarray(rgba_uint8, mode='RGBA')
     image.save(full_output_path)
 
-    print(f"png file saved to {full_output_path}")
+    print(f"PNG file saved to {full_output_path}")
     
     
 
@@ -382,10 +397,10 @@ def get_average_rgb_of_rgba_image(rgba_image):
     return avg_rgb.astype(np.float32)
 
 
-
 def create_gif_from_pngs(png_filepath: str, export_gif_full_file_path: str, frames_per_second: float = 10.0, file_name: str = "output.gif") -> str:
     """
     Reads all PNG files in a specified directory and creates an animated GIF.
+    Handles duplicate filenames with Windows-style copy numbering.
     
     Args:
         png_filepath (str): Directory path containing PNG files to be converted
@@ -426,9 +441,11 @@ def create_gif_from_pngs(png_filepath: str, export_gif_full_file_path: str, fram
     # Sort files using natural (alphanumeric) sorting
     png_files.sort(key=natural_sort_key)
     
-    # Ensure file_name has .gif extension
-    if not file_name.lower().endswith('.gif'):
-        file_name += '.gif'
+    # Generate base filename without extension
+    if file_name.lower().endswith('.gif'):
+        base_name = file_name[:-4]
+    else:
+        base_name = file_name
     
     # Validate export directory
     if not os.path.exists(export_gif_full_file_path):
@@ -436,8 +453,18 @@ def create_gif_from_pngs(png_filepath: str, export_gif_full_file_path: str, fram
     if not os.path.isdir(export_gif_full_file_path):
         raise ValueError(f"'{export_gif_full_file_path}' is not a directory")
     
-    # Create full output path
-    output_path = os.path.join(export_gif_full_file_path, file_name)
+    # Determine the final filename with copy numbering if needed
+    gif_filename = f"{base_name}.gif"
+    counter = 0
+    output_path = os.path.join(export_gif_full_file_path, gif_filename)
+    
+    while os.path.exists(output_path):
+        counter += 1
+        if counter == 1:
+            gif_filename = f"{base_name} - Copy.gif"
+        else:
+            gif_filename = f"{base_name} - Copy ({counter}).gif"
+        output_path = os.path.join(export_gif_full_file_path, gif_filename)
     
     try:
         # Load all PNG images
@@ -595,7 +622,6 @@ def extract_gif_frames_to_output_folder_and_get_approx_fps(full_path_to_gif, max
 
 
 
-
 def get_target_full_filepath():
     """
     Returns the full filepath of the item in target folder and a boolean flag to determine if item has a .gif extension
@@ -612,7 +638,7 @@ def get_target_full_filepath():
     """
 
     # Define the target folder path
-    target_folder = os.path.join(os.getcwd(), 'target')
+    target_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'target')
     allowed_extensions = {'.png', '.jpg', '.jpeg', '.gif'}
     
     # Check if target folder exists, if not create it
@@ -645,7 +671,6 @@ def get_target_full_filepath():
     
     return file_path, is_gif
 
-
 def get_output_folder_full_filepath():
     """
     Gets the full filepath of the "output" folder in the current working directory.
@@ -655,12 +680,10 @@ def get_output_folder_full_filepath():
         str: Full absolute path to the output folder
     """
     import os
-    
-    # Get the current working directory
-    current_dir = os.getcwd()
+
     
     # Create the full path to the output folder
-    output_folder = os.path.join(current_dir, "output")
+    output_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'output')
     
     # Create the folder if it doesn't exist
     if not os.path.exists(output_folder):

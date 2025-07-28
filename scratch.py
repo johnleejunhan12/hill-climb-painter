@@ -477,4 +477,3 @@ print(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 print(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 
 
-print(1 is int)

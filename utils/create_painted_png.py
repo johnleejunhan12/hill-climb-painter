@@ -2,8 +2,8 @@ import numpy as np
 import os
 import time
 from PIL import Image
-from utilities import *
-from rectangle import *
+from utils.utilities import *
+from utils.rectangle import *
 import multiprocessing as mp
 from multiprocessing import shared_memory
 
