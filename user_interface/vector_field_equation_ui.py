@@ -409,6 +409,9 @@ class VectorFieldVisualizer:
                    Returns (0, 0) for undefined values
             """
             try:
+                # Store original input types to determine return format
+                input_is_scalar = np.isscalar(x) and np.isscalar(y)
+                
                 # Convert inputs to numpy arrays
                 x_array = np.asarray(x, dtype=float)
                 y_array = np.asarray(y, dtype=float)
@@ -417,18 +420,22 @@ class VectorFieldVisualizer:
                 p = f_func_copy(x_array, y_array)
                 q = g_func_copy(x_array, y_array)
                 
-                # Handle scalar results
-                if np.isscalar(p):
+                # Convert results to arrays for consistent handling
+                p = np.asarray(p)
+                q = np.asarray(q)
+                
+                # Ensure results are at least 1D for np.where to work properly
+                if p.ndim == 0:
                     p = np.array([p])
-                if np.isscalar(q):
+                if q.ndim == 0:
                     q = np.array([q])
                 
                 # Replace invalid values with zeros
                 p = np.where(np.isfinite(p), p, 0)
                 q = np.where(np.isfinite(q), q, 0)
                 
-                # Return appropriate format based on input
-                if np.isscalar(x) and np.isscalar(y):
+                # Return appropriate format based on original input
+                if input_is_scalar:
                     return float(p[0]), float(q[0])
                 else:
                     return p, q
@@ -595,6 +602,9 @@ class VectorFieldVisualizer:
                        Returns (0, 0) for undefined values
                 """
                 try:
+                    # Store original input types to determine return format
+                    input_is_scalar = np.isscalar(x) and np.isscalar(y)
+                    
                     # Convert inputs to numpy arrays
                     x_array = np.asarray(x, dtype=float)
                     y_array = np.asarray(y, dtype=float)
@@ -603,18 +613,22 @@ class VectorFieldVisualizer:
                     p = f_func(x_array, y_array)
                     q = g_func(x_array, y_array)
                     
-                    # Handle scalar results
-                    if np.isscalar(p):
+                    # Convert results to arrays for consistent handling
+                    p = np.asarray(p)
+                    q = np.asarray(q)
+                    
+                    # Ensure results are at least 1D for np.where to work properly
+                    if p.ndim == 0:
                         p = np.array([p])
-                    if np.isscalar(q):
+                    if q.ndim == 0:
                         q = np.array([q])
                     
                     # Replace invalid values with zeros
                     p = np.where(np.isfinite(p), p, 0)
                     q = np.where(np.isfinite(q), q, 0)
                     
-                    # Return appropriate format based on input
-                    if np.isscalar(x) and np.isscalar(y):
+                    # Return appropriate format based on original input
+                    if input_is_scalar:
                         return float(p[0]), float(q[0])
                     else:
                         return p, q

@@ -1,17 +1,17 @@
 {
     "computation_size": {
-        "value": 263,
+        "value": 500,
         "min_value": 100,
         "max_value": 500
     },
     "num_textures": {
-        "value": 557,
+        "value": 1000,
         "min_value": 100,
         "max_value": 1000
     },
     "num_hill_climb_iterations": {
-        "current_lower_value": 50,
-        "current_upper_value": 50,
+        "current_lower_value": 326,
+        "current_upper_value": 497,
         "min_value": 1,
         "max_value": 500
     },
@@ -21,18 +21,18 @@
         "max_value": 100
     },
     "initial_texture_width": {
-        "value": 146,
+        "value": 71,
         "min_value": 10,
         "max_value": 200
     },
     "uniform_texture_size": {
-        "value": true
+        "value": false
     },
     "allow_early_termination": {
         "value": true
     },
     "failed_iterations_threshold": {
-        "value": 108,
+        "value": 81,
         "min_value": 1,
         "max_value": 300
     },
@@ -40,96 +40,96 @@
         "value": true
     },
     "vector_field_f": {
-        "value": "-x+y"
+        "value": "-x"
     },
     "vector_field_g": {
-        "value": "-x-y"
+        "value": "-y"
     },
     "vector_field_origin_shift": {
         "value": [
             [
-                135,
-                114
+                247,
+                186
             ],
             [
-                135,
-                114
+                251,
+                185
             ],
             [
-                135,
-                114
+                242,
+                180
             ],
             [
-                135,
-                114
+                250,
+                165
             ],
             [
-                135,
-                114
+                266,
+                159
             ],
             [
-                135,
-                114
+                287,
+                169
             ],
             [
-                135,
-                114
+                304,
+                168
             ],
             [
-                135,
-                114
+                321,
+                159
             ],
             [
-                135,
-                114
+                318,
+                159
             ],
             [
-                135,
-                114
+                319,
+                151
             ],
             [
-                135,
-                114
+                314,
+                154
             ],
             [
-                135,
-                114
+                260,
+                180
             ],
             [
-                135,
-                114
+                257,
+                182
             ],
             [
-                135,
-                114
+                256,
+                182
             ],
             [
-                135,
-                114
+                256,
+                182
             ],
             [
-                135,
-                114
+                254,
+                182
             ],
             [
-                135,
-                114
+                254,
+                182
             ],
             [
-                135,
-                114
+                254,
+                182
             ],
             [
-                135,
-                114
+                254,
+                182
             ],
             [
-                135,
-                114
+                254,
+                182
             ]
         ],
-        "target_previous_height": 189,
-        "target_previous_width": 219,
+        "target_previous_height": 1298,
+        "target_previous_width": 1500,
         "target_previous_extention": ".gif"
     },
     "display_painting_progress": {
@@ -139,10 +139,10 @@
         "value": true
     },
     "display_final_image": {
-        "value": true
+        "value": false
     },
     "output_image_size": {
-        "value": 2096,
+        "value": 1648,
         "min_value": 500,
         "max_value": 4000
     },
@@ -150,10 +150,10 @@
         "value": "painted_image_output"
     },
     "create_gif_of_painting_progress": {
-        "value": true
+        "value": false
     },
     "painting_progress_gif_name": {
-        "value": "Hello"
+        "value": ""
     },
     "painted_gif_name": {
         "value": "painted_gif_output"

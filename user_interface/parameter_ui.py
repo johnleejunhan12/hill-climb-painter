@@ -1218,7 +1218,7 @@ class ParameterUI:
                 json_parameters[param_key]["value"] = param_value
         # Handle case of num_hill_climb_iteration dual slider parameters
         json_parameters["num_hill_climb_iterations"]["current_lower_value"] = user_selected_parameters['hill_climb_min_iterations']
-        json_parameters["num_hill_climb_iterations"]["current_lower_value"] = user_selected_parameters['hill_climb_max_iterations']
+        json_parameters["num_hill_climb_iterations"]["current_upper_value"] = user_selected_parameters['hill_climb_max_iterations']
 
 
         # Save image dimensions and name of file extention

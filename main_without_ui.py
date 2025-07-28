@@ -22,7 +22,7 @@ is_print_hill_climb_progress_in_console = False
 resize_target_shorter_side_of_target = 200
 
 # 2) Add N textures (single slider)
-num_shapes_to_draw = 50 # range between 100 and 5000 in slider widget
+num_shapes_to_draw = 500 # range between 100 and 5000 in slider widget
 
 # 3) Num of hill climb iterations (dual slider)
 min_hill_climb_iterations = 20 
@@ -54,7 +54,7 @@ is_enable_vector_field = True
 # 9i) Edit vector field equation (button)
 # vector_field_function = lambda x,y: (x+y, x-y)
 from user_interface.vector_field_equation_ui import VectorFieldVisualizer
-vector_field_function = VectorFieldVisualizer.get_function_from_string_equations("-x", "-y")
+vector_field_function = VectorFieldVisualizer.get_function_from_string_equations("-y", "x")
 
 # 9ii) Shift vector field origin (button)
 field_center_x, field_center_y = 0,0
@@ -83,34 +83,34 @@ recreate_number_of_frames_in_original_gif = N
 gif_painting_of_target_gif = "painted_gif_output"
 
 # 3) Enable multiprocessing for batch frame processing 
-is_enable_multiprocessing_for_batch_frame_processing = True # ensures pygame display is not shown if set to true is_create_painting_progress_gif must be false too
+is_enable_multiprocessing_for_batch_frame_processing = False # ensures pygame display is not shown if set to true is_create_painting_progress_gif must be false too
 
 
 
 
-def vector_field_function(x,y):
-    # Returns a vector given an x and y coordinate
-    # (p, q) = (f(x,y), g(x,y))
+# def vector_field_function(x,y):
+#     # Returns a vector given an x and y coordinate
+#     # (p, q) = (f(x,y), g(x,y))
 
-    # Radial sink with rotational twist example:
+#     # Radial sink with rotational twist example:
 
-    # Set radial convergence
-    a = -3
-    # a<0: converge inwards
-    # a=0: no convergence/divergence
-    # a>0: diverge outwards
+#     # Set radial convergence
+#     a = -3
+#     # a<0: converge inwards
+#     # a=0: no convergence/divergence
+#     # a>0: diverge outwards
 
-    # Set rotational behavior
-    b = 0
-    # b<0: clockwise
-    # b=0: no rotation
-    # b>0: anticlockwise
+#     # Set rotational behavior
+#     b = 0
+#     # b<0: clockwise
+#     # b=0: no rotation
+#     # b>0: anticlockwise
 
-    p = a*x - b*y
-    q = b*x + a*y
+#     p = a*x - b*y
+#     q = b*x + a*y
 
 
-    return (p,q)
+#     return (p,q)
 
 
 

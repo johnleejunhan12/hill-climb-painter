@@ -3,6 +3,9 @@ from utils.file_operations import *
 from user_interface.parameter_ui import *
 from utils.utilities import extract_gif_frames_to_output_folder_and_get_approx_fps 
 
+# Import the new painter system
+from painter import PaintingOrchestrator
+
 
 def get_target_and_textures():
     # 1) Create target and texture folders, will not be modified if already exist
@@ -51,10 +54,11 @@ def get_target_and_textures():
 
     original_gif_frames = None
 
-    if is_gif_file(target):
         # Create two folders to store original gif frames and painted frames. Folders are created if they do not already exist.
-        original_gif_frames_full_folder_path = create_folder("original_gif_frames")
-        painted_gif_frames_full_folder_path = create_folder("painted_gif_frames")
+    original_gif_frames_full_folder_path = create_folder("original_gif_frames")
+    painted_gif_frames_full_folder_path = create_folder("painted_gif_frames")
+
+    if is_gif_file(target):
         # Clear the contents of these two folders accumulated from previous run
         clear_folder_contents(original_gif_frames_full_folder_path)
         clear_folder_contents(painted_gif_frames_full_folder_path)
@@ -82,25 +86,105 @@ def get_target_and_textures():
 
 
 def run_painting_algorithm(param_dict):
-    print("\n")
-    print(param_dict)
-    # for k,v in param_dict.items():
-    #     print(k, v)
+    """
+    Execute the painting algorithm using the new OOP architecture.
     
+    Args:
+        param_dict: Dictionary containing UI parameters
+    """
 
+    print(param_dict)
 
-    print("\n")
-    print('TARGET_FILEPATH  ',TARGET_FILEPATH)
-    print('TEXTURE_FILEPATH_LIST    ', TEXTURE_FILEPATH_LIST)
-    print('ORIGINAL_GIF_FRAMES_FILE_PATH_LIST   ', ORIGINAL_GIF_FRAMES_FILE_PATH_LIST) # original_gif_frames_file_path_list might be None 
-    print('PAINTED_GIF_FRAMES_FULL_FOLDER_PATH',PAINTED_GIF_FRAMES_FULL_FOLDER_PATH) # this is full path to folder containing painted frames of gif, always provided
-    quit()
-    painter = Painter(param_dict, TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST, PAINTED_GIF_FRAMES_FULL_FOLDER_PATH)
+    print("\n🎨 Starting Painting Algorithm")
+    print("=" * 50)
+    
+    try:
+        # Determine if target is a GIF based on file extension
+        is_gif_target = TARGET_FILEPATH.lower().endswith('.gif')
+        
+        if is_gif_target:
+            # Handle GIF target - paint multiple frames
+            print(f"🎬 Processing GIF target: {TARGET_FILEPATH}")
+            print(f"📁 Found {len(ORIGINAL_GIF_FRAMES_FILE_PATH_LIST)} frames to process")
+            
+            # Use multiprocessing if enabled in UI
+            use_multiprocessing = param_dict.get('enable_multiprocessing', False)
+            
+            success = PaintingOrchestrator.paint_batch_frames(
+                frame_paths=ORIGINAL_GIF_FRAMES_FILE_PATH_LIST,
+                texture_paths=TEXTURE_FILEPATH_LIST,
+                output_folder=PAINTED_GIF_FRAMES_FULL_FOLDER_PATH,
+                ui_dict=param_dict,
+                use_multiprocessing=use_multiprocessing
+            )
+            
+            if success:
+                # After painting all frames, create the final GIF
+                print("🎞️ Creating final GIF from painted frames...")
+                try:
+                    from utils.utilities import create_gif_from_pngs, get_output_folder_full_filepath
+                    
+                    output_folder = get_output_folder_full_filepath()
+                    gif_name = param_dict.get('painted_gif_name', 'painted_gif_output')
+                    
+                    # Get approximate FPS from original GIF
+                    approx_fps = extract_gif_frames_to_output_folder_and_get_approx_fps(
+                        full_path_to_gif=TARGET_FILEPATH,
+                        max_number_of_extracted_frames=len(ORIGINAL_GIF_FRAMES_FILE_PATH_LIST),
+                        output_folder=PAINTED_GIF_FRAMES_FULL_FOLDER_PATH
+                    )
+                    
+                    create_gif_from_pngs(
+                        PAINTED_GIF_FRAMES_FULL_FOLDER_PATH, 
+                        output_folder, 
+                        approx_fps, 
+                        file_name=gif_name
+                    )
+                    print(f"✅ Successfully created GIF: {gif_name}")
+                    
+                except Exception as e:
+                    print(f"⚠️ Warning: Failed to create final GIF: {e}")
+                    print("Individual painted frames are still available in the painted_gif_frames folder")
+            
+        else:
+            # Handle single image target
+            print(f"🖼️ Processing single image: {TARGET_FILEPATH}")
+            
+            # Get output details
+            from utils.utilities import get_output_folder_full_filepath
+            output_folder = get_output_folder_full_filepath()
+            filename = param_dict.get('output_image_name', 'painted_image')
+            
+            success = PaintingOrchestrator.paint_from_ui_params(
+                ui_dict=param_dict,
+                target_path=TARGET_FILEPATH,
+                texture_paths=TEXTURE_FILEPATH_LIST,
+                output_folder=output_folder,
+                filename=filename,
+                is_gif_target=False
+            )
+        
+        # Print final result
+        if success:
+            print("\n" + "=" * 50)
+            print("🎉 Painting Algorithm Completed Successfully!")
+            print("✅ All outputs have been saved to the 'output' folder")
+            if is_gif_target:
+                print(f"📁 Painted frames: {PAINTED_GIF_FRAMES_FULL_FOLDER_PATH}")
+        else:
+            print("\n" + "=" * 50)
+            print("❌ Painting Algorithm Failed")
+            print("Please check the console output above for error details")
+    
+    except Exception as e:
+        print(f"\n❌ Critical error in painting algorithm: {e}")
+        print("Please check your configuration and try again")
+        import traceback
+        traceback.print_exc()
 
 
 if __name__ == "__main__":
 
-    print(f"My __name__ is: {__name__}")
 
         
     TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST, PAINTED_GIF_FRAMES_FULL_FOLDER_PATH = get_target_and_textures()
