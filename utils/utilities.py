@@ -307,11 +307,13 @@ def get_texture(filepath):
     return rgba_to_grayscale_alpha(import_png_as_normalized_rgba(filepath))
 
 
-def get_texture_dict(texture_opacity_percentage = 100):
+def get_texture_dict(texture_opacity_percentage = 100, list_of_texture_full_filepath=None):
     """
     Imports all texture pngs from texture folder into greyscale alpha format and returns a dictionary containing numpy array and dimensions
 
-    Parameters: texture_opacity_percentage (int)
+    Parameters:
+        texture_opacity_percentage (int),
+        list_of_texture_full_filepath (optional list) list contains full filepaths to textures
 
     Returns:
         texture_dict (dict): 
@@ -329,7 +331,12 @@ def get_texture_dict(texture_opacity_percentage = 100):
         raise AssertionError("Invalid texture opacity percentage")
 
     texture_dict = {}
-    for i, filename in enumerate(os.listdir("texture")):
+    if list_of_texture_full_filepath is None:
+        texture_filepath_list = os.listdir("texture")
+    else:
+        texture_filepath_list = list_of_texture_full_filepath
+
+    for i, filename in enumerate(texture_filepath_list):
         texture_filepath = os.path.join("texture", filename)
         texture_greyscale_alpha = get_texture(texture_filepath) * texture_opacity_percentage/100
         texture_height, texture_width = texture_greyscale_alpha.shape[0], texture_greyscale_alpha.shape[1]
@@ -509,7 +516,54 @@ def create_gif_from_pngs(png_filepath: str, export_gif_full_file_path: str, fram
         raise Exception(f"Error creating GIF: {str(e)}")
 
 
+def get_approximate_fps_if_reduced(full_path_to_gif, max_number_of_extracted_frames):
+    """
+    Calculates the approximate FPS of a GIF if its frames were reduced to a given maximum.
+    Returns the original FPS if no reduction is needed, otherwise computes the scaled-down FPS.
 
+    Args:
+        full_path_to_gif (str): Path to the input GIF file.
+        max_number_of_extracted_frames (int): Maximum number of frames to extract.
+
+    Returns:
+        float: Original FPS (if no reduction) or approximate FPS (if reduced).
+    Raises:
+        FileNotFoundError: If the GIF does not exist.
+        ValueError: If max_number_of_extracted_frames ≤ 1 or GIF has 0 frames.
+    """
+    if max_number_of_extracted_frames <= 1:
+        raise ValueError("max_number_of_extracted_frames must be greater than 1.")
+
+    if not os.path.exists(full_path_to_gif):
+        raise FileNotFoundError(f"GIF file not found: {full_path_to_gif}")
+
+    with Image.open(full_path_to_gif) as gif:
+        # Count total frames in GIF
+        total_frames = 0
+        try:
+            while True:
+                gif.seek(total_frames)
+                total_frames += 1
+        except EOFError:
+            pass
+
+        if total_frames == 0:
+            raise ValueError("GIF has no frames.")
+
+        # Get original FPS (based on frame duration)
+        gif.seek(0)
+        duration = gif.info.get('duration', 100)  # Default: 100ms (10 FPS)
+        original_fps = 1000 / duration  # Convert ms to FPS
+
+        # If no reduction needed, return original FPS
+        if total_frames <= max_number_of_extracted_frames:
+            return original_fps
+
+        # Calculate approximate FPS after reduction
+        reduction_factor = max_number_of_extracted_frames / total_frames
+        approximate_fps = original_fps * reduction_factor
+        return approximate_fps
+    
 def extract_gif_frames_to_output_folder_and_get_approx_fps(full_path_to_gif, max_number_of_extracted_frames, output_folder):
     """
     Extract frames from a GIF file and save them as PNG files in an a specified output folder.
@@ -673,7 +727,7 @@ def get_target_full_filepath():
 
 def get_output_folder_full_filepath():
     """
-    Gets the full filepath of the "output" folder in the current working directory.
+    Gets the full filepath of the "output" folder in main directory
     Creates the folder if it does not already exist.
     
     Returns:
@@ -691,3 +745,33 @@ def get_output_folder_full_filepath():
     
     return output_folder
 
+
+
+def is_gif(file_path: str) -> bool:
+    """
+    Check if a file is a GIF by examining both its extension and magic number.
+    
+    Args:
+        file_path (str): Path to the file to check
+        
+    Returns:
+        bool: True if the file is a GIF (both extension and magic number match), False otherwise
+        
+    Raises:
+        FileNotFoundError: If the file doesn't exist
+    """
+    # Check if file exists
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found: {file_path}")
+    
+    # Check extension first (quick check)
+    if not file_path.lower().endswith('.gif'):
+        return False
+    
+    # Check magic number (more reliable)
+    try:
+        with open(file_path, 'rb') as f:
+            header = f.read(6)  # GIF magic number is 6 bytes
+            return header in (b'GIF87a', b'GIF89a')
+    except IOError:
+        return False

@@ -26,7 +26,7 @@
         "max_value": 200
     },
     "uniform_texture_size": {
-        "value": false
+        "value": true
     },
     "allow_early_termination": {
         "value": true
@@ -37,7 +37,7 @@
         "max_value": 300
     },
     "enable_vector_field": {
-        "value": false
+        "value": true
     },
     "vector_field_f": {
         "value": "-x+y"
@@ -47,11 +47,90 @@
     },
     "vector_field_origin_shift": {
         "value": [
-            []
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ],
+            [
+                135,
+                114
+            ]
         ],
-        "target_previous_height": 1080,
-        "target_previous_width": 1080,
-        "target_previous_extention": ".png"
+        "target_previous_height": 189,
+        "target_previous_width": 219,
+        "target_previous_extention": ".gif"
     },
     "display_painting_progress": {
         "value": true
@@ -71,10 +150,10 @@
         "value": "painted_image_output"
     },
     "create_gif_of_painting_progress": {
-        "value": false
+        "value": true
     },
     "painting_progress_gif_name": {
-        "value": ""
+        "value": "Hello"
     },
     "painted_gif_name": {
         "value": "painted_gif_output"

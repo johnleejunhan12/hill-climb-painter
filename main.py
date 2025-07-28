@@ -76,16 +76,26 @@ def get_target_and_textures():
                 full_path = os.path.join(original_gif_frames_full_folder_path, item)
                 original_gif_frames.append(full_path) 
 
-    return target, textures, original_gif_frames
+    return target, textures, original_gif_frames, painted_gif_frames_full_folder_path
+
+
 
 
 def run_painting_algorithm(param_dict):
+    print("\n")
     print(param_dict)
-    for k,v in param_dict.items():
-        print(k, v)
-    quit()
+    # for k,v in param_dict.items():
+    #     print(k, v)
+    
 
-    painter = Painter(param_dict, TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST)
+
+    print("\n")
+    print('TARGET_FILEPATH  ',TARGET_FILEPATH)
+    print('TEXTURE_FILEPATH_LIST    ', TEXTURE_FILEPATH_LIST)
+    print('ORIGINAL_GIF_FRAMES_FILE_PATH_LIST   ', ORIGINAL_GIF_FRAMES_FILE_PATH_LIST) # original_gif_frames_file_path_list might be None 
+    print('PAINTED_GIF_FRAMES_FULL_FOLDER_PATH',PAINTED_GIF_FRAMES_FULL_FOLDER_PATH) # this is full path to folder containing painted frames of gif, always provided
+    quit()
+    painter = Painter(param_dict, TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST, PAINTED_GIF_FRAMES_FULL_FOLDER_PATH)
 
 
 if __name__ == "__main__":
@@ -93,11 +103,12 @@ if __name__ == "__main__":
     print(f"My __name__ is: {__name__}")
 
         
-    TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST = get_target_and_textures()
+    TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST, PAINTED_GIF_FRAMES_FULL_FOLDER_PATH = get_target_and_textures()
     print("\n")
     print('TARGET_FILEPATH  ',TARGET_FILEPATH)
     print('TEXTURE_FILEPATH_LIST    ', TEXTURE_FILEPATH_LIST)
     print('ORIGINAL_GIF_FRAMES_FILE_PATH_LIST   ', ORIGINAL_GIF_FRAMES_FILE_PATH_LIST) # original_gif_frames_file_path_list might be None 
+    print('PAINTED_GIF_FRAMES_FULL_FOLDER_PATH',PAINTED_GIF_FRAMES_FULL_FOLDER_PATH)
 
     while True:
         ui_return_value = get_command_from_parameter_ui(TARGET_FILEPATH, target_gif_frames=ORIGINAL_GIF_FRAMES_FILE_PATH_LIST)
@@ -111,7 +122,7 @@ if __name__ == "__main__":
         # Case 2: User reselects target and/or texture
         elif command == "reselect_target_texture":
             print("User wants to reselect target and texture")
-            TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST = get_target_and_textures()
+            TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST, PAINTED_GIF_FRAMES_FULL_FOLDER_PATH = get_target_and_textures()
 
         # Case 3: User runs the hill climbing algorithm
         elif command == "run":

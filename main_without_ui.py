@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from utils.utilities import *
 from utils.rectangle import *
-from pygame_display import *
+from utils.pygame_display import *
 from utils.file_operations import *
 from user_interface.select_coordinate_ui import CoordinateSelectorUI
 from utils.vector_field import VectorField
