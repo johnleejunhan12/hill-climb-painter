@@ -1,0 +1,85 @@
+{
+    "computation_size": {
+        "value": 410,
+        "min_value": 100,
+        "max_value": 720
+    },
+    "num_textures": {
+        "value": 10000,
+        "min_value": 100,
+        "max_value": 10000
+    },
+    "num_hill_climb_iterations": {
+        "current_lower_value": 9,
+        "current_upper_value": 500,
+        "min_value": 1,
+        "max_value": 500
+    },
+    "texture_opacity": {
+        "value": 100,
+        "min_value": 50,
+        "max_value": 100
+    },
+    "initial_texture_width": {
+        "value": 47,
+        "min_value": 10,
+        "max_value": 200
+    },
+    "uniform_texture_size": {
+        "value": false
+    },
+    "allow_early_termination": {
+        "value": true
+    },
+    "failed_iterations_threshold": {
+        "value": 300,
+        "min_value": 1,
+        "max_value": 300
+    },
+    "enable_vector_field": {
+        "value": false
+    },
+    "vector_field_f": {
+        "value": "-y"
+    },
+    "vector_field_g": {
+        "value": "x"
+    },
+    "vector_field_origin_shift": {
+        "value": [
+            []
+        ],
+        "target_previous_height": 512,
+        "target_previous_width": 512,
+        "target_previous_extention": ".png"
+    },
+    "display_painting_progress": {
+        "value": true
+    },
+    "display_placement_progress": {
+        "value": false
+    },
+    "display_final_image": {
+        "value": true
+    },
+    "output_image_size": {
+        "value": 2362,
+        "min_value": 500,
+        "max_value": 4000
+    },
+    "output_image_name": {
+        "value": "painted_image_output"
+    },
+    "create_gif_of_painting_progress": {
+        "value": false
+    },
+    "painting_progress_gif_name": {
+        "value": ""
+    },
+    "painted_gif_name": {
+        "value": "painted_gif_output"
+    },
+    "enable_multiprocessing": {
+        "value": false
+    }
+}

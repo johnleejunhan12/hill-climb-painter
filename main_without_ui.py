@@ -1,94 +1,123 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from numpy.ma.core import ones_like, zeros_like
-from utilities import *
-from rectangle import *
-from pygame_display import *
-from file_operations import *
-from select_coordinate_ui import CoordinateSelectorUI
-from vector_field import VectorField
-from output_image import CreateOutputImage
-from output_gif import CreateOutputGIF
-from numba_warmup import warmup_numba
+from utils.utilities import *
+from utils.rectangle import *
+from utils.pygame_display import *
+from utils.file_operations import *
+from user_interface.select_coordinate_ui import CoordinateSelectorUI
+from utils.vector_field import VectorField
+from utils.create_painted_png import CreateOutputImage
+from utils.create_paint_progress_gif import CreateOutputGIF
+from utils.numba_warmup import warmup_numba
 import random
 
 import cProfile
 import pstats
 
-# Print to console parameters
+# Print to console parameters (debug)
 is_print_hill_climb_progress_in_console = False
 
+# Parameter tab:
+# 1) Computation size (single slider)
+resize_target_shorter_side_of_target = 200
 
-# Hill climb parameters:
-num_shapes_to_draw = 1000
-min_hill_climb_iterations = 1
-max_hill_climb_iterations = 50
-is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True
-fail_threshold_before_terminating_hill_climb = 100
+# 2) Add N textures (single slider)
+num_shapes_to_draw = 500 # range between 100 and 5000 in slider widget
 
-# Draw texture parameters:
-texture_opacity = 0.99 # between 0 and 1
+# 3) Num of hill climb iterations (dual slider)
+min_hill_climb_iterations = 300 
+max_hill_climb_iterations = 500
+
+# 4) Texture opacity percentage from 1 to 100% (single slider)
+texture_opacity_percentage = 100
+
+# 5) Initial texture width to ? pixels (single slider)
 initial_random_rectangle_pixel_width = 20
-is_scaling_allowed_during_mutation= True
 
-# Parameters for target:
-resize_target_shorter_side_of_target = 500
+# 6) Allow size of texture to vary during optimization (checkbox) equivalent to NOT make all textures the same size
+is_scaling_allowed_during_mutation = True
 
-# Image output parameters:
-desired_length_of_longer_side_in_output = 1200
-image_name = "image_output"
-is_display_final_image = False
-is_append_datetime = False # add date and time at the end of image_name
-
-# Multiprocessing flag for batch frame processing, ensures pygame display is not shown if set to true
-default_is_enable_multiprocessing = False
-is_enable_multiprocessing_for_batch_frame_processing = default_is_enable_multiprocessing
-
-# There are two methods of creating gif:
-# 1) Create gif as more shapes are drawn to canvas (single painting)
-is_create_painting_progress_gif = False
-frames_per_second = 200
-gif_name = "gif_output"
-
-# OR...
-
-# 2) Create gif from series of completed paintings
-recreate_number_of_frames_in_original_gif = 200
-gif_painting_of_gif_name = "sunset_paintstrokes"
-
-# Pygame display parameters
+# 7) Display painting progress (toggle visibility checkbox)
 is_show_pygame_display_window = True
-is_display_rectangle_improvement = False
+# 7.i) Show improvement of individual textures (checkbox)
+is_display_rectangle_improvement = True
+# 7.ii) Display final image after painting (checkbox initialized only if the target is not a gif)
+is_display_final_image = True
 
-# vector field parameters
+# 8) Allow early termination of hill climbing (toggle visibility checkbox)
+is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True 
+# 8.i) Terminate after N failed iterations where there is no improvement (single slider)
+fail_threshold_before_terminating_hill_climb = 100 
+
+# 9) Enable vector field (toggle visibility checkbox)
 is_enable_vector_field = True
+# 9i) Edit vector field equation (button)
+# vector_field_function = lambda x,y: (x+y, x-y)
+from user_interface.vector_field_equation_ui import VectorFieldVisualizer
+vector_field_function = VectorFieldVisualizer.get_function_from_string_equations("-y", "x")
+
+# 9ii) Shift vector field origin (button)
 field_center_x, field_center_y = 0,0
 
 
+# Output tab (For png, jpg, jpeg case)
+# 1) Output image size ? px (single slider)
+desired_length_of_longer_side_in_painted_image = 1200 # slider between 800 and 4000
 
-def vector_field_function(x,y):
-    # Returns a vector given an x and y coordinate
-    # (p, q) = (f(x,y), g(x,y))
+# 2) Name of output image (text box input)
+image_name = "image_output" 
 
-    # Radial sink with rotational twist example:
-
-    # Set radial convergence
-    a = -3
-    # a<0: converge inwards
-    # a=0: no convergence/divergence
-    # a>0: diverge outwards
-
-    # Set rotational behavior
-    b = 0
-    # b<0: clockwise
-    # b=0: no rotation
-    # b>0: anticlockwise
-
-    p = a*x - b*y
-    q = b*x + a*y
+# 3) Create GIF of painting progress (toggle visibility checkbox)
+is_create_painting_progress_gif = False  # checkbox, description is "creates gif of painting progress"
+# 3.i) GIF filename
+painting_proress_gif_name = "gif_output"
 
 
-    return (p,q)
+
+# Output tab (For gif case)
+# 1) Paint N out of total number frames from target GIF
+N = 200 # placeholder for testing, this is upper limit, can exceed number of frames in original GIF
+recreate_number_of_frames_in_original_gif = N
+
+# 2) Painted GIF filename
+gif_painting_of_target_gif = "painted_gif_output"
+
+# 3) Enable multiprocessing for batch frame processing 
+is_enable_multiprocessing_for_batch_frame_processing = False # ensures pygame display is not shown if set to true is_create_painting_progress_gif must be false too
+
+
+
+
+# def vector_field_function(x,y):
+#     # Returns a vector given an x and y coordinate
+#     # (p, q) = (f(x,y), g(x,y))
+
+#     # Radial sink with rotational twist example:
+
+#     # Set radial convergence
+#     a = -3
+#     # a<0: converge inwards
+#     # a=0: no convergence/divergence
+#     # a>0: diverge outwards
+
+#     # Set rotational behavior
+#     b = 0
+#     # b<0: clockwise
+#     # b=0: no rotation
+#     # b>0: anticlockwise
+
+#     p = a*x - b*y
+#     q = b*x + a*y
+
+
+#     return (p,q)
+
+
+
+
+# Other parameters not part of UI:
+is_append_datetime = False # Adds date time to image output
+frames_per_second_of_painting_progress_gif = 100 # This is not part of the UI.
 
 
 # Top-level worker function for multiprocessing (must be at module scope for Windows compatibility)
@@ -135,13 +164,15 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
     # Import target as numpy arrays
     target_rgba = get_target_image_as_rgba(target_image_full_filepath, resize_target_shorter_side_of_target)
 
-    
+
     # Import multiple texture png from texture folder into dictionary of numpy arrays in the form of
     # {
     # 0: {'texture_greyscale_alpha': texture_greyscale_alpha, 'texture_height': 385, 'texture_width': 1028}, 
     # 1: {'texture_greyscale_alpha': texture_greyscale_alpha, 'texture_height': 408, 'texture_width': 933}} 
     # }
-    texture_dict, num_textures = get_texture_dict(texture_opacity)
+    texture_dict, num_textures = get_texture_dict(texture_opacity_percentage)
+
+
 
     if num_textures == 0:
         raise ValueError("No texture pngs found in texture folder.")
@@ -156,6 +187,7 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
     vector_field = VectorField(is_enable_vector_field, vector_field_function, canvas_height, canvas_width, field_center_x, field_center_y)
 
 
+
     # keep track of all best scoring rectangle_list and corresponding texture
     # best_rect_with_texture = []
 
@@ -166,11 +198,11 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
         pygame_display_window = PygameDisplayProcess(canvas_height, canvas_width, is_show_pygame_display_window)
 
     # initialize gif generator
-    gif_creator = CreateOutputGIF(fps=frames_per_second, is_create_gif=is_create_painting_progress_gif, gif_file_name=gif_name)
+    gif_creator = CreateOutputGIF(fps=frames_per_second_of_painting_progress_gif, is_create_gif=is_create_painting_progress_gif, gif_file_name=painting_proress_gif_name)
 
     # Use synchronous mode if in a multiprocessing worker
     use_worker_process = not is_enable_multiprocessing_for_batch_frame_processing if 'is_enable_multiprocessing_for_batch_frame_processing' in globals() else True
-    create_image_output = CreateOutputImage(texture_dict, canvas_height, canvas_width, desired_length_of_longer_side_in_output, target_rgba, use_worker_process=use_worker_process)
+    create_image_output = CreateOutputImage(texture_dict, canvas_height, canvas_width, desired_length_of_longer_side_in_painted_image, target_rgba, use_worker_process=use_worker_process)
 
     for shape_index in range(num_shapes_to_draw):
         # choose a random texture
@@ -222,9 +254,10 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
             else:
                 # increment number of times the hill climbing algorithm failed to improve
                 fail_count += 1
-                
 
-        
+
+
+
         # Update current_rgba with the best rectangle texture
         update_canvas_with_best_rect(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
 
@@ -265,6 +298,9 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
 
 if __name__ == "__main__":
     warmup_numba()
+    
+    field_center_x, field_center_y = 0,0
+
 
     # Get full filepath of target, which could have '.png', .jpg', '.jpeg', '.gif' extension
     full_target_filepath, is_target_gif = get_target_full_filepath()
@@ -327,7 +363,7 @@ if __name__ == "__main__":
                 paint_target_image(png_full_file_path, painted_gif_frames_full_folder_path, filename_of_exported_png=str(i))
 
         # Read the painted pngs from painted_gif_frames folder and create the final gif in output folder
-        create_gif_from_pngs(painted_gif_frames_full_folder_path, output_folder_full_filepath, approx_fps, file_name=gif_painting_of_gif_name)
+        create_gif_from_pngs(painted_gif_frames_full_folder_path, output_folder_full_filepath, approx_fps, file_name=gif_painting_of_target_gif)
 
     else:
         # Allow user to select center of vector field
@@ -335,8 +371,7 @@ if __name__ == "__main__":
             coord_selector_UI = CoordinateSelectorUI(full_target_filepath, resize_target_shorter_side_of_target)
             coordinates = coord_selector_UI.run()
             if coordinates is not None:
-                field_center_x, field_center_y = coordinates
-
+                field_center_x, field_center_y = coordinates[0]
         # recreate the image
         paint_target_image(full_target_filepath, output_folder_full_filepath, filename_of_exported_png=image_name)
     
