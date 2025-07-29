@@ -14,10 +14,11 @@ class DisplayManager:
     Handles pygame display windows and matplotlib final image display.
     """
     
-    def __init__(self, config: DisplayConfig, canvas_height: int, canvas_width: int):
+    def __init__(self, config: DisplayConfig, canvas_height: int, canvas_width: int, multiprocessing_enabled: bool = False):
         self.config = config
         self.canvas_height = canvas_height
         self.canvas_width = canvas_width
+        self.multiprocessing_enabled = multiprocessing_enabled
         self.pygame_display = None
         self._initialize_displays()
     
@@ -31,7 +32,8 @@ class DisplayManager:
                     True  # is_show_display
                 )
             except Exception as e:
-                print(f"Warning: Failed to initialize pygame display: {e}")
+                if not self.multiprocessing_enabled:
+                    print(f"Warning: Failed to initialize pygame display: {e}")
                 self.pygame_display = None
     
     def update_display(self, canvas: np.ndarray):
@@ -73,7 +75,8 @@ class DisplayManager:
                 plt.axis('off')
                 plt.show()
             except Exception as e:
-                print(f"Warning: Failed to show final image: {e}")
+                if not self.multiprocessing_enabled:
+                    print(f"Warning: Failed to show final image: {e}")
     
     def was_closed(self) -> bool:
         """
@@ -92,7 +95,8 @@ class DisplayManager:
             try:
                 self.pygame_display.close()
             except Exception as e:
-                print(f"Warning: Error closing pygame display: {e}")
+                if not self.multiprocessing_enabled:
+                    print(f"Warning: Error closing pygame display: {e}")
             finally:
                 self.pygame_display = None
     

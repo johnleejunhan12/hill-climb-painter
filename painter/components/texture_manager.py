@@ -3,8 +3,11 @@ Texture management component for loading and organizing textures.
 """
 
 import random
+import concurrent.futures
+import os
+import numpy as np
 from typing import Dict, List, Tuple, Any
-from utils.utilities import get_texture_dict
+from utils.utilities import get_texture_dict, import_image_as_normalized_rgba_fast
 from ..config import ImageConfig
 
 
@@ -14,9 +17,89 @@ class TextureManager:
     Encapsulates texture-related operations that were previously scattered.
     """
     
-    def __init__(self):
+    def __init__(self, max_workers: int = 4):
         self._texture_dict = None
         self._num_textures = 0
+        self.max_workers = max_workers  # For parallel loading
+    
+    def load_textures_fast(self, texture_paths: List[str], opacity: int) -> Dict[int, Dict[str, Any]]:
+        """
+        Load textures using parallel processing for improved performance.
+        
+        Args:
+            texture_paths: List of texture file paths
+            opacity: Texture opacity percentage (1-100)
+            
+        Returns:
+            Dictionary mapping indices to texture data
+        """
+        if not texture_paths:
+            raise ValueError("No texture paths provided")
+        
+        texture_dict = {}
+        
+        # Use ThreadPoolExecutor for I/O bound operations
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Submit all loading tasks
+            future_to_index = {
+                executor.submit(self._load_single_texture_fast, path, opacity): i 
+                for i, path in enumerate(texture_paths)
+            }
+            
+            # Collect results
+            for future in concurrent.futures.as_completed(future_to_index):
+                index = future_to_index[future]
+                try:
+                    texture_data = future.result()
+                    if texture_data is not None:
+                        texture_dict[index] = texture_data
+                except Exception as e:
+                    print(f"Warning: Failed to load texture {texture_paths[index]}: {e}")
+        
+        self._texture_dict = texture_dict
+        self._num_textures = len(texture_dict)
+        
+        if self._num_textures == 0:
+            raise ValueError("No textures loaded successfully")
+        
+        print(f"✓ Fast loaded {self._num_textures} textures using {self.max_workers} threads")
+        return texture_dict
+    
+    def _load_single_texture_fast(self, filepath: str, opacity: int) -> Dict[str, Any]:
+        """
+        Load a single texture file with optimization.
+        
+        Args:
+            filepath: Path to texture file
+            opacity: Opacity percentage
+            
+        Returns:
+            Texture data dictionary or None if failed
+        """
+        try:
+            if not os.path.exists(filepath):
+                return None
+            
+            # Load image using fast method
+            texture_rgba = import_image_as_normalized_rgba_fast(filepath)
+            
+            # Apply opacity
+            opacity_factor = opacity / 100.0
+            texture_rgba[:, :, 3] *= opacity_factor
+            
+            # Convert to grayscale+alpha format expected by the painter
+            grayscale = 0.299 * texture_rgba[:, :, 0] + 0.587 * texture_rgba[:, :, 1] + 0.114 * texture_rgba[:, :, 2]
+            texture_greyscale_alpha = np.stack([grayscale, texture_rgba[:, :, 3]], axis=-1)
+            
+            return {
+                'texture_greyscale_alpha': texture_greyscale_alpha,
+                'texture_height': texture_rgba.shape[0],
+                'texture_width': texture_rgba.shape[1]
+            }
+            
+        except Exception as e:
+            print(f"Error loading texture {filepath}: {e}")
+            return None
     
     def load_textures(self, texture_paths: List[str], config: ImageConfig) -> Dict[int, Dict[str, Any]]:
         """

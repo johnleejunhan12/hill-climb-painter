@@ -35,6 +35,7 @@ class HillClimbConfig:
     initial_texture_width: int
     allow_scaling: bool
     fail_threshold: int
+    allow_early_termination: bool
     
     def validate(self) -> List[str]:
         """Validate hill climbing configuration parameters"""
@@ -129,13 +130,16 @@ class PaintingConfig:
     
     def __init__(self, image_config: ImageConfig, hill_climb_config: HillClimbConfig,
                  vector_field_config: VectorFieldConfig, display_config: DisplayConfig,
-                 output_config: OutputConfig, multiprocessing_config: MultiprocessingConfig):
+                 output_config: OutputConfig, multiprocessing_config: MultiprocessingConfig,
+                 visualization_fps: int = 20, gif_probability: float = 0.8):
         self.image = image_config
         self.hill_climb = hill_climb_config
         self.vector_field = vector_field_config
         self.display = display_config
         self.output = output_config
         self.multiprocessing = multiprocessing_config
+        self.visualization_fps = visualization_fps
+        self.gif_probability = gif_probability
         
         # Validate all configurations
         self._validate_all()
@@ -172,9 +176,14 @@ class PaintingConfig:
         output_config = cls._create_output_config(ui_dict, is_gif_target)
         multiprocessing_config = cls._create_multiprocessing_config(ui_dict, is_gif_target)
         
+        # Extract visualization parameters
+        visualization_fps = ui_dict.get("intermediate_frame_generation_fps", 20)
+        gif_probability = ui_dict.get("probability_of_writing_intermediate_frame_to_gif", 0.8)
+        
         return cls(
             image_config, hill_climb_config, vector_field_config,
-            display_config, output_config, multiprocessing_config
+            display_config, output_config, multiprocessing_config,
+            visualization_fps, gif_probability
         )
     
     @staticmethod
@@ -195,14 +204,19 @@ class PaintingConfig:
             max_iterations=ui_dict["hill_climb_max_iterations"],
             initial_texture_width=ui_dict["initial_texture_width"],
             allow_scaling=not ui_dict["uniform_texture_size"],  # UI uses inverse logic
-            fail_threshold=ui_dict["failed_iterations_threshold"]
+            fail_threshold=ui_dict["failed_iterations_threshold"],
+            allow_early_termination=ui_dict.get("allow_early_termination", False)
         )
     
     @staticmethod
     def _create_vector_field_config(ui_dict: Dict[str, Any]) -> VectorFieldConfig:
         """Create VectorFieldConfig from UI dictionary"""
         coordinates = ui_dict.get("vector_field_origin_shift", [[0, 0]])
-        center_x, center_y = (coordinates[0][0], coordinates[0][1]) if coordinates else (0, 0)
+        
+        # Safely extract coordinates with proper validation
+        center_x, center_y = 0, 0
+        if coordinates and len(coordinates) > 0 and len(coordinates[0]) >= 2:
+            center_x, center_y = coordinates[0][0], coordinates[0][1]
         
         return VectorFieldConfig(
             enabled=ui_dict["enable_vector_field"],
@@ -215,11 +229,14 @@ class PaintingConfig:
     @staticmethod
     def _create_display_config(ui_dict: Dict[str, Any], is_gif_target: bool) -> DisplayConfig:
         """Create DisplayConfig from UI dictionary"""
+        # Disable printing when multiprocessing is enabled (checked below)
+        multiprocessing_enabled = ui_dict.get("enable_multiprocessing", False) if is_gif_target else False
+        
         return DisplayConfig(
-            show_pygame=ui_dict.get("display_painting_progress", False) if not is_gif_target else False,
-            show_improvements=ui_dict.get("display_placement_progress", False) if not is_gif_target else False,
-            show_final=ui_dict.get("display_final_image", False) if not is_gif_target else False,
-            print_progress=True  # Default, not typically in UI
+            show_pygame=ui_dict.get("display_painting_progress", False) and not is_gif_target,
+            show_improvements=ui_dict.get("display_placement_progress", False) and not is_gif_target,
+            show_final=ui_dict.get("display_final_image", True) and not is_gif_target,
+            print_progress=ui_dict.get("print_progress", True) and not multiprocessing_enabled
         )
     
     @staticmethod
@@ -267,7 +284,8 @@ class PaintingConfig:
                 'max_iterations': self.hill_climb.max_iterations,
                 'initial_texture_width': self.hill_climb.initial_texture_width,
                 'allow_scaling': self.hill_climb.allow_scaling,
-                'fail_threshold': self.hill_climb.fail_threshold
+                'fail_threshold': self.hill_climb.fail_threshold,
+                'allow_early_termination': self.hill_climb.allow_early_termination
             },
             'vector_field': {
                 'enabled': self.vector_field.enabled,
@@ -292,6 +310,10 @@ class PaintingConfig:
             'multiprocessing': {
                 'enabled': self.multiprocessing.enabled,
                 'cpu_usage_percentage': self.multiprocessing.cpu_usage_percentage
+            },
+            'visualization': {
+                'fps': self.visualization_fps,
+                'gif_probability': self.gif_probability
             }
         }
     
@@ -305,7 +327,13 @@ class PaintingConfig:
         output_config = OutputConfig(**data['output'])
         multiprocessing_config = MultiprocessingConfig(**data['multiprocessing'])
         
+        # Extract visualization parameters with defaults for backwards compatibility
+        visualization_data = data.get('visualization', {})
+        visualization_fps = visualization_data.get('fps', 20)
+        gif_probability = visualization_data.get('gif_probability', 0.8)
+        
         return cls(
             image_config, hill_climb_config, vector_field_config,
-            display_config, output_config, multiprocessing_config
+            display_config, output_config, multiprocessing_config,
+            visualization_fps, gif_probability
         ) 

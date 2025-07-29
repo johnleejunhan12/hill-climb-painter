@@ -4,6 +4,7 @@ Factory for creating painting engines with proper dependency injection.
 
 from .config import PaintingConfig
 from .painting_engine import PaintingEngine
+from .components.hill_climber import HillClimber
 
 
 class PaintingEngineFactory:
@@ -24,7 +25,9 @@ class PaintingEngineFactory:
         Returns:
             Configured PaintingEngine instance
         """
-        return PaintingEngine(config, is_multiprocessing_worker)
+        # Create hill climber
+        hill_climber = HillClimber(config.hill_climb, config.multiprocessing.enabled)
+        return PaintingEngine(config, is_multiprocessing_worker, hill_climber)
     
     @staticmethod
     def create_from_ui_dict(ui_dict: dict, is_gif_target: bool = False, 

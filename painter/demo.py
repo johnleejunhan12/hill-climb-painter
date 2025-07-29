@@ -119,7 +119,7 @@ def demo_components():
     
     # 5. DisplayManager Demo (Phase 3)
     print("\n5. DisplayManager:")
-    display_manager = DisplayManager(config.display, 200, 200)
+    display_manager = DisplayManager(config.display, 200, 200, config.multiprocessing.enabled)
     print("✓ DisplayManager created")
     print(f"  - Show pygame: {config.display.show_pygame}")
     print(f"  - Show improvements: {config.display.show_improvements}")

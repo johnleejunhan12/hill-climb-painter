@@ -4,7 +4,7 @@ Hill climbing optimization component for shape placement and optimization.
 
 import random
 import numpy as np
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any, List
 from utils.rectangle import (
     create_random_rectangle, 
     get_mutated_rectangle_copy,
@@ -15,6 +15,12 @@ from utils.rectangle import (
 from utils.utilities import get_num_hill_climb_steps
 from utils.vector_field import VectorField
 from ..config import HillClimbConfig
+from dataclasses import dataclass
+
+# Forward declaration to avoid circular imports
+if False:
+    from .display_manager import DisplayManager
+    from .output_manager import OutputManager
 
 
 class ShapeOptimizationResult:
@@ -35,8 +41,22 @@ class HillClimber:
     Encapsulates the iterative optimization logic that was in the main loop.
     """
     
-    def __init__(self, config: HillClimbConfig):
+    def __init__(self, config: HillClimbConfig, multiprocessing_enabled: bool = False, 
+                 display_manager: Optional['DisplayManager'] = None,
+                 output_manager: Optional['OutputManager'] = None,
+                 visualization_fps: int = 30,
+                 gif_probability: float = 0.8):
         self.config = config
+        self.multiprocessing_enabled = multiprocessing_enabled
+        self.display_manager = display_manager
+        self.output_manager = output_manager
+        # Track last update time for frame rate limiting
+        self._last_intermediate_update_time = 0.0
+        # Configurable visualization frame rate
+        self.visualization_fps = visualization_fps
+        self.min_interval = 1.0 / max(1, visualization_fps)  # Prevent division by zero
+        # Configurable GIF recording probability
+        self.gif_probability = gif_probability
     
     def optimize_shape(self, target: np.ndarray, texture_key: int, texture_data: Dict[str, Any],
                       canvas: np.ndarray, vector_field: Optional[VectorField], 
@@ -116,9 +136,10 @@ class HillClimber:
         for iteration in range(max_iterations):
             iterations_performed = iteration + 1
             
-            # Check for early termination
-            if fail_count > self.config.fail_threshold:
-                print(f"Early termination at iteration {iteration} (fail_count: {fail_count})")
+            # Check for early termination (only if enabled)
+            if self.config.allow_early_termination and fail_count > self.config.fail_threshold:
+                if not self.multiprocessing_enabled:
+                    print(f"Early termination at iteration {iteration} (fail_count: {fail_count})")
                 break
             
             # Mutate the rectangle
@@ -139,6 +160,29 @@ class HillClimber:
                 best_rect_list = mutated_rect_list
                 rgb_of_best_rect = rgb_of_mutated_rect
                 fail_count = 0  # Reset fail count on improvement
+                
+                # Rate-limited intermediate visualization (configurable FPS for smooth updates)
+                import time
+                current_time = time.time()
+                
+                should_update_display = (current_time - self._last_intermediate_update_time) >= self.min_interval
+                
+                # Create intermediate canvas for visualization (if needed)
+                intermediate_canvas = None
+                if should_update_display and ((self.display_manager and self.display_manager.supports_improvements()) or self.output_manager):
+                    intermediate_canvas = self.create_intermediate_canvas(
+                        canvas, mutated_rect_list, texture_greyscale_alpha, 
+                        rgb_of_mutated_rect, y_min_mutated, scanline_x_intersects_mutated
+                    )
+                    self._last_intermediate_update_time = current_time
+                
+                # Show intermediate optimization progress if enabled
+                if should_update_display and self.display_manager and self.display_manager.supports_improvements():
+                    self.display_manager.update_intermediate_display(intermediate_canvas)
+                
+                # Record intermediate frames for GIF with configurable probability
+                if should_update_display and self.output_manager and intermediate_canvas is not None:
+                    self.output_manager.record_intermediate_frame(intermediate_canvas, probability=self.gif_probability)
             else:
                 fail_count += 1
         
@@ -147,7 +191,7 @@ class HillClimber:
             'best_rgb': rgb_of_best_rect,
             'best_score': highscore,
             'iterations': iterations_performed,
-            'converged': fail_count <= self.config.fail_threshold
+            'converged': self.config.allow_early_termination and fail_count > self.config.fail_threshold
         }
     
     def apply_shape_to_canvas(self, canvas: np.ndarray, target: np.ndarray,

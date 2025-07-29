@@ -19,15 +19,22 @@ class PaintingEngine:
     Provides a clean interface for painting single images or batch processing.
     """
     
-    def __init__(self, config: PaintingConfig, is_multiprocessing_worker: bool = False):
+    def __init__(self, config: PaintingConfig, is_multiprocessing_worker: bool = False, hill_climber: Optional['HillClimber'] = None):
         self.config = config
         self.is_multiprocessing_worker = is_multiprocessing_worker
+        self.multiprocessing_enabled = config.multiprocessing.enabled
         
         # Initialize core components
         self.image_processor = ImageProcessor()
         self.texture_manager = TextureManager()
         self.vector_field_factory = VectorFieldFactory()
-        self.hill_climber = HillClimber(config.hill_climb)
+        
+        self.hill_climber = hill_climber or HillClimber(
+            config.hill_climb, 
+            config.multiprocessing.enabled,
+            visualization_fps=config.visualization_fps,
+            gif_probability=config.gif_probability
+        )
         
         # Display and output managers will be initialized per paint operation
         self.display_manager = None
@@ -60,11 +67,15 @@ class PaintingEngine:
             # 2. Setup display and output managers
             canvas_height, canvas_width = self.image_processor.get_canvas_dimensions(target)
             
-            with DisplayManager(self.config.display, canvas_height, canvas_width) as display_mgr, \
+            with DisplayManager(self.config.display, canvas_height, canvas_width, self.multiprocessing_enabled) as display_mgr, \
                  OutputManager(self.config.output, self.is_multiprocessing_worker) as output_mgr:
                 
                 self.display_manager = display_mgr
                 self.output_manager = output_mgr
+                
+                # Update hill climber with the managers for intermediate display updates
+                self.hill_climber.display_manager = display_mgr
+                self.hill_climber.output_manager = output_mgr
                 
                 # Setup output generators
                 output_mgr.setup_output_generators(
@@ -85,7 +96,8 @@ class PaintingEngine:
                 return success
                 
         except Exception as e:
-            print(f"❌ Painting failed: {e}")
+            if not self.multiprocessing_enabled:
+                print(f"❌ Painting failed: {e}")
             return False
         finally:
             # Cleanup is handled by context managers
@@ -105,7 +117,8 @@ class PaintingEngine:
         try:
             # Load target image
             target = self.image_processor.load_target(target_path, self.config.image)
-            print(f"✓ Loaded target image: {target.shape}")
+            if not self.multiprocessing_enabled:
+                print(f"✓ Loaded target image: {target.shape}")
             
             # Create canvas
             canvas = self.image_processor.create_canvas(target)
@@ -155,14 +168,15 @@ class PaintingEngine:
             for shape_index in range(total_shapes):
                 # Check if user closed display window
                 if self.display_manager and self.display_manager.was_closed():
-                    print("🛑 User closed display window. Stopping painting.")
+                    if not self.multiprocessing_enabled:
+                        print("🛑 User closed display window. Stopping painting.")
                     return True  # Consider this a successful early termination
                 
                 # Get random texture
                 texture_key, texture_data = self.texture_manager.get_random_texture()
                 
                 # Print progress
-                if self.display_manager:
+                if self.display_manager and not self.multiprocessing_enabled:
                     progress = self.hill_climber.get_progress_info(shape_index)
                     self.display_manager.print_progress(
                         f"Shape {shape_index + 1}/{total_shapes} "
@@ -189,11 +203,13 @@ class PaintingEngine:
                     self.output_manager.record_frame(canvas)
                     self.output_manager.enqueue_shape_for_output(optimization_result)
             
-            print(f"✅ Painting loop completed: {total_shapes} shapes painted")
+            if not self.multiprocessing_enabled:
+                print(f"✅ Painting loop completed: {total_shapes} shapes painted")
             return True
             
         except Exception as e:
-            print(f"❌ Error in painting loop: {e}")
+            if not self.multiprocessing_enabled:
+                print(f"❌ Error in painting loop: {e}")
             return False
     
     def validate_inputs(self, target_path: str, texture_paths: List[str], 

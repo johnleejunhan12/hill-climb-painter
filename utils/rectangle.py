@@ -37,7 +37,7 @@ def create_random_rectangle(canvas_height, canvas_width, texture_height, texture
     x = np.random.randint(0, canvas_width)
     y = np.random.randint(0, canvas_height)
 
-    if vector_field.is_enabled:
+    if vector_field and vector_field.is_enabled:
         # Get theta from vector field
         theta = vector_field.get_vector_field_theta(x, y)
     else:
@@ -68,7 +68,7 @@ def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width, vector_fi
     x, y, rect_height, rect_width, theta = rectangle
     mutated = [x, y, rect_height, rect_width, theta]  # copy
 
-    is_vector_field_enabled = vector_field.is_enabled
+    is_vector_field_enabled = vector_field and vector_field.is_enabled
 
     if is_vector_field_enabled: # Dont need to rotate randomly as the vector field outputs theta given (x,y)
         mutation_operation_case = [1]
@@ -82,8 +82,8 @@ def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width, vector_fi
         
     if case == 1:
         # Case 1: Mutate x and y
-        dx = np.random.randint(-100, 100)
-        dy = np.random.randint(-100, 100)
+        dx = np.random.randint(-50, 50)
+        dy = np.random.randint(-50, 50)
         mutated[0] = clamp_int(x + dx, 0, canvas_width - 1)
         mutated[1] = clamp_int(y + dy, 0, canvas_height - 1)
 

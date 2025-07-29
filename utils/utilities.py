@@ -62,8 +62,16 @@ def get_height_width_of_array(image_array):
 
 import os
 import numpy as np
+import random
+import math
 from PIL import Image
 from datetime import datetime
+try:
+    import cv2
+    OPENCV_AVAILABLE = True
+except ImportError:
+    OPENCV_AVAILABLE = False
+    print("Warning: OpenCV not available, using slower PIL for image loading")
 
 def save_rgba_array_as_png(rgba_array, name_of_png, output_full_folder_path, is_append_datetime=True):
     """
@@ -124,6 +132,7 @@ def save_rgba_array_as_png(rgba_array, name_of_png, output_full_folder_path, is_
 def import_image_as_normalized_rgba(filepath: str) -> np.ndarray:
     """
     Reads a PNG or JPG file and returns a normalized RGBA image as a float32 numpy array.
+    Uses fast OpenCV implementation when available, falls back to PIL.
     JPGs will have alpha=1 added, and a warning will be issued.
 
     Parameters:
@@ -135,6 +144,13 @@ def import_image_as_normalized_rgba(filepath: str) -> np.ndarray:
     Raises:
         ValueError: If the file is not a PNG or JPG.
     """
+    # Use fast implementation if available
+    try:
+        return import_image_as_normalized_rgba_fast(filepath)
+    except Exception:
+        # Fallback to original PIL implementation
+        pass
+    
     ext = os.path.splitext(filepath)[-1].lower()
 
     if ext == ".png":
@@ -775,3 +791,57 @@ def is_gif(file_path: str) -> bool:
             return header in (b'GIF87a', b'GIF89a')
     except IOError:
         return False
+
+def import_image_as_normalized_rgba_fast(filepath: str) -> np.ndarray:
+    """
+    Fast image loading using OpenCV (3-5x faster than PIL).
+    Falls back to PIL if OpenCV is not available.
+    
+    Parameters:
+        filepath (str): Path to the image file (.png or .jpg/.jpeg).
+        
+    Returns:
+        np.ndarray: Normalized RGBA image of shape (H, W, 4), dtype np.float32.
+    """
+    if not OPENCV_AVAILABLE:
+        return import_image_as_normalized_rgba(filepath)
+    
+    ext = os.path.splitext(filepath)[-1].lower()
+    
+    try:
+        if ext == ".png":
+            # Read PNG with alpha channel
+            img = cv2.imread(filepath, cv2.IMREAD_UNCHANGED)
+            if img is None:
+                raise ValueError(f"Failed to load image: {filepath}")
+            
+            if len(img.shape) == 3:
+                if img.shape[2] == 3:  # RGB
+                    # Convert BGR to RGB and add alpha
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                    alpha = np.ones((img.shape[0], img.shape[1], 1), dtype=img.dtype) * 255
+                    img = np.concatenate([img, alpha], axis=-1)
+                elif img.shape[2] == 4:  # RGBA/BGRA
+                    img = cv2.cvtColor(img, cv2.COLOR_BGRA2RGBA)
+            
+        elif ext in [".jpg", ".jpeg"]:
+            # Read JPEG and add alpha
+            img = cv2.imread(filepath, cv2.IMREAD_COLOR)
+            if img is None:
+                raise ValueError(f"Failed to load image: {filepath}")
+            
+            # Convert BGR to RGB
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            # Add alpha channel
+            alpha = np.ones((img.shape[0], img.shape[1], 1), dtype=img.dtype) * 255
+            img = np.concatenate([img, alpha], axis=-1)
+            
+        else:
+            raise ValueError("Only PNG and JPG/JPEG files are supported.")
+        
+        # Normalize to float32 [0, 1]
+        return img.astype(np.float32) / 255.0
+        
+    except Exception as e:
+        print(f"OpenCV loading failed for {filepath}, falling back to PIL: {e}")
+        return import_image_as_normalized_rgba(filepath)

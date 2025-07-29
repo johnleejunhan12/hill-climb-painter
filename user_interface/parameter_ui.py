@@ -232,8 +232,6 @@ class ParameterUI:
         self.target_width, self.target_height = get_image_dimensions(self.target_filepath)
         self.is_same_target_ext_and_dimension = self.file_ext == self.target_prev_extention and self.target_previous_height == self.target_height and self.target_previous_width == self.target_width
         
-        print(self.target_width, self.target_height, self.file_ext, 
-              self.target_prev_extention, self.target_previous_height, self.target_previous_width)
         
         self.is_shift_origin_coord_selected = True
 
@@ -1170,6 +1168,10 @@ class ParameterUI:
             parameters['num_frames_to_paint'] = self.frames_in_gif_slider.get()
             parameters['painted_gif_name'] = self.painted_gif_name_input.get()
             parameters['enable_multiprocessing'] = self.multiprocessing_chk.get()
+        
+        # Handle conditional logic:
+        if self.file_ext != ".gif":
+            parameters['enable_multiprocessing'] = False
 
         return parameters
 
@@ -1212,7 +1214,6 @@ class ParameterUI:
         for param_key in parameter_keys:
             param_value = user_selected_parameters.get(param_key, "Key not present")
             if param_value == "Key not present":
-                print("Key not present", "\n")
                 continue
             else:
                 json_parameters[param_key]["value"] = param_value

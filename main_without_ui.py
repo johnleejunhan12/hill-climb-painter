@@ -25,8 +25,8 @@ resize_target_shorter_side_of_target = 200
 num_shapes_to_draw = 500 # range between 100 and 5000 in slider widget
 
 # 3) Num of hill climb iterations (dual slider)
-min_hill_climb_iterations = 20 
-max_hill_climb_iterations = 50
+min_hill_climb_iterations = 300 
+max_hill_climb_iterations = 500
 
 # 4) Texture opacity percentage from 1 to 100% (single slider)
 texture_opacity_percentage = 100
@@ -40,9 +40,9 @@ is_scaling_allowed_during_mutation = True
 # 7) Display painting progress (toggle visibility checkbox)
 is_show_pygame_display_window = True
 # 7.i) Show improvement of individual textures (checkbox)
-is_display_rectangle_improvement = False
+is_display_rectangle_improvement = True
 # 7.ii) Display final image after painting (checkbox initialized only if the target is not a gif)
-is_display_final_image = False
+is_display_final_image = True
 
 # 8) Allow early termination of hill climbing (toggle visibility checkbox)
 is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True 

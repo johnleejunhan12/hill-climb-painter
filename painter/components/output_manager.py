@@ -77,7 +77,8 @@ class OutputManager:
             try:
                 self.gif_creator.enqueue_frame(canvas)
             except Exception as e:
-                print(f"Warning: Failed to record GIF frame: {e}")
+                if not self.is_multiprocessing_worker:
+                    print(f"Warning: Failed to record GIF frame: {e}")
     
     def record_intermediate_frame(self, canvas: np.ndarray, probability: float = 0.25):
         """
@@ -114,7 +115,8 @@ class OutputManager:
             self.image_creator.enqueue(job)
             return True
         except Exception as e:
-            print(f"Warning: Failed to enqueue shape for output: {e}")
+            if not self.is_multiprocessing_worker:
+                print(f"Warning: Failed to enqueue shape for output: {e}")
             return False
     
     def finalize_and_save(self, output_folder: str, filename: str) -> bool:

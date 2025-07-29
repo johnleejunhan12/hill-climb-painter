@@ -46,7 +46,7 @@ def get_target_and_textures():
     for texture_path in list_of_texture_images_full_path:
         textures.append(copy_and_paste_file(texture_path, texture_folder_fullpath))
 
-    # Extract gif frames
+    # Extract gif frames for UI (if target is GIF)
     def is_gif_file(filepath):
         # Get the file extension (lowercase to handle .GIF, .gif, etc.)
         file_ext = os.path.splitext(filepath)[1].lower()
@@ -54,7 +54,7 @@ def get_target_and_textures():
 
     original_gif_frames = None
 
-        # Create two folders to store original gif frames and painted frames. Folders are created if they do not already exist.
+    # Create two folders to store original gif frames and painted frames. Folders are created if they do not already exist.
     original_gif_frames_full_folder_path = create_folder("original_gif_frames")
     painted_gif_frames_full_folder_path = create_folder("painted_gif_frames")
 
@@ -64,11 +64,11 @@ def get_target_and_textures():
         clear_folder_contents(painted_gif_frames_full_folder_path)
 
         # Export all gif frames as png file into the original_gif_frames folder and find the approximate fps of the gif.
-        # If max_number_of_extracted_frames is lesser than number of frames in the gif, approx_fps will be smaller than the number of frames in gif to keep total duration roughly the same
+        # Extract ALL frames for UI purposes (coordinate selection, etc.)
         
         approx_fps = extract_gif_frames_to_output_folder_and_get_approx_fps(
             full_path_to_gif=target,
-            max_number_of_extracted_frames=10000000000,   # max number of frames as parameter (we want all the frames)
+            max_number_of_extracted_frames=10000000000,   # Extract all frames for UI
             output_folder=original_gif_frames_full_folder_path
         )
 
@@ -83,6 +83,43 @@ def get_target_and_textures():
     return target, textures, original_gif_frames, painted_gif_frames_full_folder_path
 
 
+def select_frame_indices_for_painting(total_frames, num_frames_to_paint):
+    """
+    Select frame indices using the same algorithm as extract_gif_frames_to_output_folder_and_get_approx_fps.
+    This ensures consistent frame sampling logic.
+    
+    Args:
+        total_frames (int): Total number of available frames
+        num_frames_to_paint (int): Number of frames to select for painting
+        
+    Returns:
+        list: Sorted list of frame indices to paint
+    """
+    if total_frames <= num_frames_to_paint:
+        # Use all available frames
+        return list(range(total_frames))
+    else:
+        # Sample frames evenly using the same algorithm as the utility function
+        frames_to_extract = []
+        step = (total_frames - 1) / (num_frames_to_paint - 1)
+        
+        for i in range(num_frames_to_paint):
+            frame_index = round(i * step)
+            frames_to_extract.append(frame_index)
+        
+        # Ensure unique frame indices
+        frames_to_extract = list(set(frames_to_extract))
+        frames_to_extract.sort()
+        
+        # Fill with remaining frames if needed (edge case handling)
+        if len(frames_to_extract) < num_frames_to_paint:
+            remaining_frames = [i for i in range(total_frames) if i not in frames_to_extract]
+            frames_to_extract.extend(remaining_frames[:num_frames_to_paint - len(frames_to_extract)])
+            frames_to_extract.sort()
+        
+        return frames_to_extract
+
+
 
 
 def run_painting_algorithm(param_dict):
@@ -92,26 +129,67 @@ def run_painting_algorithm(param_dict):
     Args:
         param_dict: Dictionary containing UI parameters
     """
-
-    print(param_dict)
-
-    print("\n🎨 Starting Painting Algorithm")
-    print("=" * 50)
+    param_dict["print_progress"] = IS_PRINT_PROGRESS_OF_HILL_CLIMBING_ALGO
     
+    # Configure intermediate frame visualization settings
+    # 🎯 Control how often intermediate optimization steps are displayed
+    param_dict["intermediate_frame_generation_fps"] = 20  # FPS cap for intermediate display updates (1-60 recommended)
+    
+    # 🎞️ Control how many frames are recorded to the painting progress GIF
+    param_dict["probability_of_writing_intermediate_frame_to_gif"] = 0.2  # Probability of recording frames (0.0 = no frames, 1.0 = all frames)
+    
+    # for k,v in param_dict.items():
+    #     print(k,v,"\n")
+    # quit()
     try:
         # Determine if target is a GIF based on file extension
         is_gif_target = TARGET_FILEPATH.lower().endswith('.gif')
+
         
         if is_gif_target:
-            # Handle GIF target - paint multiple frames
+            param_dict["print_progress"] = False
+            
+            # Handle GIF target - select and paint the specified number of frames
             print(f"🎬 Processing GIF target: {TARGET_FILEPATH}")
-            print(f"📁 Found {len(ORIGINAL_GIF_FRAMES_FILE_PATH_LIST)} frames to process")
+            
+            # Get the number of frames to paint from UI parameters
+            total_available_frames = len(ORIGINAL_GIF_FRAMES_FILE_PATH_LIST) if ORIGINAL_GIF_FRAMES_FILE_PATH_LIST else 0
+            num_frames_to_paint = param_dict.get('num_frames_to_paint', total_available_frames)
+            
+            print(f"📁 Found {total_available_frames} total frames")
+            print(f"🎯 Selecting {num_frames_to_paint} frames for painting")
+            
+            # Select frame indices using the same algorithm as the utility function
+            selected_frame_indices = select_frame_indices_for_painting(total_available_frames, num_frames_to_paint)
+            
+            # Get the actual frame paths for the selected indices
+            selected_frame_paths = [ORIGINAL_GIF_FRAMES_FILE_PATH_LIST[i] for i in selected_frame_indices]
+            
+            print(f"🔍 Selected frame indices: {selected_frame_indices}")
+            print(f"📝 Selected {len(selected_frame_paths)} frames to process")
+            
+            # Calculate FPS for the selected frames (same logic as utility function)
+            # Get original FPS from the GIF
+            from PIL import Image
+            with Image.open(TARGET_FILEPATH) as gif:
+                duration = gif.info.get('duration', 100)  # Default to 100ms if not specified
+                original_fps = 1000 / duration  # Convert milliseconds to FPS
+            
+            if len(selected_frame_indices) == total_available_frames:
+                # Using all frames, keep original FPS
+                fps_for_output = original_fps
+                print(f"🎞️ Using original FPS: {fps_for_output:.2f}")
+            else:
+                # Calculate approximate FPS (original FPS * reduction factor)
+                reduction_factor = len(selected_frame_indices) / total_available_frames
+                fps_for_output = original_fps * reduction_factor
+                print(f"🎞️ Calculated FPS for reduced frames: {fps_for_output:.2f} (reduction factor: {reduction_factor:.3f})")
             
             # Use multiprocessing if enabled in UI
             use_multiprocessing = param_dict.get('enable_multiprocessing', False)
             
             success = PaintingOrchestrator.paint_batch_frames(
-                frame_paths=ORIGINAL_GIF_FRAMES_FILE_PATH_LIST,
+                frame_paths=selected_frame_paths,
                 texture_paths=TEXTURE_FILEPATH_LIST,
                 output_folder=PAINTED_GIF_FRAMES_FULL_FOLDER_PATH,
                 ui_dict=param_dict,
@@ -127,17 +205,11 @@ def run_painting_algorithm(param_dict):
                     output_folder = get_output_folder_full_filepath()
                     gif_name = param_dict.get('painted_gif_name', 'painted_gif_output')
                     
-                    # Get approximate FPS from original GIF
-                    approx_fps = extract_gif_frames_to_output_folder_and_get_approx_fps(
-                        full_path_to_gif=TARGET_FILEPATH,
-                        max_number_of_extracted_frames=len(ORIGINAL_GIF_FRAMES_FILE_PATH_LIST),
-                        output_folder=PAINTED_GIF_FRAMES_FULL_FOLDER_PATH
-                    )
-                    
+                    # Use the calculated FPS for the selected frames
                     create_gif_from_pngs(
                         PAINTED_GIF_FRAMES_FULL_FOLDER_PATH, 
                         output_folder, 
-                        approx_fps, 
+                        fps_for_output, 
                         file_name=gif_name
                     )
                     print(f"✅ Successfully created GIF: {gif_name}")
@@ -185,7 +257,7 @@ def run_painting_algorithm(param_dict):
 
 if __name__ == "__main__":
 
-
+    IS_PRINT_PROGRESS_OF_HILL_CLIMBING_ALGO = True
         
     TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST, PAINTED_GIF_FRAMES_FULL_FOLDER_PATH = get_target_and_textures()
     print("\n")

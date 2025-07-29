@@ -8,7 +8,7 @@ try:
 except ImportError: # 
     from select_target_ui import FileSelectorUI
 
-print(f"My __name__ is: {__name__}")
+
 
 
 class TargetTextureSelectorUI(tk.Tk):
