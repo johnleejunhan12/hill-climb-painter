@@ -2,8 +2,6 @@ from user_interface.target_texture_select_ui import TargetTextureSelectorUI
 from utils.file_operations import *
 from user_interface.parameter_ui import *
 from utils.utilities import extract_gif_frames_to_output_folder_and_get_approx_fps 
-
-# Import the new painter system
 from painter import PaintingOrchestrator
 
 
@@ -138,9 +136,7 @@ def run_painting_algorithm(param_dict):
     # 🎞️ Control how many frames are recorded to the painting progress GIF
     param_dict["probability_of_writing_intermediate_frame_to_gif"] = 0.2  # Probability of recording frames (0.0 = no frames, 1.0 = all frames)
     
-    # for k,v in param_dict.items():
-    #     print(k,v,"\n")
-    # quit()
+
     try:
         # Determine if target is a GIF based on file extension
         is_gif_target = TARGET_FILEPATH.lower().endswith('.gif')

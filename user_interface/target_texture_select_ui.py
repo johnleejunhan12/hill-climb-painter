@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk, ImageSequence
 import os
+import numpy as np
+from numba import jit
 
 try:
     from .select_target_ui import FileSelectorUI
@@ -9,6 +11,41 @@ except ImportError: #
     from select_target_ui import FileSelectorUI
 
 
+@jit(nopython=True, cache=True)
+def apply_color_multiplication_numba(img_array, click_r, click_g, click_b):
+    """
+    Numba-optimized function to apply color multiplication to texture image.
+    
+    Args:
+        img_array: numpy array of shape (height, width, 4) for RGBA image
+        click_r, click_g, click_b: RGB values from clicked position (0-255)
+    
+    Returns:
+        Modified numpy array with color multiplication applied
+    """
+    height, width = img_array.shape[:2]
+    
+    for y in range(height):
+        for x in range(width):
+            # Get current pixel values
+            r, g, b, a = img_array[y, x]
+            
+            # Use red channel as grayscale intensity (since texture was converted to grayscale)
+            intensity = r / 255.0
+            
+            # Multiply clicked color by texture intensity
+            new_r = min(255, int(click_r * intensity))
+            new_g = min(255, int(click_g * intensity))
+            new_b = min(255, int(click_b * intensity))
+            
+            # Update pixel values
+            img_array[y, x, 0] = new_r
+            img_array[y, x, 1] = new_g
+            img_array[y, x, 2] = new_b
+            # Keep alpha unchanged
+            img_array[y, x, 3] = a
+    
+    return img_array
 
 
 class TargetTextureSelectorUI(tk.Tk):
@@ -43,6 +80,10 @@ class TargetTextureSelectorUI(tk.Tk):
         self.selected_texture_paths = initial_selected_texture_paths or []
         self.selected_texture_images = []
         self.texture_grid_labels = []
+        # Color picking feature variables
+        self.clicked_rgb_color = None
+        self.displayed_image_scale = None
+        self.displayed_image_offset = None
         
         self.title("Target & Texture Selector")
         self.configure(bg="#f5f6fa")
@@ -130,6 +171,9 @@ class TargetTextureSelectorUI(tk.Tk):
         self.image_display = tk.Label(self.left_container, bg="#eaeaea", bd=0, relief='flat', font=("Segoe UI", 16), anchor='center', justify='center')
         self.image_display.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
         self.image_display.configure(image='', text='No target selected\nAllowed: png, jpeg, jpg, gif')
+        
+        # Bind left mouse click to color picking
+        self.image_display.bind("<Button-1>", self._on_image_click)
 
         # Left: Select Target Button
         self.select_target_btn = ttk.Button(
@@ -212,6 +256,25 @@ class TargetTextureSelectorUI(tk.Tk):
                 row = idx // grid_size
                 col = idx % grid_size
                 img_copy = img.copy()
+                
+                # Apply color multiplication if a color has been clicked
+                if self.clicked_rgb_color is not None:
+                    # Convert to RGBA if not already
+                    if img_copy.mode != "RGBA":
+                        img_copy = img_copy.convert("RGBA")
+                    
+                    # Extract clicked RGB values
+                    click_r, click_g, click_b = self.clicked_rgb_color
+                    
+                    # Convert PIL image to numpy array for fast processing
+                    img_array = np.array(img_copy, dtype=np.uint8)
+                    
+                    # Apply color multiplication using numba-optimized function
+                    img_array = apply_color_multiplication_numba(img_array, click_r, click_g, click_b)
+                    
+                    # Convert back to PIL image
+                    img_copy = Image.fromarray(img_array, 'RGBA')
+                
                 img_copy.thumbnail((cell_w, cell_h), Image.Resampling.LANCZOS)
                 tk_img = ImageTk.PhotoImage(img_copy)
                 label = tk.Label(frame, image=tk_img, bg="#eaeaea")
@@ -242,6 +305,8 @@ class TargetTextureSelectorUI(tk.Tk):
                     self.after_cancel(self.gif_animation_id)
                     self.gif_animation_id = None
                 self._update_image_display()
+            # Reset clicked color when target is cleared
+            self.clicked_rgb_color = None
             self.update_all_btns()
 
         self.clear_target_btn = ttk.Button(
@@ -256,6 +321,8 @@ class TargetTextureSelectorUI(tk.Tk):
                 self.selected_texture_paths = []
                 self.selected_texture_images = []
                 self._update_texture_display()
+            # Reset clicked color when texture is cleared
+            self.clicked_rgb_color = None
             self.update_all_btns()
 
         self.clear_texture_btn = ttk.Button(
@@ -411,6 +478,68 @@ class TargetTextureSelectorUI(tk.Tk):
     def _on_resize(self, event):
         pass
 
+    def _on_image_click(self, event):
+        """Handle left mouse click on the target image to pick color for textures"""
+        # Only process clicks if both target and textures are selected
+        if not self.selected_image_or_gif_path or not self.selected_texture_paths:
+            return
+        
+        # Skip color picking for GIFs (too complex with animation)
+        ext = os.path.splitext(self.selected_image_or_gif_path)[1].lower()
+        if ext == '.gif':
+            return
+            
+        # Get the click coordinates relative to the label
+        click_x = event.x
+        click_y = event.y
+        
+        # Get the actual displayed image dimensions and position
+        if not self.selected_image:
+            return
+            
+        # Calculate the actual image position within the label
+        label_width = self.image_display.winfo_width()
+        label_height = self.image_display.winfo_height()
+        
+        # Get the thumbnail size that was used for display
+        img_copy = self.selected_image.copy()
+        img_copy.thumbnail((label_width, label_height - 50), Image.Resampling.LANCZOS)
+        display_width, display_height = img_copy.size
+        
+        # Calculate image position (centered in label)
+        img_x_offset = (label_width - display_width) // 2
+        img_y_offset = (label_height - display_height) // 2
+        
+        # Check if click is within the displayed image bounds
+        if (click_x < img_x_offset or click_x >= img_x_offset + display_width or
+            click_y < img_y_offset or click_y >= img_y_offset + display_height):
+            return
+        
+        # Convert click coordinates to original image coordinates
+        scale_x = self.selected_image.width / display_width
+        scale_y = self.selected_image.height / display_height
+        
+        orig_x = int((click_x - img_x_offset) * scale_x)
+        orig_y = int((click_y - img_y_offset) * scale_y)
+        
+        # Ensure coordinates are within bounds
+        orig_x = max(0, min(orig_x, self.selected_image.width - 1))
+        orig_y = max(0, min(orig_y, self.selected_image.height - 1))
+        
+        # Get RGB color at the clicked position
+        pixel_color = self.selected_image.getpixel((orig_x, orig_y))
+        if isinstance(pixel_color, int):  # Grayscale image
+            self.clicked_rgb_color = (pixel_color, pixel_color, pixel_color)
+        elif len(pixel_color) >= 3:  # RGB or RGBA
+            self.clicked_rgb_color = pixel_color[:3]
+        else:
+            return
+        
+        print(f"Clicked at ({orig_x}, {orig_y}), RGB: {self.clicked_rgb_color}")
+        
+        # Update texture display with new color
+        self._update_texture_display()
+
     def _on_select_target(self):
         selector_single = FileSelectorUI(
             ['.png', '.jpg', '.jpeg', '.gif'],
@@ -477,7 +606,13 @@ class TargetTextureSelectorUI(tk.Tk):
             img = self.selected_image.copy()
             img.thumbnail((container_width, container_height), Image.Resampling.LANCZOS)
             tk_img = ImageTk.PhotoImage(img)
-            self.image_display.configure(image=tk_img, text='')
+            
+            # Show color picking hint if textures are also selected
+            display_text = ''
+            if self.selected_texture_paths:
+                display_text = 'Click on image to color textures'
+            
+            self.image_display.configure(image=tk_img, text=display_text)
             setattr(self.image_display, 'image', tk_img)
 
     def run_and_get_selection(self):
