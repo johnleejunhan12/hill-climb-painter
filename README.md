@@ -8,8 +8,8 @@ An advanced image recreation tool that uses **hill climbing optimization** and *
 
 <table>
   <tr>
-    <td><img src="readme_stuff/mona_lisa_ui_demo.gif" width="610"/></td>
-    <td><img src="readme_stuff/mona_lisa_gif_final.gif" width="300"/></td>
+    <td><img src="readme_stuff/mona_lisa_ui_demo.gif" width="360"/></td>
+    <td><img src="readme_stuff/mona_lisa_gif_final.gif" width="180"/></td>
   </tr>
 </table>
 
