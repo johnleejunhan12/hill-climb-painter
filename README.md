@@ -14,7 +14,7 @@ To generate a painted approximation of a target image, we begin by initializing 
 
 Initially, a texture is assigned a random position and rotation. Its color is computed by averaging the RGB values of the corresponding region on the target image that the texture would cover at that location.
 
-![Image](/readme_stuff/how_work_2.png "Target, texture and canvas")
+![Image](/readme_stuff/how_work_2_v2.png "Target, texture and canvas")
 
 
 To evaluate the quality of a placement, we define a score based on the change in root mean squared error (RMSE) between the canvas and the target image:
@@ -23,6 +23,24 @@ To evaluate the quality of a placement, we define a score based on the change in
 
 A higher score indicates a more effective placement, as it reflects a greater reduction in RMSE. 
 Such a heuristic rewards texture placements which add meaningful detail while penalizing texture placements that interfere with existing canvas textures.
+
+To illustrate the scoring system we can plot the difference between RMSE before and after the texture is applied. The examples provided shows how the scoring system rewards textures that are well placed while penalising badly placed textures.
+
+#### A) Higher score for good texture placement
+A well placed texture will naturally obtain a higher score as it reduces the RMSE significantly.
+
+![Image](/readme_stuff/how_work_3.png "Target, texture and canvas")
+
+![Image](/readme_stuff/how_work_4.png "Target, texture and canvas")
+
+#### B) Lower score for bad texture placement
+Here, the texture overlaps with the hands, resulting in sub-optimal placement. As seen in the score visualization, the pixel wise score is negative (red color). Which reduces the score even though the texture was still relatively well placed as indicated by the majority of green region.
+
+![Image](/readme_stuff/how_work_5.png "Target, texture and canvas")
+
+![Image](/readme_stuff/how_work_6.png "Target, texture and canvas")
+
+
 
 The texture undergoes random perturbations to its position, rotation, and scale. After each adjustment, the score is recalculated. If the new configuration yields a higher score, it is accepted; otherwise, the previous placement is retained. 
 
