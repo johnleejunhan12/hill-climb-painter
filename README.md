@@ -1,15 +1,38 @@
 # Hill Climb Painter
 
-An advanced image recreation tool that uses **hill climbing optimization** and **texture-based painting** to recreate target images with artistic flair. The application places textured "brush strokes" iteratively to match the target image, creating painted-style outputs with customizable parameters.
+A python application that paints images and GIFs using various shapes and textures
 
 
+![Image](/readme_stuff/street.png "Rainy street")
 
-![Image](/readme_stuff/mona_lisa_ui_demo.gif)
+### How it works
+
+To generate a painted approximation of a target image, we begin by initializing a blank canvas with the average RGB color of the target image. 
+
+![Image](/readme_stuff/how_work_1.png "Target, texture and canvas")
 
 
+Initially, a texture is assigned a random position and rotation. Its color is computed by averaging the RGB values of the corresponding region on the target image that the texture would cover at that location.
+
+![Image](/readme_stuff/how_work_2.png "Target, texture and canvas")
 
 
-https://github.com/user-attachments/assets/4b817553-60e4-400d-bd84-de2ec3fbcccb
+To evaluate the quality of a placement, we define a score based on the change in root mean squared error (RMSE) between the canvas and the target image:
+
+**Score = RMSE_before − RMSE_after**
+
+A higher score indicates a more effective placement, as it reflects a greater reduction in RMSE. 
+Such a heuristic rewards texture placements which add meaningful detail while penalizing texture placements that interfere with existing canvas textures.
+
+The texture undergoes random perturbations to its position, rotation, and scale. After each adjustment, the score is recalculated. If the new configuration yields a higher score, it is accepted; otherwise, the previous placement is retained. 
+
+This iterative process continues until an iteration limit is reached or stops after a specified number of failed iterations where there is no further improvement. 
+
+### Painting progress
+The GIF below shows how textures can be sequentially added to create a painting. The size, scale and rotation of each texure are optimised using hill climbing algorithm before the texture is drawn onto the canvas.
+
+![Image](/readme_stuff/mona_lisa_gif_final.gif "Mona Lisa")
+
 
 
 
@@ -328,6 +351,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Pygame community for real-time visualization
 - Contributors and testers
 
+![Image](/readme_stuff/gato.png "Mr Cat")
+
+![Image](/readme_stuff/shrek_gif_painted.gif "Somebody")
 
 ---
 

@@ -16,6 +16,7 @@ painted_gif_frames
 texture_presets/
 target/
 texture/
+output/
 
 
 # pycharrm ide stuff
