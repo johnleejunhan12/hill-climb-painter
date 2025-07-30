@@ -3,8 +3,15 @@
 An advanced image recreation tool that uses **hill climbing optimization** and **texture-based painting** to recreate target images with artistic flair. The application places textured "brush strokes" iteratively to match the target image, creating painted-style outputs with customizable parameters.
 
 
-![mona_lisa_ui](readme_stuff/ui_mona_lisa.png)
-![mona_lisa_gif](readme_stuff/mona_lisa_readme_final.gif)
+<!-- ![mona_lisa_ui](readme_stuff/ui_mona_lisa.png)
+![mona_lisa_gif](readme_stuff/mona_lisa_readme_final.gif) -->
+
+<table>
+  <tr>
+    <td><img src="readme_stuff/mona_lisa_ui_demo.gif" width="610"/></td>
+    <td><img src="readme_stuff/mona_lisa_gif_final.gif" width="300"/></td>
+  </tr>
+</table>
 
 ## 🎨 What It Does
 
