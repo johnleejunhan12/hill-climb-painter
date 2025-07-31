@@ -51,9 +51,9 @@ def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width, vector_fi
     Takes in a rectangle and returns a mutated copy of it.
     One of three mutation cases is randomly applied with equal probability:
 
-    Case 1: Mutate center x and y by a small integer amount, clamped to canvas bounds.
+    Case 1: Mutate center x and y by some integer amount, clamped to canvas bounds.
     Case 2: Scale both rect_height and rect_width by the same factor.
-    Case 3: Adjust theta by a random radian between -pi and pi, clamped to [-pi, pi].
+    Case 3: Adjust theta by a random radian between -pi/4 and pi/4, clamped to [-pi, pi].
 
     Parameters:
         rectangle (list): [x(int), y(int), rect_height(float), rect_width(float), theta(float)]
@@ -98,7 +98,7 @@ def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width, vector_fi
         mutated[3] = rect_width * scale
 
     elif case == 3: # Case 3: Do rotation
-        dtheta = np.random.uniform(-np.pi, np.pi)
+        dtheta = np.random.uniform(-np.pi/4, np.pi/4)
         new_theta = theta + dtheta
         # Wrap angle to [-π, π]
         new_theta = (new_theta + np.pi) % (2 * np.pi) - np.pi
