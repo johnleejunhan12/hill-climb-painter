@@ -45,7 +45,6 @@ def visualize_image_difference(image_path1, image_path2, title="Image Difference
     
     # Create the visualization
     plt.figure(figsize=(10, 8))
-    plt.style.use('dark_background')
 
     # Plot the difference using viridis colormap
     im = plt.imshow(rms_diff, cmap='viridis', interpolation='nearest')
@@ -82,17 +81,17 @@ def visualize_image_difference(image_path1, image_path2, title="Image Difference
 
 # With custom title and save path
 rmse_before = visualize_image_difference(
-    'canvas.png', 
+    'empty_canvas.png', 
     'mona_lisa.jpg',
     title='Before adding texture',
-    save_path='before_adding_texture_bad.png'
+    save_path='empty_canvas_mona_lisa.png'
 )
 
 rmse_after = visualize_image_difference(
-    'bad_stroke_on_canvas.png', 
+    'good.png', 
     'mona_lisa.jpg',
     title='After adding texture',
-    save_path='after_adding_texture_bad.png'
+    save_path='good_mona_lisa.png'
 )
 
 

@@ -22,10 +22,10 @@ is_print_hill_climb_progress_in_console = False
 resize_target_shorter_side_of_target = 200
 
 # 2) Add N textures (single slider)
-num_shapes_to_draw = 500 # range between 100 and 5000 in slider widget
+num_shapes_to_draw = 1000 # range between 100 and 5000 in slider widget
 
 # 3) Num of hill climb iterations (dual slider)
-min_hill_climb_iterations = 300 
+min_hill_climb_iterations = 50 
 max_hill_climb_iterations = 500
 
 # 4) Texture opacity percentage from 1 to 100% (single slider)
@@ -50,7 +50,7 @@ is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True
 fail_threshold_before_terminating_hill_climb = 100 
 
 # 9) Enable vector field (toggle visibility checkbox)
-is_enable_vector_field = True
+is_enable_vector_field = False
 # 9i) Edit vector field equation (button)
 # vector_field_function = lambda x,y: (x+y, x-y)
 from user_interface.vector_field_equation_ui import VectorFieldVisualizer

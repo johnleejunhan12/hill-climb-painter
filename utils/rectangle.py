@@ -623,8 +623,8 @@ def get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, s
             # score is higher when new pixel difference is lower than original pixel difference
             # score is lower when new pixel difference is higher than original pixel difference
 
-            # i) Find original sum of squared differences between current and target rgb
-            original_pixel_difference = np.sum((current_rgba[y,x,0:3] - target_rgba[y,x,0:3]) ** 2)
+            # i) Find original root sum of squared differences between current and target rgb
+            original_pixel_difference = np.sqrt(np.sum((current_rgba[y,x,0:3] - target_rgba[y,x,0:3]) ** 2))
 
             # ii) Alpha blend rgba of interpolated pixel onto rgba of current_rgba
             foreground_rgb = rgb * interpolated_greyscale
@@ -633,8 +633,8 @@ def get_score_of_rectangle(target_rgba, texture_greyscale_alpha, current_rgba, s
             background_alpha = current_rgba[y,x,3]
             blended_rgb, resultant_alpha = alpha_blend(foreground_rgb, foreground_alpha, background_rgb, background_alpha)
 
-            # iii) Find the new sum of squared pixel difference between blended and target
-            new_pixel_difference = np.sum((blended_rgb - target_rgba[y, x, 0:3]) ** 2)
+            # iii) Find the new root sum of squared pixel difference between blended and target
+            new_pixel_difference = np.sqrt(np.sum((blended_rgb - target_rgba[y, x, 0:3]) ** 2))
 
             pixel_score = original_pixel_difference - new_pixel_difference
             total_score += pixel_score

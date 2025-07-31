@@ -1,44 +1,74 @@
 # Hill Climb Painter
 
-A python application that paints images and GIFs using various shapes and textures
+A python application that recreates images and GIFs using various shapes and textures
 
 
 ![Image](/readme_stuff/street.png "Rainy street")
 
 ### How it works
 
-To generate a painted approximation of a target image, we begin by initializing a blank canvas with the average RGB color of the target image. 
+To generate a painted approximation of a target image using textures, we begin by initializing a blank canvas with the average RGB color of the target image. In this example, we will use 11 different paintstrokes as textures. 
 
 ![Image](/readme_stuff/how_work_1.png "Target, texture and canvas")
 
 
-Initially, a texture is assigned a random position and rotation. Its color is computed by averaging the RGB values of the corresponding region on the target image that the texture would cover at that location.
+Initially, a random paint stroke is selected. It is assigned a random scale, position and rotation. As seen in the image below, its color is computed by taking the average of the RGB values within the corresponding region of the target image that the texture would cover if it were to be placed on the target image.
 
 ![Image](/readme_stuff/how_work_2_v2.png "Target, texture and canvas")
 
 
-To evaluate the quality of a placement, we define a score based on the change in root mean squared error (RMSE) between the canvas and the target image:
 
-**Score = RMSE_before − RMSE_after**
 
-A higher score indicates a more effective placement, as it reflects a greater reduction in RMSE. 
-Such a heuristic rewards texture placements which add meaningful detail while penalizing texture placements that interfere with existing canvas textures.
+Next, we need to determine whether the placement of a paint stroke is **"good"** or **"bad"**.
 
-To illustrate the scoring system we can plot the difference between RMSE before and after the texture is applied. The examples provided shows how the scoring system rewards textures that are well placed while penalising badly placed textures.
+To do this, we define a **quantitative reward-and-penalty scoring system** that satisfies the following criteria:
 
-#### A) Higher score for good texture placement
-A well placed texture will naturally obtain a higher score as it reduces the RMSE significantly.
+---
+
+### ✅ Reward "Good" Placements That:
+
+- **Add new detail** to empty or blurry regions of the canvas, bringing it closer to the target image by filling in underdeveloped areas.
+
+- **Use a suitable color** that closely resembles the corresponding region in the target image. This ensures the paint stroke blends naturally into the canvas.  
+  > *Note:* Since the stroke's color is calculated using the average RGB values of the region it would cover, the most suitable colors occur when the target region has low color variance. This encourages strokes to be placed in areas of consistent color rather than highly varied regions.
+
+- **Maximize coverage** by filling in large areas of empty or blurry canvas, rather than unnecessarily overwriting existing details.
+
+---
+
+### ❌ Penalize "Bad" Placements That:
+
+- **Make the canvas worse** by reducing its similarity to the target image. Such strokes are destructive and lead to a sloppier final result.
+
+- **Overwrite already detailed or accurate areas**, which can undo valuable work already done in previous strokes.
+
+- **Contribute little to no meaningful detail**—for example, placing small strokes in nearly empty areas. In such cases, using larger strokes would be more effective and should be encouraged.
+"""
+
+***
+
+
+The scoring metric that encapsulates all the above requirements is calculated in 3 steps:
+
+### Step 1: Find the error between the target image and canvas
+
+Pixel errors are calculated using root sum of squared difference between RGB values of the target and canvas.
 
 ![Image](/readme_stuff/how_work_3.png "Target, texture and canvas")
 
+### Step 2: Find the error between the target image and canvas with paint stroke
+
+We calculate pixel errors again using the same formula but with the texture drawn onto the canvas
 ![Image](/readme_stuff/how_work_4.png "Target, texture and canvas")
 
-#### B) Lower score for bad texture placement
-Here, the texture overlaps with the hands, resulting in sub-optimal placement. As seen in the score visualization, the pixel wise score is negative (red color). Which reduces the score even though the texture was still relatively well placed as indicated by the majority of green region.
+### Step 3: Find the difference between errors
 
-![Image](/readme_stuff/how_work_5.png "Target, texture and canvas")
+The final score is calculated by taking the difference in errors before and after the texture was added. As seen in the color map plot, textures that are well placed recieve a higher score as they reduce the total pixel error between the canvas and target image.
+![Image](/readme_stuff/good_score.png "Target, texture and canvas")
 
-![Image](/readme_stuff/how_work_6.png "Target, texture and canvas")
+If the texture was placed in a sub optimal configuration, it will be penalised as shown in the red (negative) regions of the scoring color plot.
+![Image](/readme_stuff/bad_placement.png "Target, texture and canvas")
+![Image](/readme_stuff/bad_score.png "Target, texture and canvas")
 
 
 
