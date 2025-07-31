@@ -2,7 +2,10 @@
 
 A python application that recreates images and GIFs using various shapes and textures
 
-![Image](/readme_stuff/street.png "Rainy street")
+<!-- ![Image](/readme_stuff/street.png "Rainy street") -->
+[![IMAGE ALT TEXT HERE](/readme_stuff/street.png)](https://youtu.be/jfOIpWaAR6k)
+
+
 
 ### How it works
 To generate a painted approximation of a target image using textures, we begin by initializing a blank canvas with the average RGB color of the target image. In this example, we will use 11 different paintstrokes as textures. 
