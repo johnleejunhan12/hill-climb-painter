@@ -30,11 +30,11 @@ def get_target_and_textures():
     
     user_selection_start_of_script = select_target_and_texture_ui.run_and_get_selection()
     if user_selection_start_of_script is None:
-        print("User did not select anything, terminate the script")
+        # print("User did not select anything, terminate the script")
         quit()
     else:
         target_image_full_filepath, list_of_texture_images_full_path = user_selection_start_of_script
-        print("User has selected")
+        # print("User has selected")
     clear_folder_contents(target_folder_fullpath, exclude_files=target_image_full_filepath)
 
     target = copy_and_paste_file(target_image_full_filepath, target_folder_fullpath)
@@ -256,11 +256,11 @@ if __name__ == "__main__":
     IS_PRINT_PROGRESS_OF_HILL_CLIMBING_ALGO = True
         
     TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST, PAINTED_GIF_FRAMES_FULL_FOLDER_PATH = get_target_and_textures()
-    print("\n")
-    print('TARGET_FILEPATH  ',TARGET_FILEPATH)
-    print('TEXTURE_FILEPATH_LIST    ', TEXTURE_FILEPATH_LIST)
-    print('ORIGINAL_GIF_FRAMES_FILE_PATH_LIST   ', ORIGINAL_GIF_FRAMES_FILE_PATH_LIST) # original_gif_frames_file_path_list might be None 
-    print('PAINTED_GIF_FRAMES_FULL_FOLDER_PATH',PAINTED_GIF_FRAMES_FULL_FOLDER_PATH)
+    # print("\n")
+    # print('TARGET_FILEPATH  ',TARGET_FILEPATH)
+    # print('TEXTURE_FILEPATH_LIST    ', TEXTURE_FILEPATH_LIST)
+    # print('ORIGINAL_GIF_FRAMES_FILE_PATH_LIST   ', ORIGINAL_GIF_FRAMES_FILE_PATH_LIST) # original_gif_frames_file_path_list might be None 
+    # print('PAINTED_GIF_FRAMES_FULL_FOLDER_PATH',PAINTED_GIF_FRAMES_FULL_FOLDER_PATH)
 
     while True:
         ui_return_value = get_command_from_parameter_ui(TARGET_FILEPATH, target_gif_frames=ORIGINAL_GIF_FRAMES_FILE_PATH_LIST)
@@ -268,17 +268,17 @@ if __name__ == "__main__":
 
         # Case 1: User exit parameter UI
         if command == "user_closed_param_ui_window":
-            print("User closed param ui window")
+            # print("User closed param ui window")
             break
 
         # Case 2: User reselects target and/or texture
         elif command == "reselect_target_texture":
-            print("User wants to reselect target and texture")
+            # print("User wants to reselect target and texture")
             TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST, PAINTED_GIF_FRAMES_FULL_FOLDER_PATH = get_target_and_textures()
 
         # Case 3: User runs the hill climbing algorithm
         elif command == "run":
-            print("Run hill climb algo with params\n")
+            # print("Run hill climb algo with params\n")
             parameters = ui_return_value["parameters"]
             run_painting_algorithm(parameters)
 

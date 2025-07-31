@@ -23,7 +23,7 @@ def create_folder(folder_name: str) -> str:
     if os.path.exists(folder_path):
         if not os.path.isdir(folder_path):
             raise NotADirectoryError(f"'{folder_name}' exists but is not a directory")
-        print(f"Folder '{folder_name}' already exists")
+        # print(f"Folder '{folder_name}' already exists")
         return folder_path
     
     try:
@@ -83,9 +83,10 @@ def clear_folder_contents(folder_path: str, exclude_files: Union[str, List[str]]
     # Print cleared folder and excluded files
     if exclude_paths:
         excluded_files_str = ", ".join(os.path.basename(path) for path in exclude_paths)
-        print(f"Cleared folder: {folder_path}. Excluded files: {excluded_files_str}")
+        # print(f"Cleared folder: {folder_path}. Excluded files: {excluded_files_str}")
     else:
-        print(f"Cleared folder: {folder_path}")
+        #print(f"Cleared folder: {folder_path}")
+        pass
     
     return folder_path
 
@@ -129,7 +130,7 @@ def copy_and_paste_file(source_file_path: str, destination_folder_full_path: str
     source_dir = os.path.dirname(os.path.abspath(source_file_path))
     destination_dir = os.path.abspath(destination_folder_full_path)
     if source_dir == destination_dir:
-        print(f"Source file is already in destination folder: {source_file_path}")
+        # print(f"Source file is already in destination folder: {source_file_path}")
         return source_file_path
     
     # Get the filename from the source path

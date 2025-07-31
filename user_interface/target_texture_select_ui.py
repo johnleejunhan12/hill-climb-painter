@@ -102,7 +102,7 @@ class TargetTextureSelectorUI(tk.Tk):
         print(f"Loading initial image: {self.selected_image_or_gif_path}")
         if self.selected_image_or_gif_path is not None:
             ext = os.path.splitext(self.selected_image_or_gif_path)[1].lower()
-            print(f"Extension: {ext}")
+            # print(f"Extension: {ext}")
             if ext == '.gif':
                 self._load_gif(self.selected_image_or_gif_path)
             else:

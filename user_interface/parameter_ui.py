@@ -4,7 +4,7 @@ import tkinter as tk
 import os
 import warnings
 
-print("Working directory:", os.getcwd())
+
 
 try:
     from .select_coordinate_ui import *
@@ -1228,7 +1228,7 @@ class ParameterUI:
         json_parameters["vector_field_origin_shift"]["target_previous_extention"] = self.file_ext
 
 
-        print("Saving parameters to JSON file:", json_parameters)
+        # print("Saving parameters to JSON file:", json_parameters)
         # dump to json 
         write_parameter_json(json_parameters)
 

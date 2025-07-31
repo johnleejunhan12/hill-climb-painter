@@ -2,75 +2,51 @@
 
 A python application that recreates images and GIFs using various shapes and textures
 
-
 ![Image](/readme_stuff/street.png "Rainy street")
 
 ### How it works
-
 To generate a painted approximation of a target image using textures, we begin by initializing a blank canvas with the average RGB color of the target image. In this example, we will use 11 different paintstrokes as textures. 
-
 ![Image](/readme_stuff/how_work_1.png "Target, texture and canvas")
-
-
 Initially, a random paint stroke is selected. It is assigned a random scale, position and rotation. As seen in the image below, its color is computed by taking the average of the RGB values within the corresponding region of the target.
-
 ![Image](/readme_stuff/how_work_2_v2.png "Target and canvas")
-
-
-
-
 Next, we need to determine whether the placement of a paint stroke is "good" or "bad".
-
 To do this, we define a **quantitative reward-and-penalty scoring system** that satisfies the following criteria:
 
 ***
 
-### ✅ Reward "Good" placements that:
-
+### Reward good placements that:
 - **Add more detail** to empty or blurry regions of the canvas, bringing it closer to the target image by filling in underdeveloped areas.
-
 - **Use a suitable color** that closely resembles the corresponding region in the target image. This ensures the paint stroke blends naturally into the canvas.  
   > *Note:* Since the stroke's color is calculated using the average RGB values of the region it would cover, the most suitable colors occur when the target region has low color variance. The painted result will look more cohesive if strokes are placed in areas of consistent color rather than highly varied regions.
-
 - **Maximize coverage** by filling in large areas of empty or blurry canvas without overwriting existing details.
 
 ***
 
-### ❌ Penalize "Bad" placements that:
-
+### Penalize bad placements that:
 - **Make the canvas worse** by reducing its similarity to the target image. Such strokes are destructive and lead to a sloppier final result.
-
 - **Overwrite already detailed or accurate areas**, which can undo valuable work already done in previous strokes.
-
 - **Contribute little to no meaningful detail**. For example, placing tiny strokes in nearly empty areas. In such cases, using larger strokes would be more effective and should be encouraged.
-
 
 ***
 
-
 ### Scoring heuristic:
-
 **Step 1: Find the error between the target image and canvas**
-
 Pixel errors are calculated using root sum of squared difference between RGB values of the target and canvas.
-
 ![Image](/readme_stuff/how_work_3.png "Target, texture and canvas")
 
 **Step 2: Find the error between the target image and canvas with paint stroke**
-
 We calculate pixel errors again using the same formula but with the texture drawn onto the canvas
 ![Image](/readme_stuff/how_work_4.png "Target, texture and canvas")
 
 **Step 3: Find the difference between errors**
-
 The final score is calculated by taking the difference in errors before and after the texture was added. As seen in the color map plot, textures that are well placed recieve a higher score as they reduce the total pixel error between the canvas and target image.
 ![Image](/readme_stuff/good_score.png "Target, texture and canvas")
-
 If the texture was placed in a sub optimal configuration, it will be penalised as shown in the red (negative) regions of the scoring color plot.
 ![Image](/readme_stuff/bad_placement.png "Target, texture and canvas")
 ![Image](/readme_stuff/bad_score.png "Target, texture and canvas")
 
 ***
+
 ### Greedy Hill Climbing
 
 After an initial score is obtained, the texture undergoes random perturbations to its position, rotation, and scale. After each adjustment, the score is recalculated. If the new configuration yields a higher score, it is accepted; otherwise, the previous configuration is retained. 
@@ -80,8 +56,9 @@ After an initial score is obtained, the texture undergoes random perturbations t
 
 This iterative process continues until an iteration limit is reached or terminates after a specified number of failed iterations where there is no further improvement. 
 
-### Painting the image
+***
 
+### Painting the image
 By repeatedly applying the same optimization technique across several hundred strokes, we gradually build up the image, layer by layer, until a coherent painting emerges. The GIF below illustrates the overall painting process where each stroke's position, scale, and rotation are optimized using greedy hill climbing before being committed to the canvas.
 
 ![Image](/readme_stuff/mona_lisa_gif_final.gif "Mona Lisa")
