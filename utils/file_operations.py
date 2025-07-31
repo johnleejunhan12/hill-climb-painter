@@ -157,7 +157,7 @@ def copy_and_paste_file(source_file_path: str, destination_folder_full_path: str
     
     try:
         shutil.copy2(source_file_path, destination_file_path)
-        print(f"Copied file to: {destination_file_path}")
+        # print(f"Copied file to: {destination_file_path}")
         return destination_file_path
     except OSError as e:
         raise OSError(f"Failed to copy file from {source_file_path} to {destination_file_path}. Reason: {e}")

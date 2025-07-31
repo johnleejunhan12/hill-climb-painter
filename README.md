@@ -1,50 +1,121 @@
 # Hill Climb Painter
-
-A python application that recreates images and GIFs using various shapes and textures
-
-<!-- ![Image](/readme_stuff/street.png "Rainy street") -->
-[![IMAGE ALT TEXT HERE](/readme_stuff/street.png)](https://youtu.be/jfOIpWaAR6k)
+A Python desktop application that recreates images and GIFs using various textures.
 
 
 
-### How it works
+![Image](/readme_stuff/mona_lisa_gif_final.gif "Mona Lisa")
+
+## Overview
+Hill Climb Painter is an image reconstruction algorithm that transforms target visuals into painted representations by sequentially placing textured brush strokes. It leverages a greedy hill climbing approch to iteratively optimize each texture's position, rotation, and scale, with the goal of minimizing the visual difference between the subject and canvas.
+
+Each texture is evaluated for its visual contribution before being committed to the canvas, ensuring that only detail-enhancing, color-appropriate textures are added. This enables the painting to evolve from coarse, abstract forms into a visually rich and structured composition, capturing both the fidelity of photorealism and the expressive texture characteristic of impressionist art.
+
+
+
+
+## Features
+
+
+![Image](/readme_stuff/ui_owl.png "GUI to select subject and textures")
+
+### 🎨  Create a painted masterpiece
+- **Multiple Format Support**: PNG, JPG, JPEG, and animated GIF inputs
+- **High-Resolution Output**: Specify your desired resolution of the painting (up to 4K)
+- **Texture-Based Painting**: Use custom PNG textures such as brush strokes or shapes
+
+
+### ⏰ Real-Time Visualization
+- **Live Painting Display**: Watch the algorithm work in real-time in a pygame display
+- **Progress Tracking**: Visualize improvements of texture placements during optimisation process
+- **Painting Progress GIFs**: Save time-lapse animations of painting progress
+
+### ⚙️ GUI for parameter customization
+- **Texture Count**: Change how abstract or detailed you want the painting will be
+- **Computation Size**: Balance between painting quality and speed
+- **Optimization Settings**: Adjust iteration ranges and termination thresholds
+- **Texture Properties**: Modify size, opacity and scaling behavior of texture
+- **Vector Field Equations**: Align textures to a mathematically defined vector field
+- **Persistent settings**: Selected target, texture and parameters are automatically saved
+
+
+### ⚡ Performance optimisation
+- **Numba Acceleration**: JIT compilation for expensive functions
+- **Multiprocessing Support**: Paint multiple GIF frames in parallel
+
+
+
+## Installation and setup
+### Prerequisites
+- Python 3.7 or higher
+- Virtual environment (recommended)
+
+### Step 1: Clone the Repository
+```bash
+git clone https://github.com/johnleejunhan12/hill-climb-painter.git
+cd hill-climb-painter
+```
+
+### Step 2: Create Virtual Environment
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# macOS/Linux
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### Step 3: Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+## How it works
 To generate a painted approximation of a target image using textures, we begin by initializing a blank canvas with the average RGB color of the target image. In this example, we will use 11 different paintstrokes as textures. 
 ![Image](/readme_stuff/how_work_1.png "Target, texture and canvas")
-Initially, a random paint stroke is selected. It is assigned a random scale, position and rotation. As seen in the image below, its color is computed by taking the average of the RGB values within the corresponding region of the target.
+<br><br>
+Initially, a random paint stroke is selected. It is assigned a random scale, position, and rotation. As seen in the image below, its color is computed by taking the average of the RGB values within the corresponding region of the target.
 ![Image](/readme_stuff/how_work_2_v2.png "Target and canvas")
+<br><br>
 Next, we need to determine whether the placement of a paint stroke is "good" or "bad".
-To do this, we define a **quantitative reward-and-penalty scoring system** that satisfies the following criteria:
+To achieve this, we define a quantitative scoring system that satisfies the following criteria:
 
-***
 
-### Reward good placements that:
+#### **Reward good placements that**:
 - **Add more detail** to empty or blurry regions of the canvas, bringing it closer to the target image by filling in underdeveloped areas.
 - **Use a suitable color** that closely resembles the corresponding region in the target image. This ensures the paint stroke blends naturally into the canvas.  
   > *Note:* Since the stroke's color is calculated using the average RGB values of the region it would cover, the most suitable colors occur when the target region has low color variance. The painted result will look more cohesive if strokes are placed in areas of consistent color rather than highly varied regions.
 - **Maximize coverage** by filling in large areas of empty or blurry canvas without overwriting existing details.
 
-***
 
-### Penalize bad placements that:
+
+#### Penalize bad placements that:
 - **Make the canvas worse** by reducing its similarity to the target image. Such strokes are destructive and lead to a sloppier final result.
 - **Overwrite already detailed or accurate areas**, which can undo valuable work already done in previous strokes.
 - **Contribute little to no meaningful detail**. For example, placing tiny strokes in nearly empty areas. In such cases, using larger strokes would be more effective and should be encouraged.
 
-***
 
 ### Scoring heuristic:
-**Step 1: Find the error between the target image and canvas**
+**1) Finding the error between the target image and canvas**
+
 Pixel errors are calculated using root sum of squared difference between RGB values of the target and canvas.
 ![Image](/readme_stuff/how_work_3.png "Target, texture and canvas")
+<br><br>
 
-**Step 2: Find the error between the target image and canvas with paint stroke**
+**2) Finding the error between the target image and canvas with paint stroke**
+
 We calculate pixel errors again using the same formula but with the texture drawn onto the canvas
 ![Image](/readme_stuff/how_work_4.png "Target, texture and canvas")
+<br><br>
 
-**Step 3: Find the difference between errors**
-The final score is calculated by taking the difference in errors before and after the texture was added. As seen in the color map plot, textures that are well placed recieve a higher score as they reduce the total pixel error between the canvas and target image.
+**3) Obtain the difference between errors**
+
+The final score is calculated by taking the difference in errors before and after the texture was added. As seen in the color map plot, textures that are well placed receive a higher score as they reduce the total pixel error between the canvas and target image.
 ![Image](/readme_stuff/good_score.png "Target, texture and canvas")
-If the texture was placed in a sub optimal configuration, it will be penalised as shown in the red (negative) regions of the scoring color plot.
+<br><br>
+#### **Penalizing sub-optimal placements**
+If the texture was placed in a suboptimal configuration, it will be penalized as shown in the red (negative) regions of the scoring color plot.
 ![Image](/readme_stuff/bad_placement.png "Target, texture and canvas")
 ![Image](/readme_stuff/bad_score.png "Target, texture and canvas")
 
@@ -57,7 +128,7 @@ After an initial score is obtained, the texture undergoes random perturbations t
 ![Image](/readme_stuff/scoring_texture_progress.gif "Target, texture and canvas")
 
 
-This iterative process continues until an iteration limit is reached or terminates after a specified number of failed iterations where there is no further improvement. 
+This iterative process continues until an iteration limit is reached or terminates after a specified number of failed iterations without further improvement. 
 
 ***
 
@@ -144,7 +215,7 @@ pip install -r requirements.txt
 - **matplotlib**: Plotting and final image display
 - **Pillow**: Image processing (PNG/JPEG/GIF handling)
 - **numba**: JIT compilation for performance
-- **pygame**: Real-time painting display
+- **pygame**: Real-time painting progress display
 - **imageio**: GIF creation from frames
 - **sympy**: Vector field equation parsing
 
@@ -161,67 +232,12 @@ This launches the full GUI experience:
 3. **Real-Time Painting**: Watch the algorithm work with live visualization
 4. **Output Management**: Results saved to `output/` folder
 
-### Command Line Version (Without UI)
-```bash
-python main_without_ui.py
-```
 
-Pre-configured version for quick testing. Modify parameters directly in the file.
 
-## 📁 Project Structure
 
-```
-hill-climb-painter/
-├── main.py                          # Main GUI application
-├── main_without_ui.py               # Command-line version
-├── requirements.txt                 # Python dependencies
-├── painter/                         # Core painting engine (OOP architecture)
-│   ├── orchestrator.py             # Main entry point
-│   ├── painting_engine.py          # Core algorithm coordination
-│   ├── config.py                   # Configuration management
-│   └── components/                  # Modular components
-│       ├── hill_climber.py         # Optimization algorithm
-│       ├── image_processor.py      # Image loading/processing
-│       ├── texture_manager.py      # Texture handling
-│       ├── vector_field_factory.py # Vector field creation
-│       ├── display_manager.py      # Real-time visualization
-│       └── output_manager.py       # Result generation
-├── user_interface/                  # GUI components
-│   ├── parameter_ui.py             # Main parameter interface
-│   ├── target_texture_select_ui.py # File selection UI
-│   ├── vector_field_equation_ui.py # Vector field editor
-│   └── parameters.json             # UI state persistence
-├── utils/                          # Utility functions
-│   ├── rectangle.py                # Shape optimization (Numba accelerated)
-│   ├── vector_field.py             # Vector field mathematics
-│   ├── utilities.py                # Image processing utilities
-│   └── file_operations.py          # File management
-├── target/                         # Place target images here
-├── texture/                        # Place texture PNG files here
-├── output/                         # Generated results
-├── original_gif_frames/            # Extracted GIF frames (auto-created)
-└── painted_gif_frames/             # Painted frames (auto-created)
-```
+## Parameter configuration
 
-## 🎯 Usage Workflow
 
-### 1. Prepare Your Files
-```bash
-# Add target image or GIF
-cp your_image.jpg target/
-
-# Add texture PNG files (brush strokes)
-cp brush1.png brush2.png texture/
-```
-
-### 2. Run the Application
-```bash
-python main.py
-```
-
-### 3. Select Target & Textures
-- Use the file selection UI to choose your target and textures
-- Preview selected files before proceeding
 
 ### 4. Configure Parameters
 
@@ -394,4 +410,40 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ```bash
 python main.py
+```
+
+
+## 📁 Project Structure
+
+```
+hill-climb-painter/
+├── main.py                          # Main GUI application
+├── main_without_ui.py               # Command-line version
+├── requirements.txt                 # Python dependencies
+├── painter/                         # Core painting engine (OOP architecture)
+│   ├── orchestrator.py             # Main entry point
+│   ├── painting_engine.py          # Core algorithm coordination
+│   ├── config.py                   # Configuration management
+│   └── components/                  # Modular components
+│       ├── hill_climber.py         # Optimization algorithm
+│       ├── image_processor.py      # Image loading/processing
+│       ├── texture_manager.py      # Texture handling
+│       ├── vector_field_factory.py # Vector field creation
+│       ├── display_manager.py      # Real-time visualization
+│       └── output_manager.py       # Result generation
+├── user_interface/                  # GUI components
+│   ├── parameter_ui.py             # Main parameter interface
+│   ├── target_texture_select_ui.py # File selection UI
+│   ├── vector_field_equation_ui.py # Vector field editor
+│   └── parameters.json             # UI state persistence
+├── utils/                          # Utility functions
+│   ├── rectangle.py                # Shape optimization (Numba accelerated)
+│   ├── vector_field.py             # Vector field mathematics
+│   ├── utilities.py                # Image processing utilities
+│   └── file_operations.py          # File management
+├── target/                         # Place target images here
+├── texture/                        # Place texture PNG files here
+├── output/                         # Generated results
+├── original_gif_frames/            # Extracted GIF frames (auto-created)
+└── painted_gif_frames/             # Painted frames (auto-created)
 ```
