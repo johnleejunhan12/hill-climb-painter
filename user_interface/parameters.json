@@ -1,6 +1,6 @@
 {
     "computation_size": {
-        "value": 223,
+        "value": 421,
         "min_value": 100,
         "max_value": 720
     },
@@ -49,9 +49,9 @@
         "value": [
             []
         ],
-        "target_previous_height": 512,
-        "target_previous_width": 512,
-        "target_previous_extention": ".png"
+        "target_previous_height": 1436,
+        "target_previous_width": 2089,
+        "target_previous_extention": ".jpeg"
     },
     "display_painting_progress": {
         "value": true
@@ -63,7 +63,7 @@
         "value": true
     },
     "output_image_size": {
-        "value": 2719,
+        "value": 4000,
         "min_value": 500,
         "max_value": 4000
     },
@@ -71,7 +71,7 @@
         "value": "painted_image_output"
     },
     "create_gif_of_painting_progress": {
-        "value": false
+        "value": true
     },
     "painting_progress_gif_name": {
         "value": ""

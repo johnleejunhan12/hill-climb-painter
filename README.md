@@ -1,26 +1,21 @@
 # Hill Climb Painter
-A Python desktop application that recreates images and GIFs using various textures.
 
-
-
-![Image](/readme_stuff/mona_lisa_gif_final.gif "Mona Lisa")
+A Python desktop application that transforms images into paintings
+![Image](/readme_stuff/hill_climb_painter.gif "Hill Climb Painter")
 
 ## Overview
-Hill Climb Painter is an image reconstruction algorithm that transforms target visuals into painted representations by sequentially placing textured brush strokes. It leverages a greedy hill climbing approch to iteratively optimize each texture's position, rotation, and scale, with the goal of minimizing the visual difference between the subject and canvas.
 
-Each texture is evaluated for its visual contribution before being committed to the canvas, ensuring that only detail-enhancing, color-appropriate textures are added. This enables the painting to evolve from coarse, abstract forms into a visually rich and structured composition, capturing both the fidelity of photorealism and the expressive texture characteristic of impressionist art.
+Hill Climb Painter is an image reconstruction algorithm that transforms images and short animations into painted representations by sequentially placing textured brush strokes. A greedy hill-climbing algorithm is used to iteratively optimize each stroke’s position, rotation, and scale, minimizing the visual difference between the target image and the canvas.
 
-
-
+Each brush stroke is assessed for its visual impact before being applied to the canvas, ensuring that only those contributing meaningful detail are added. As more strokes are layered, coarse and abstract forms are gradually refined into a structured and balanced composition, blending realistic detail with the textured aesthetics of impressionism.
 
 ## Features
 
+![Image](/readme_stuff/ui_owl.png "Painting of an owl")
 
-![Image](/readme_stuff/ui_owl.png "GUI to select subject and textures")
-
-### 🎨  Create a painted masterpiece
+### 🎨 Painting application
 - **Multiple Format Support**: PNG, JPG, JPEG, and animated GIF inputs
-- **High-Resolution Output**: Specify your desired resolution of the painting (up to 4K)
+- **High-Resolution Output**: Specify a desired resolution of the final painting (up to 4K)
 - **Texture-Based Painting**: Use custom PNG textures such as brush strokes or shapes
 
 
@@ -30,12 +25,13 @@ Each texture is evaluated for its visual contribution before being committed to 
 - **Painting Progress GIFs**: Save time-lapse animations of painting progress
 
 ### ⚙️ GUI for parameter customization
-- **Texture Count**: Change how abstract or detailed you want the painting will be
-- **Computation Size**: Balance between painting quality and speed
-- **Optimization Settings**: Adjust iteration ranges and termination thresholds
+- **Persistent settings**: Selected target, texture and parameters are automatically saved
+- **Texture Count**: Change how abstract or detailed the painting should be
+- **Canvas Computation Size**: Balance between painting quality and speed
+- **Texture Optimization**: Adjust iteration ranges and termination thresholds
 - **Texture Properties**: Modify size, opacity and scaling behavior of texture
 - **Vector Field Equations**: Align textures to a mathematically defined vector field
-- **Persistent settings**: Selected target, texture and parameters are automatically saved
+
 
 
 ### ⚡ Performance optimisation
@@ -70,6 +66,53 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+
+
+
+
+
+## Usage
+### Step 1: Run the application
+```bash
+python main.py
+```
+### Step 2: Select target and textures
+
+
+
+### Step 3: Adjust parameters
+
+### Step 4: View the painting process
+
+### Step 5: Obtaining the saved painting
+
+
+
+
+
+### Creative constraints
+
+
+### 1) Different textures
+The textures used are not limited to just brushstrokes. We can use various shapes such as circles, triangles and squares as the texture. We can also use unusual textures such as lines to produce a chaotic and scribbly abstract rendition of the original image.
+
+### 2) Disable scaling of texture
+By setting an initial texture size and restricting it, we can achieve painting styles like pointillism, where small textures are applied in patterns to form an image.
+
+
+
+### 3) Vector fields
+
+Vector fields `(f(x,y), g(x,y))` allow us to control texture directionality by constraining brush strokes to align with the field's flow. To demonstrate this, we create a radial sink pattern using the vector field `(-x, -y)`, which causes textures to converge toward a central point. By positioning this convergence point at the cat's nose `(267, 279)`, all brush strokes naturally flow inward, creating a focal point that draws the viewer's attention. 
+![Image](/readme_stuff/cat_vector.png "Setting a vector field")
+![Image](/readme_stuff/cat.gif "Vector field aligned textures")
+
+### 2) Prevent resizing of textures
+
+### 3) 
+
+
 
 ## How it works
 To generate a painted approximation of a target image using textures, we begin by initializing a blank canvas with the average RGB color of the target image. In this example, we will use 11 different paintstrokes as textures. 

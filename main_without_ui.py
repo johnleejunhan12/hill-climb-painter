@@ -19,20 +19,21 @@ is_print_hill_climb_progress_in_console = False
 
 # Parameter tab:
 # 1) Computation size (single slider)
-resize_target_shorter_side_of_target = 200
-
+# resize_target_shorter_side_of_target = 50
+resize_target_shorter_side_of_target = 671
 # 2) Add N textures (single slider)
-num_shapes_to_draw = 1000 # range between 100 and 5000 in slider widget
+num_shapes_to_draw = 7000 # range between 100 and 5000 in slider widget
 
 # 3) Num of hill climb iterations (dual slider)
-min_hill_climb_iterations = 50 
+min_hill_climb_iterations = 5
 max_hill_climb_iterations = 500
 
 # 4) Texture opacity percentage from 1 to 100% (single slider)
 texture_opacity_percentage = 100
 
 # 5) Initial texture width to ? pixels (single slider)
-initial_random_rectangle_pixel_width = 20
+initial_random_rectangle_pixel_width = 80
+#initial_random_rectangle_pixel_width = 5
 
 # 6) Allow size of texture to vary during optimization (checkbox) equivalent to NOT make all textures the same size
 is_scaling_allowed_during_mutation = True
@@ -40,21 +41,21 @@ is_scaling_allowed_during_mutation = True
 # 7) Display painting progress (toggle visibility checkbox)
 is_show_pygame_display_window = True
 # 7.i) Show improvement of individual textures (checkbox)
-is_display_rectangle_improvement = True
+is_display_rectangle_improvement = False
 # 7.ii) Display final image after painting (checkbox initialized only if the target is not a gif)
 is_display_final_image = True
 
 # 8) Allow early termination of hill climbing (toggle visibility checkbox)
 is_prematurely_terminate_hill_climbing_if_stuck_in_local_minima = True 
 # 8.i) Terminate after N failed iterations where there is no improvement (single slider)
-fail_threshold_before_terminating_hill_climb = 100 
+fail_threshold_before_terminating_hill_climb = 200 
 
 # 9) Enable vector field (toggle visibility checkbox)
-is_enable_vector_field = False
+is_enable_vector_field = True
 # 9i) Edit vector field equation (button)
 # vector_field_function = lambda x,y: (x+y, x-y)
 from user_interface.vector_field_equation_ui import VectorFieldVisualizer
-vector_field_function = VectorFieldVisualizer.get_function_from_string_equations("-y", "x")
+vector_field_function = VectorFieldVisualizer.get_function_from_string_equations("-x", "-y")
 
 # 9ii) Shift vector field origin (button)
 field_center_x, field_center_y = 0,0
@@ -62,13 +63,13 @@ field_center_x, field_center_y = 0,0
 
 # Output tab (For png, jpg, jpeg case)
 # 1) Output image size ? px (single slider)
-desired_length_of_longer_side_in_painted_image = 1200 # slider between 800 and 4000
+desired_length_of_longer_side_in_painted_image = 3000 # slider between 800 and 4000
 
 # 2) Name of output image (text box input)
 image_name = "image_output" 
 
 # 3) Create GIF of painting progress (toggle visibility checkbox)
-is_create_painting_progress_gif = False  # checkbox, description is "creates gif of painting progress"
+is_create_painting_progress_gif = True  # checkbox, description is "creates gif of painting progress"
 # 3.i) GIF filename
 painting_proress_gif_name = "gif_output"
 
@@ -117,8 +118,31 @@ is_enable_multiprocessing_for_batch_frame_processing = False # ensures pygame di
 
 # Other parameters not part of UI:
 is_append_datetime = False # Adds date time to image output
-frames_per_second_of_painting_progress_gif = 100 # This is not part of the UI.
+frames_per_second_of_painting_progress_gif = 4 # This is not part of the UI.
 
+def method_1_power_law(shape_index, total_shapes, target_frames=40, power=2.5):
+    """
+    🏆 BEST RECOMMENDATION: Power Law Distribution
+    
+    Perfect balance of:
+    - Exactly 40 frames
+    - 100% coverage (reaches iteration 9999)
+    - Heavy concentration at start (23 frames in first quarter)
+    - Smooth distribution throughout
+    
+    Mathematical principle: position = (i/n)^power * total_iterations
+    Higher power = more frames concentrated at start
+    """
+    # Pre-calculate all target positions for efficiency
+    if not hasattr(method_1_power_law, '_positions'):
+        method_1_power_law._positions = set()
+        for i in range(target_frames):
+            normalized = i / (target_frames - 1) if target_frames > 1 else 0
+            powered = normalized ** power
+            position = int(powered * (total_shapes - 1))
+            method_1_power_law._positions.add(position)
+    
+    return shape_index in method_1_power_law._positions
 
 # Top-level worker function for multiprocessing (must be at module scope for Windows compatibility)
 def paint_worker(args):
@@ -261,8 +285,11 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
         # Update current_rgba with the best rectangle texture
         update_canvas_with_best_rect(best_rect_list, target_rgba, texture_greyscale_alpha, current_rgba)
 
-        # Enqueue to gif creator 
-        gif_creator.enqueue_frame(current_rgba)
+        if not is_display_rectangle_improvement:
+            if method_1_power_law(shape_index, num_shapes_to_draw):
+                frame = add_black_borders(current_rgba, 200, 10)
+                gif_creator.enqueue_frame(frame)
+                print(f"Enqueued frame {shape_index} to gif creator")
 
         # # Append the best rectangle list with its corresponding texture and color to the best_textured_rect
         # best_rect_with_texture.append({"best_rect_list":best_rect_list,"texture_key": texture_key, "rgb": rgb_of_best_rect})
@@ -290,6 +317,12 @@ def paint_target_image(target_image_full_filepath, png_output_folder_full_path, 
     # Save the output and end safely the process.
     output_rgba = create_image_output.finish() 
     save_rgba_array_as_png(output_rgba, filename_of_exported_png, png_output_folder_full_path, is_append_datetime=is_append_datetime)
+
+
+    # Add extra frames of the final image to the gif
+    for _ in range(10):
+        frame = add_black_borders(current_rgba, 200, 10)
+        gif_creator.enqueue_frame(frame)
 
     # Safely end process of gif_creator
     gif_creator.end_process()

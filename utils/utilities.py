@@ -845,3 +845,35 @@ def import_image_as_normalized_rgba_fast(filepath: str) -> np.ndarray:
     except Exception as e:
         print(f"OpenCV loading failed for {filepath}, falling back to PIL: {e}")
         return import_image_as_normalized_rgba(filepath)
+
+
+def add_black_borders(rgba_array, horizontal_pad, vertical_pad):
+    """
+    Adds black borders to an RGBA image array.
+    
+    Parameters:
+    - rgba_array: numpy array of shape (height, width, 4) with values in [0, 1]
+    - horizontal_pad: width of left and right borders (in pixels)
+    - vertical_pad: height of top and bottom borders (in pixels)
+    
+    Returns:
+    - Padded RGBA array with black borders
+    """
+    if len(rgba_array.shape) != 3 or rgba_array.shape[2] != 4:
+        raise ValueError("Input array must be of shape (height, width, 4)")
+    
+    original_height, original_width, _ = rgba_array.shape
+    
+    # Calculate new dimensions
+    new_height = original_height + 2 * vertical_pad
+    new_width = original_width + 2 * horizontal_pad
+    
+    # Create new array filled with black (0, 0, 0, 1)
+    padded_array = np.zeros((new_height, new_width, 4))
+    padded_array[..., 3] = 1  # Set alpha channel to 1 (fully opaque)
+    
+    # Place original image in the center
+    padded_array[vertical_pad:vertical_pad + original_height, 
+                 horizontal_pad:horizontal_pad + original_width] = rgba_array
+    
+    return padded_array
