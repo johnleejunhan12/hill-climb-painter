@@ -129,6 +129,11 @@ def run_painting_algorithm(param_dict):
     """
     param_dict["print_progress"] = IS_PRINT_PROGRESS_OF_HILL_CLIMBING_ALGO
     
+    # Configure frame skipping parameters
+    param_dict["is_enable_smaller_gif_export_size"] = IS_ENABLE_SMALLER_GIF_EXPORT_SIZE
+    param_dict["enable_smaller_gif_frame_cap"] = ENABLE_SMALLER_GIF_FRAME_CAP
+    param_dict["enable_smaller_gif_number_of_extra_frames_at_end"] = ENABLE_SMALLER_GIF_NUMBER_OF_EXTRA_FRAMES_AT_END
+    
     # Configure intermediate frame visualization settings
     # 🎯 Control how often intermediate optimization steps are displayed
     param_dict["intermediate_frame_generation_fps"] = 20  # FPS cap for intermediate display updates (1-60 recommended)
@@ -136,7 +141,9 @@ def run_painting_algorithm(param_dict):
     # 🎞️ Control how many frames are recorded to the painting progress GIF
     param_dict["probability_of_writing_intermediate_frame_to_gif"] = 0.2  # Probability of recording frames (0.0 = no frames, 1.0 = all frames)
     
-
+    # for key, value in param_dict.items():
+    #     print(f"{key}: {value}")
+    # quit()
     try:
         # Determine if target is a GIF based on file extension
         is_gif_target = TARGET_FILEPATH.lower().endswith('.gif')
@@ -253,14 +260,19 @@ def run_painting_algorithm(param_dict):
 
 if __name__ == "__main__":
 
+    # Debug settings
     IS_PRINT_PROGRESS_OF_HILL_CLIMBING_ALGO = True
-        
+
+
+    # Additional settings for smaller GIFs (only works if create_gif_of_painting_progress = True and display_placement_progress = False)
+    IS_ENABLE_SMALLER_GIF_EXPORT_SIZE = True  # Skip frames to create smaller GIFs size
+    ENABLE_SMALLER_GIF_FRAME_CAP = 50  # Target number of frames when power law frame skipping is enabled  
+    ENABLE_SMALLER_GIF_NUMBER_OF_EXTRA_FRAMES_AT_END = 30  # Number of frames to add at the end of the GIF (so the gif will not end abruptly after the last frame)
+
+
+
     TARGET_FILEPATH, TEXTURE_FILEPATH_LIST, ORIGINAL_GIF_FRAMES_FILE_PATH_LIST, PAINTED_GIF_FRAMES_FULL_FOLDER_PATH = get_target_and_textures()
-    # print("\n")
-    # print('TARGET_FILEPATH  ',TARGET_FILEPATH)
-    # print('TEXTURE_FILEPATH_LIST    ', TEXTURE_FILEPATH_LIST)
-    # print('ORIGINAL_GIF_FRAMES_FILE_PATH_LIST   ', ORIGINAL_GIF_FRAMES_FILE_PATH_LIST) # original_gif_frames_file_path_list might be None 
-    # print('PAINTED_GIF_FRAMES_FULL_FOLDER_PATH',PAINTED_GIF_FRAMES_FULL_FOLDER_PATH)
+
 
     while True:
         ui_return_value = get_command_from_parameter_ui(TARGET_FILEPATH, target_gif_frames=ORIGINAL_GIF_FRAMES_FILE_PATH_LIST)

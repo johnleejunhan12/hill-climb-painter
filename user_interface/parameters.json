@@ -1,17 +1,17 @@
 {
     "computation_size": {
-        "value": 421,
+        "value": 326,
         "min_value": 100,
         "max_value": 720
     },
     "num_textures": {
-        "value": 3783,
+        "value": 4812,
         "min_value": 100,
         "max_value": 10000
     },
     "num_hill_climb_iterations": {
-        "current_lower_value": 103,
-        "current_upper_value": 291,
+        "current_lower_value": 1,
+        "current_upper_value": 234,
         "min_value": 1,
         "max_value": 500
     },
@@ -21,7 +21,7 @@
         "max_value": 100
     },
     "initial_texture_width": {
-        "value": 95,
+        "value": 86,
         "min_value": 10,
         "max_value": 200
     },
@@ -32,7 +32,7 @@
         "value": true
     },
     "failed_iterations_threshold": {
-        "value": 300,
+        "value": 104,
         "min_value": 1,
         "max_value": 300
     },
@@ -60,21 +60,21 @@
         "value": false
     },
     "display_final_image": {
-        "value": true
+        "value": false
     },
     "output_image_size": {
-        "value": 4000,
+        "value": 3020,
         "min_value": 500,
         "max_value": 4000
     },
     "output_image_name": {
-        "value": "painted_image_output"
+        "value": "street_painting"
     },
     "create_gif_of_painting_progress": {
         "value": true
     },
     "painting_progress_gif_name": {
-        "value": ""
+        "value": "street_painting_progress"
     },
     "painted_gif_name": {
         "value": "painted_gif_output"

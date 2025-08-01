@@ -181,7 +181,13 @@ class HillClimber:
                     self.display_manager.update_intermediate_display(intermediate_canvas)
                 
                 # Record intermediate frames for GIF with configurable probability
-                if should_update_display and self.output_manager and intermediate_canvas is not None:
+                # Skip intermediate frame recording if power law frame skipping is active
+                should_record_intermediate = (should_update_display and 
+                                            self.output_manager and 
+                                            intermediate_canvas is not None and
+                                            not getattr(self.output_manager, '_skip_intermediate_frames', False))
+                
+                if should_record_intermediate:
                     self.output_manager.record_intermediate_frame(intermediate_canvas, probability=self.gif_probability)
             else:
                 fail_count += 1

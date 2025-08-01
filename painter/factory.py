@@ -47,7 +47,17 @@ class PaintingEngineFactory:
             ValueError: If configuration validation fails
         """
         config = PaintingConfig.from_ui_dict(ui_dict, is_gif_target)
-        return PaintingEngine(config, is_multiprocessing_worker)
+        # Create hill climber with frame skipping awareness
+        hill_climber = HillClimber(
+            config.hill_climb, 
+            config.multiprocessing.enabled,
+            visualization_fps=config.visualization_fps,
+            gif_probability=config.gif_probability
+        )
+        engine = PaintingEngine(config, is_multiprocessing_worker, hill_climber=hill_climber)
+        # Store ui_dict for parameter access
+        engine.ui_dict = ui_dict
+        return engine
     
     @staticmethod
     def create_worker_engine(config_dict: dict) -> PaintingEngine:
@@ -61,7 +71,17 @@ class PaintingEngineFactory:
             PaintingEngine configured for worker process
         """
         config = PaintingConfig.from_serializable_dict(config_dict)
-        return PaintingEngine(config, is_multiprocessing_worker=True)
+        # Create hill climber for worker
+        hill_climber = HillClimber(
+            config.hill_climb, 
+            config.multiprocessing.enabled,
+            visualization_fps=config.visualization_fps,
+            gif_probability=config.gif_probability
+        )
+        engine = PaintingEngine(config, is_multiprocessing_worker=True, hill_climber=hill_climber)
+        # Reconstruct ui_dict for worker (frame skipping parameters included)
+        engine.ui_dict = config_dict.get('ui_dict', {})
+        return engine
     
     @staticmethod
     def create_default_engine() -> PaintingEngine:

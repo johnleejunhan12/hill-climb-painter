@@ -123,6 +123,8 @@ class PaintingOrchestrator:
             # Create config and serialize it for workers
             config = PaintingConfig.from_ui_dict(ui_dict, is_gif_target=True)
             config_dict = config.to_serializable_dict()
+            # Include ui_dict for frame skipping parameters
+            config_dict['ui_dict'] = ui_dict
             
             # Prepare work items
             work_items = []

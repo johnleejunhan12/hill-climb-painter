@@ -1,6 +1,7 @@
 # Hill Climb Painter
 
 A Python desktop application that transforms images into paintings
+
 ![Image](/readme_stuff/hill_climb_painter.gif "Hill Climb Painter")
 
 ## Overview
@@ -78,14 +79,70 @@ pip install -r requirements.txt
 python main.py
 ```
 ### Step 2: Select target and textures
+Choose a target image to paint (PNG, JPG, JPEG) and choose textures (PNG) to be applied to the painting. 
 
+Note: PNG is required for textures as it has an alpha channel to represent transparent pixels. Textures must be white in color, you can test the color of the texture by clicking on regions of the image.
+
+![Image](/readme_stuff/usage_1.png "Select target and textures")
 
 
 ### Step 3: Adjust parameters
 
-### Step 4: View the painting process
+Experiment with various parameters to achieve your desired style of painting
 
-### Step 5: Obtaining the saved painting
+![Image](/readme_stuff/usage_2.png "Adjust parameters")
+
+<details>
+
+<summary>Parameter Explanation</summary>
+
+
+| #  | **Parameters Tab**                          | **Effect**                                                                                             |
+|----|---------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| 1  | Computation size                            | Sets the working canvas resolution. Decrease for speed, increase for more detail. *(Recommended: 300)* |
+| 2  | Add N textures                              | More textures result in a more detailed painting.                                                      |
+| 3  | Number of hill climb iterations             | Optimization steps per texture. Higher = better placement, but slower runtime.                         |
+| 4  | Texture opacity                             | Opacity of each texture. *100% = fully opaque; lower = more translucent.*                              |
+| 5  | Initial texture size                        | Size of each texture when created. Affects initial brush size.                                         |
+| 6  | Constrain texture size to initial size      | If checked, texture size remains fixed after creation.                                                 |
+| 7  | Display painting progress                   | Visualizes painting progress using Pygame.                                                             |
+| 7a | Show improvement of individual texturs      | Displays hill climbing steps for each texture's placement.                                             |
+| 7b | Display final image after painting          | Shows the completed painting after all textures are applied.                                           |
+| 8  | Allow early termination of hill climbing    | Texture is committed early if no improvement occurs over N iterations.                                 |
+
+<br>
+
+| #  | **Output Settings Tab**                     | **Effect**                                                                                               |
+|----|---------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| 1  | Output image size                           | Resolution of final painted image. *(High-res output possible even with a low-res computation canvas)*   |
+| 2  | Name of output image                        | Specify a name of the painted image                                                                      |
+| 3  | Create GIF of painting progress             | If checked, generates a GIF showing the painting process.                                                |
+| 3a | Enter GIF filename                          | Filename of painting progress GIF.                                                                       |
+
+
+
+</details>
+
+
+
+### Step 4: View the painting process
+If you checked the display painting progress, a pygame window will show the real time painting progress. You can also close the display to prematurely stop the painting process.
+
+![Image](/readme_stuff/pygame_display.gif "Pygame display")
+
+
+### Step 5: Obtain result from output folder
+After the paining is completed, you can view the final product in the output folder
+
+![Image](/readme_stuff/output_folder.png "Output folder")
+
+Gif of painting progress
+
+![Image](/readme_stuff/street_painting_progress.gif "Image output")
+
+High resolution image output
+
+![Image](/readme_stuff/street_painting.png "Image output")
 
 
 

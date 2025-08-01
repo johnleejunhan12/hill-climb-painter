@@ -5,6 +5,7 @@ Main painting engine that orchestrates all components to perform the painting al
 import numpy as np
 from typing import List, Optional, Tuple
 from .config import PaintingConfig
+import math
 from .components.image_processor import ImageProcessor
 from .components.texture_manager import TextureManager
 from .components.vector_field_factory import VectorFieldFactory
@@ -39,6 +40,12 @@ class PaintingEngine:
         # Display and output managers will be initialized per paint operation
         self.display_manager = None
         self.output_manager = None
+        
+        # UI parameters for configuration access (set by factory)
+        self.ui_dict = None
+        
+        # Pre-computed frame positions for power law method
+        self._power_law_frame_positions = None
     
     def paint_image(self, target_path: str, texture_paths: List[str], 
                    output_folder: str, filename: str) -> bool:
@@ -82,6 +89,17 @@ class PaintingEngine:
                     texture_dict, canvas_height, canvas_width, target, 
                     self.config.image.output_image_size
                 )
+                
+                # Configure intermediate frame skipping for power law method
+                if (self.ui_dict and 
+                    self.ui_dict.get("is_enable_smaller_gif_export_size", False) and 
+                    self.ui_dict.get("create_gif_of_painting_progress", False) and 
+                    not self.ui_dict.get("display_placement_progress", True)):
+                    # Disable intermediate frame recording when power law skipping is active
+                    output_mgr._skip_intermediate_frames = True
+                    frame_cap = self.ui_dict.get("enable_smaller_gif_frame_cap", 40)
+                    extra_frames = self.ui_dict.get("enable_smaller_gif_number_of_extra_frames_at_end", 0)
+                    print(f"🎯 Power law frame skipping enabled - targeting {frame_cap} frames + {extra_frames} extra end frames, intermediate frames disabled")
                 
                 # 3. Execute main painting loop
                 success = self._execute_painting_loop(
@@ -200,7 +218,9 @@ class PaintingEngine:
                     self.display_manager.update_display(canvas)
                 
                 if self.output_manager:
-                    self.output_manager.record_frame(canvas)
+                    # Use conditional frame recording based on configuration
+                    if self._should_record_frame(shape_index, total_shapes):
+                        self.output_manager.record_frame(canvas)
                     self.output_manager.enqueue_shape_for_output(optimization_result)
             
             if not self.multiprocessing_enabled:
@@ -240,6 +260,91 @@ class PaintingEngine:
             errors.append("Output folder cannot be empty")
         
         return errors
+    
+    def _compute_power_law_frame_positions(self, total_shapes: int, target_frames: int, power: float = 2.5) -> set:
+        """
+        Pre-compute frame positions using power law distribution.
+        
+        Args:
+            total_shapes: Total number of shapes to be painted
+            target_frames: Desired number of frames (~40)
+            power: Power law exponent (higher = more frames at start)
+            
+        Returns:
+            Set of shape indices where frames should be recorded
+        """
+        positions = set()
+        for i in range(target_frames):
+            normalized = i / (target_frames - 1) if target_frames > 1 else 0
+            powered = normalized ** power
+            position = int(powered * (total_shapes - 1))
+            positions.add(position)
+        return positions
+    
+    def _should_record_frame_power_law(self, shape_index: int, total_shapes: int) -> bool:
+        """
+        Determine if current shape should be recorded using power law method.
+        
+        Args:
+            shape_index: Current shape index (0-based)
+            total_shapes: Total number of shapes
+            
+        Returns:
+            True if frame should be recorded
+        """
+        # Lazy initialization of frame positions
+        if self._power_law_frame_positions is None:
+            target_frames = self.ui_dict.get("enable_smaller_gif_frame_cap", 40)
+            self._power_law_frame_positions = self._compute_power_law_frame_positions(total_shapes, target_frames)
+        
+        return shape_index in self._power_law_frame_positions
+    
+    def _should_record_frame_power_law_with_extra_end_frames(self, shape_index: int, total_shapes: int) -> bool:
+        """
+        Determine if current shape should be recorded using power law method with extra end frames.
+        
+        Args:
+            shape_index: Current shape index (0-based)
+            total_shapes: Total number of shapes
+            
+        Returns:
+            True if frame should be recorded
+        """
+        # First check if it's a normal power law frame
+        is_power_law_frame = self._should_record_frame_power_law(shape_index, total_shapes)
+        
+        # Check if we should add extra frames at the end
+        extra_frames_count = self.ui_dict.get("enable_smaller_gif_number_of_extra_frames_at_end", 0)
+        
+        if extra_frames_count > 0:
+            # Record extra frames at the very end to prolong the final state
+            is_in_final_frames = shape_index >= (total_shapes - extra_frames_count)
+            return is_power_law_frame or is_in_final_frames
+        
+        return is_power_law_frame
+    
+    def _should_record_frame(self, shape_index: int, total_shapes: int) -> bool:
+        """
+        Determine if current frame should be recorded based on configuration.
+        
+        Args:
+            shape_index: Current shape index
+            total_shapes: Total number of shapes
+            
+        Returns:
+            True if frame should be recorded
+        """
+        # Check conditions for smaller gif export
+        if (self.ui_dict and 
+            self.ui_dict.get("is_enable_smaller_gif_export_size", False) and 
+            self.ui_dict.get("create_gif_of_painting_progress", False) and 
+            not self.ui_dict.get("display_placement_progress", True)):
+            
+            # Use power law method with extra frames at end
+            return self._should_record_frame_power_law_with_extra_end_frames(shape_index, total_shapes)
+        
+        # Default behavior: record all frames when gif creation is enabled
+        return True
     
     def get_config_summary(self) -> dict:
         """
