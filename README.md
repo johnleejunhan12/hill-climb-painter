@@ -136,24 +136,17 @@ Experiment with various parameters to achieve your desired style of painting
 ### Step 4: View the painting process
 If you checked the display painting progress, a pygame window will show the real time painting progress. You can also close the display to prematurely stop the painting process.
 
-![Image](/readme_stuff/pygame_display.gif "Pygame display")
+https://github.com/user-attachments/assets/db229c0f-234f-4ed7-b74b-e8ecd0e8e5f7
+
 
 
 ### Step 5: Obtain result from output folder
-After the paining is completed, you can view the final product in the output folder
+All painted results are saved to `hill-climb-painter\output`
 
-![Image](/readme_stuff/output_folder.png "Output folder")
-
-Gif of painting progress
-
-![Image](/readme_stuff/street_painting_progress.gif "Image output")
-
-High resolution image output
-
-![Image](/readme_stuff/street_painting.png "Image output")
-
-
-
+<p float="left">
+  <img src="readme_stuff/street_painting_progress.gif" width="45%"/>
+  <img src="/readme_stuff/street_painting.png" width="45%" /> 
+</p>
 
 
 ### Creative constraints
