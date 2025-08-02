@@ -1,24 +1,24 @@
 # Hill Climb Painter
 
-A Python desktop application that converts images into paintings
+A Python desktop application that recreates images into paintings
 
 ![Image](/readme_stuff/hill_climb_painter.gif "Hill Climb Painter")
 
 ## Overview
 
-Hill Climb Painter is an image reconstruction algorithm that transforms images and short animations into painted representations by sequentially placing textured brush strokes. A greedy hill-climbing algorithm is used to iteratively optimize each stroke’s position, rotation, and scale, minimizing the visual difference between the target image and the canvas.
+Hill Climb Painter is an image reconstruction algorithm that transforms images and short animations into painted representations by sequentially placing textured brush strokes. 
+A greedy hill-climbing algorithm is used to iteratively optimize each stroke’s position, rotation, and scale, minimizing the visual difference between the target image and the canvas.
 
-Each brush stroke is assessed for its visual impact before being applied to the canvas, ensuring that only those contributing meaningful detail are added. As more strokes are layered, coarse and abstract forms are gradually refined into a structured and balanced composition, blending realistic detail with the textured aesthetics of impressionism.
+Each brush stroke is assessed for its visual impact before being applied to the canvas, ensuring that only those contributing meaningful detail are added. As more strokes are layered, coarse and abstract forms are gradually refined into structure, resulting in a painting that blends photorealism with the textured aesthetics of impressionism.
 
 ## Features
 
 ![Image](/readme_stuff/ui_owl.png "Painting of an owl")
 
-### 🎨 Painting algorithm
+### 🎨 Input and Output
 - **Multiple Format Support**: PNG, JPG, JPEG, and animated GIF inputs
 - **High-Resolution Output**: Specify a desired resolution of the final painting (up to 4K)
 - **Texture-Based Painting**: Use custom PNG textures such as brush strokes or shapes
-
 
 ### ⏰ Real-Time Visualization
 - **Live Painting Display**: Watch the algorithm work in real-time in a pygame display
@@ -27,12 +27,8 @@ Each brush stroke is assessed for its visual impact before being applied to the 
 
 ### ⚙️ GUI for parameter customization
 - **Persistent settings**: Selected target, texture and parameters are automatically saved
-- **Texture Count**: Change how abstract or detailed the painting should be
-- **Canvas Computation Size**: Balance between painting quality and speed
-- **Texture Optimization**: Adjust iteration ranges and termination thresholds
-- **Texture Properties**: Modify size, opacity and scaling behavior of texture
+- **Hill Climbing Settings**: Extensive customization for hill climbing parameters
 - **Vector Field Equations**: Align textures to a mathematically defined vector field
-
 
 
 ### ⚡ Performance optimisation
@@ -85,14 +81,8 @@ pip install -r requirements.txt
 python main.py
 ```
 ### Step 2: Select target and textures
-Choose a target image to paint (PNG, JPG, JPEG) and choose textures (PNG) to be applied to the painting. 
-
-
-
-  > *Note:* Textures must be PNG as it has an alpha channel to represent transparent pixels. Textures must be white in color, you can test the color of the texture by clicking on regions of the image.
-
-
-
+* Choose a target image to paint (PNG, JPG, JPEG)
+* Choose textures (PNG)
 
 ![Image](/readme_stuff/usage_1.png "Select target and textures")
 
@@ -105,24 +95,27 @@ Experiment with various parameters to achieve your desired style of painting
 
 <details>
 
-<summary>Parameter summary</summary>
+<summary>GUI guide</summary>
 
-| #  | **Parameters Tab**                          | **Effect**                                                                                             |
+| #  | **Parameters**                          | **Effect**                                                                                             |
 |----|---------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| 1  | Computation size                            | Sets the working canvas resolution. Decrease for speed, increase for more detail. *(Recommended: 300)* |
+| 1  | Computation size                            | Sets the computation canvas resolution. Decrease for speed, increase to capture greater detail. |
 | 2  | Add N textures                              | More textures result in a more detailed painting.                                                      |
-| 3  | Number of hill climb iterations             | Optimization steps per texture. Higher = better placement, but slower runtime.                         |
+| 3  | Number of hill climb iterations             | Optimization steps per texture. Higher value leads to better texture placement, but runs slower.                         |
 | 4  | Texture opacity                             | Opacity of each texture. *100% = fully opaque; lower = more translucent.*                              |
-| 5  | Initial texture size                        | Size of each texture when created. Affects initial brush size.                                         |
-| 6  | Constrain texture size to initial size      | If checked, texture size remains fixed after creation.                                                 |
-| 7  | Display painting progress                   | Visualizes painting progress using Pygame.                                                             |
-| 7a | Show improvement of individual texturs      | Displays hill climbing steps for each texture's placement.                                             |
+| 5  | Initial texture size                        | Specify length of texture's shorter side when it is initially generated                                         |
+| 6  | Constrain texture size to initial size      | If checked, texture size remain unchanged during hill climb optimisation                                                 |
+| 7  | Display painting progress                   | Shows the painting progress in real time                                                             |
+| 7a | Show improvement of individual textures      | Show optimisation process of texture placement                                          |
 | 7b | Display final image after painting          | Shows the completed painting after all textures are applied.                                           |
-| 8  | Allow early termination of hill climbing    | Texture is committed early if no improvement occurs over N iterations.                                 |
+| 8  | Allow early termination of hill climbing    | Optimisation of texture placements stop if no improvement occurs after N iterations.                                 |
+| 9  | Enable vector field                         | Enforces a contstraint on texture rotation, aligning them to a specified vector field                          |
+
+
 
 <br>
 
-| #  | **Output Settings Tab**                     | **Effect**                                                                                               |
+| #  | **Output Settings**                     | **Effect**                                                                                               |
 |----|---------------------------------------------|----------------------------------------------------------------------------------------------------------|
 | 1  | Output image size                           | Resolution of final painted image. *(High-res output possible even with a low-res computation canvas)*   |
 | 2  | Name of output image                        | Specify a name of the painted image                                                                      |
@@ -134,7 +127,7 @@ Experiment with various parameters to achieve your desired style of painting
 
 
 ### Step 4: View the painting process
-If you checked the display painting progress, a pygame window will show the real time painting progress. You can also close the display to prematurely stop the painting process.
+If **display painting progress** was enabled, you can watch the algorithm paint in real time in a display. The pygame window can be closed to prematurely stop the painting process.
 
 https://github.com/user-attachments/assets/db229c0f-234f-4ed7-b74b-e8ecd0e8e5f7
 
@@ -149,7 +142,19 @@ All painted results are saved to `hill-climb-painter\output`
 </p>
 
 
-### Creative constraints
+## GIF inputs
+
+GIFs can be selected as the target. Multiple frames can be painted in parallel using multiprocessing.
+
+<p float="left">
+  <img src="readme_stuff/shrek_ui.gif" width="40%"/>
+  <img src="/readme_stuff/shrek_ui_params.png" width="40%" /> 
+  <img src="/readme_stuff/somebody.gif" width="40%" /> 
+</p>
+
+
+
+## Creative constraints
 
 
 ### 1) Different textures

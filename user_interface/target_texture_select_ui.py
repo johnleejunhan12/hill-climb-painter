@@ -75,6 +75,7 @@ class TargetTextureSelectorUI(tk.Tk):
         self.selected_image_or_gif_path = initial_selected_image_path
         self.selected_image = None
         self.selected_gif_frames = None
+        self.selected_gif_pil_frames = None  # Store original PIL frames for color picking
         self.gif_frame_index = 0
         self.gif_animation_id = None
         self.selected_texture_paths = initial_selected_texture_paths or []
@@ -273,7 +274,7 @@ class TargetTextureSelectorUI(tk.Tk):
                     img_array = apply_color_multiplication_numba(img_array, click_r, click_g, click_b)
                     
                     # Convert back to PIL image
-                    img_copy = Image.fromarray(img_array, 'RGBA')
+                    img_copy = Image.fromarray(img_array)
                 
                 img_copy.thumbnail((cell_w, cell_h), Image.Resampling.LANCZOS)
                 tk_img = ImageTk.PhotoImage(img_copy)
@@ -483,18 +484,20 @@ class TargetTextureSelectorUI(tk.Tk):
         # Only process clicks if both target and textures are selected
         if not self.selected_image_or_gif_path or not self.selected_texture_paths:
             return
-        
-        # Skip color picking for GIFs (too complex with animation)
-        ext = os.path.splitext(self.selected_image_or_gif_path)[1].lower()
-        if ext == '.gif':
-            return
             
         # Get the click coordinates relative to the label
         click_x = event.x
         click_y = event.y
         
-        # Get the actual displayed image dimensions and position
-        if not self.selected_image:
+        # Determine which image we're working with (static image or current GIF frame)
+        ext = os.path.splitext(self.selected_image_or_gif_path)[1].lower()
+        if ext == '.gif' and self.selected_gif_pil_frames:
+            # Use current GIF frame
+            current_image = self.selected_gif_pil_frames[self.gif_frame_index]
+        elif self.selected_image:
+            # Use static image
+            current_image = self.selected_image
+        else:
             return
             
         # Calculate the actual image position within the label
@@ -502,7 +505,7 @@ class TargetTextureSelectorUI(tk.Tk):
         label_height = self.image_display.winfo_height()
         
         # Get the thumbnail size that was used for display
-        img_copy = self.selected_image.copy()
+        img_copy = current_image.copy()
         img_copy.thumbnail((label_width, label_height - 50), Image.Resampling.LANCZOS)
         display_width, display_height = img_copy.size
         
@@ -516,18 +519,18 @@ class TargetTextureSelectorUI(tk.Tk):
             return
         
         # Convert click coordinates to original image coordinates
-        scale_x = self.selected_image.width / display_width
-        scale_y = self.selected_image.height / display_height
+        scale_x = current_image.width / display_width
+        scale_y = current_image.height / display_height
         
         orig_x = int((click_x - img_x_offset) * scale_x)
         orig_y = int((click_y - img_y_offset) * scale_y)
         
         # Ensure coordinates are within bounds
-        orig_x = max(0, min(orig_x, self.selected_image.width - 1))
-        orig_y = max(0, min(orig_y, self.selected_image.height - 1))
+        orig_x = max(0, min(orig_x, current_image.width - 1))
+        orig_y = max(0, min(orig_y, current_image.height - 1))
         
         # Get RGB color at the clicked position
-        pixel_color = self.selected_image.getpixel((orig_x, orig_y))
+        pixel_color = current_image.getpixel((orig_x, orig_y))
         if isinstance(pixel_color, int):  # Grayscale image
             self.clicked_rgb_color = (pixel_color, pixel_color, pixel_color)
         elif len(pixel_color) >= 3:  # RGB or RGBA
@@ -565,6 +568,7 @@ class TargetTextureSelectorUI(tk.Tk):
         img = Image.open(path)
         self.selected_image = img.copy()
         self.selected_gif_frames = None
+        self.selected_gif_pil_frames = None
 
     def _load_gif(self, path):
         if self.gif_animation_id:
@@ -575,10 +579,14 @@ class TargetTextureSelectorUI(tk.Tk):
         if img.width > max_dim or img.height > max_dim:
             scale = min(max_dim / img.width, max_dim / img.height)
             new_size = (int(img.width * scale), int(img.height * scale))
-            frames = [frame.copy().resize(new_size, Image.Resampling.LANCZOS) for frame in ImageSequence.Iterator(img)]
+            pil_frames = [frame.copy().resize(new_size, Image.Resampling.LANCZOS) for frame in ImageSequence.Iterator(img)]
         else:
-            frames = [frame.copy() for frame in ImageSequence.Iterator(img)]
-        self.selected_gif_frames = [ImageTk.PhotoImage(frame.convert('RGBA')) for frame in frames]
+            pil_frames = [frame.copy() for frame in ImageSequence.Iterator(img)]
+        
+        # Store original PIL frames for color picking
+        self.selected_gif_pil_frames = pil_frames
+        # Store PhotoImage frames for display
+        self.selected_gif_frames = [ImageTk.PhotoImage(frame.convert('RGBA')) for frame in pil_frames]
         self.selected_image = None
         self.gif_frame_index = 0
         self._animate_gif()
@@ -587,7 +595,13 @@ class TargetTextureSelectorUI(tk.Tk):
         if not self.selected_gif_frames:
             return
         frame = self.selected_gif_frames[self.gif_frame_index]
-        self.image_display.configure(image=frame)
+        
+        # Show color picking hint if textures are also selected
+        display_text = ''
+        if self.selected_texture_paths:
+            display_text = 'Click on image to color textures'
+        
+        self.image_display.configure(image=frame, text=display_text)
         self.gif_frame_index = (self.gif_frame_index + 1) % len(self.selected_gif_frames)
         self.gif_animation_id = self.after(80, self._animate_gif)
 

@@ -9,6 +9,138 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
+class VectorFieldFunction:
+    """
+    Picklable vector field function class that can be used with multiprocessing.
+    Stores equations as strings and compiles them when needed.
+    """
+    
+    def __init__(self, f_equation: str, g_equation: str):
+        """
+        Initialize vector field function with string equations.
+        
+        Args:
+            f_equation: Mathematical expression for f(x,y) component
+            g_equation: Mathematical expression for g(x,y) component
+        """
+        self.f_equation = f_equation
+        self.g_equation = g_equation
+        self.f_expression = None
+        self.g_expression = None
+        self._f_func = None
+        self._g_func = None
+        self._compiled = False
+        
+        # Compile the functions immediately
+        self._compile_functions()
+    
+    def __getstate__(self):
+        """Prepare object for pickling by removing unpicklable lambda functions."""
+        state = self.__dict__.copy()
+        # Remove unpicklable lambda functions
+        state['_f_func'] = None
+        state['_g_func'] = None
+        state['_compiled'] = False
+        return state
+    
+    def __setstate__(self, state):
+        """Restore object after unpickling and recompile functions."""
+        self.__dict__.update(state)
+        # Recompile functions after unpickling
+        self._compile_functions()
+    
+    def _compile_functions(self):
+        """Compile the string equations into callable functions."""
+        try:
+            # Initialize SymPy symbols
+            x, y = sp.symbols('x y', real=True)
+            
+            # Define allowed symbols and functions
+            allowed_functions = ['sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 
+                               'sinh', 'cosh', 'tanh', 'asin', 'acos', 'atan',
+                               'abs', 'sign', 'floor', 'ceiling']
+            
+            # Create safe namespace
+            safe_dict = {func: getattr(sp, func) for func in allowed_functions if hasattr(sp, func)}
+            safe_dict.update({'x': x, 'y': y, 'pi': sp.pi, 'e': sp.E})
+            
+            # Parse expressions
+            f_expr = sympify(self.f_equation, locals=safe_dict)
+            g_expr = sympify(self.g_equation, locals=safe_dict)
+            
+            # Store expression strings
+            self.f_expression = str(f_expr)
+            self.g_expression = str(g_expr)
+            
+            # Convert to numerical functions
+            self._f_func = lambdify([x, y], f_expr, 'numpy')
+            self._g_func = lambdify([x, y], g_expr, 'numpy')
+            
+            self._compiled = True
+            
+        except Exception:
+            self._compiled = False
+    
+    def __call__(self, x, y):
+        """
+        Evaluate the vector field at given coordinates.
+        
+        Args:
+            x, y: float or array-like coordinates
+            
+        Returns:
+            tuple: (f(x,y), g(x,y)) components
+        """
+        if not self._compiled:
+            # Try to recompile if not compiled
+            self._compile_functions()
+            if not self._compiled:
+                # Return zeros if compilation fails
+                if np.isscalar(x) and np.isscalar(y):
+                    return 0.0, 0.0
+                else:
+                    return np.zeros_like(x), np.zeros_like(y)
+        
+        try:
+            # Store original input types to determine return format
+            input_is_scalar = np.isscalar(x) and np.isscalar(y)
+            
+            # Convert inputs to numpy arrays
+            x_array = np.asarray(x, dtype=float)
+            y_array = np.asarray(y, dtype=float)
+            
+            # Evaluate functions
+            p = self._f_func(x_array, y_array)
+            q = self._g_func(x_array, y_array)
+            
+            # Convert results to arrays for consistent handling
+            p = np.asarray(p)
+            q = np.asarray(q)
+            
+            # Ensure results are at least 1D for np.where to work properly
+            if p.ndim == 0:
+                p = np.array([p])
+            if q.ndim == 0:
+                q = np.array([q])
+            
+            # Replace invalid values with zeros
+            p = np.where(np.isfinite(p), p, 0)
+            q = np.where(np.isfinite(q), q, 0)
+            
+            # Return appropriate format based on original input
+            if input_is_scalar:
+                return float(p[0]), float(q[0])
+            else:
+                return p, q
+                
+        except Exception:
+            # Return zeros for any evaluation error
+            if np.isscalar(x) and np.isscalar(y):
+                return 0.0, 0.0
+            else:
+                return np.zeros_like(x), np.zeros_like(y)
+
+
 class VectorFieldVisualizer:
     def __init__(self, master=None, presets=None, sq_grid_size=None, initial_f_string=None, initial_g_string=None):
         # Set initial window dimensions
@@ -393,65 +525,22 @@ class VectorFieldVisualizer:
         if self.f_func is None or self.g_func is None:
             return None
         
-        f_func_copy = self.f_func
-        g_func_copy = self.g_func
+        # Get the equation strings
+        f_text = self.f_entry.get() if hasattr(self, 'f_entry') else ""
+        g_text = self.g_entry.get() if hasattr(self, 'g_entry') else ""
         
-        def vector_field_function(x, y):
-            """
-            Vector field function that returns (f(x,y), g(x,y))
-            
-            Parameters:
-            x, y: float or array-like
-                Input coordinates
-                
-            Returns:
-            tuple: (p, q) where p = f(x,y) and q = g(x,y)
-                   Returns (0, 0) for undefined values
-            """
-            try:
-                # Store original input types to determine return format
-                input_is_scalar = np.isscalar(x) and np.isscalar(y)
-                
-                # Convert inputs to numpy arrays
-                x_array = np.asarray(x, dtype=float)
-                y_array = np.asarray(y, dtype=float)
-                
-                # Evaluate functions
-                p = f_func_copy(x_array, y_array)
-                q = g_func_copy(x_array, y_array)
-                
-                # Convert results to arrays for consistent handling
-                p = np.asarray(p)
-                q = np.asarray(q)
-                
-                # Ensure results are at least 1D for np.where to work properly
-                if p.ndim == 0:
-                    p = np.array([p])
-                if q.ndim == 0:
-                    q = np.array([q])
-                
-                # Replace invalid values with zeros
-                p = np.where(np.isfinite(p), p, 0)
-                q = np.where(np.isfinite(q), q, 0)
-                
-                # Return appropriate format based on original input
-                if input_is_scalar:
-                    return float(p[0]), float(q[0])
-                else:
-                    return p, q
-                    
-            except Exception:
-                # Return zeros for any evaluation error
-                if np.isscalar(x) and np.isscalar(y):
-                    return 0.0, 0.0
-                else:
-                    return np.zeros_like(x), np.zeros_like(y)
+        if not f_text or not g_text:
+            return None
         
-        # Add metadata to the function
-        vector_field_function.f_expression = str(self.f_expr)
-        vector_field_function.g_expression = str(self.g_expr)
-        
-        return vector_field_function
+        # Use the new VectorFieldFunction class
+        try:
+            vector_field_func = VectorFieldFunction(f_text, g_text)
+            if vector_field_func._compiled:
+                return vector_field_func
+            else:
+                return None
+        except Exception:
+            return None
     
     def create_result_string(self):
         """Create the formatted string (f(x,y), g(x,y))"""
@@ -537,13 +626,10 @@ class VectorFieldVisualizer:
             Mathematical expression for g(x,y)
         
         Returns:
-        function or None:
-            A function that takes x, y (scalar or array-like) and returns (p, q) where
+        VectorFieldFunction or None:
+            A picklable function object that takes x, y (scalar or array-like) and returns (p, q) where
             p = f(x,y) and q = g(x,y). Returns None if either expression is invalid.
         """
-        # Initialize SymPy symbols
-        x, y = sp.symbols('x y', real=True)
-        
         # Validate inputs
         try:
             f_text = f_eqn_string.strip() if f_eqn_string else ""
@@ -552,99 +638,25 @@ class VectorFieldVisualizer:
             if not f_text or not g_text:
                 return None
             
-            # Define allowed symbols and functions
-            allowed_symbols = {x, y}
-            allowed_functions = ['sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 
-                               'sinh', 'cosh', 'tanh', 'asin', 'acos', 'atan',
-                               'abs', 'sign', 'floor', 'ceiling']
+            # Try to create and validate the vector field function
+            vector_field_func = VectorFieldFunction(f_text, g_text)
             
-            # Create safe namespace
-            safe_dict = {func: getattr(sp, func) for func in allowed_functions if hasattr(sp, func)}
-            safe_dict.update({'x': x, 'y': y, 'pi': sp.pi, 'e': sp.E})
-            
-            # Parse expressions
-            f_expr = sympify(f_text, locals=safe_dict)
-            g_expr = sympify(g_text, locals=safe_dict)
-            
-            # Check if expressions contain only allowed symbols
-            f_symbols = f_expr.free_symbols
-            g_symbols = g_expr.free_symbols
-            
-            if not (f_symbols <= allowed_symbols) or not (g_symbols <= allowed_symbols):
+            # Test if the function was compiled successfully
+            if not vector_field_func._compiled:
                 return None
-            
-            # Convert to numerical functions
-            f_func = lambdify([x, y], f_expr, 'numpy')
-            g_func = lambdify([x, y], g_expr, 'numpy')
             
             # Test evaluation with sample values
             try:
-                x_array = np.array([0.1])
-                y_array = np.array([0.1])
-                p = f_func(x_array, y_array)
-                q = g_func(x_array, y_array)
+                test_result = vector_field_func(0.1, 0.1)
+                if not isinstance(test_result, tuple) or len(test_result) != 2:
+                    return None
+                p, q = test_result
                 if not (np.isscalar(p) or isinstance(p, np.ndarray)) or not (np.isscalar(q) or isinstance(q, np.ndarray)):
                     return None
             except Exception:
                 return None
-                
-            # Create the vector field function
-            def vector_field_function(x, y):
-                """
-                Vector field function that returns (f(x,y), g(x,y))
-                
-                Parameters:
-                x, y: float or array-like
-                    Input coordinates
-                    
-                Returns:
-                tuple: (p, q) where p = f(x,y) and q = g(x,y)
-                       Returns (0, 0) for undefined values
-                """
-                try:
-                    # Store original input types to determine return format
-                    input_is_scalar = np.isscalar(x) and np.isscalar(y)
-                    
-                    # Convert inputs to numpy arrays
-                    x_array = np.asarray(x, dtype=float)
-                    y_array = np.asarray(y, dtype=float)
-                    
-                    # Evaluate functions
-                    p = f_func(x_array, y_array)
-                    q = g_func(x_array, y_array)
-                    
-                    # Convert results to arrays for consistent handling
-                    p = np.asarray(p)
-                    q = np.asarray(q)
-                    
-                    # Ensure results are at least 1D for np.where to work properly
-                    if p.ndim == 0:
-                        p = np.array([p])
-                    if q.ndim == 0:
-                        q = np.array([q])
-                    
-                    # Replace invalid values with zeros
-                    p = np.where(np.isfinite(p), p, 0)
-                    q = np.where(np.isfinite(q), q, 0)
-                    
-                    # Return appropriate format based on original input
-                    if input_is_scalar:
-                        return float(p[0]), float(q[0])
-                    else:
-                        return p, q
-                        
-                except Exception:
-                    # Return zeros for any evaluation error
-                    if np.isscalar(x) and np.isscalar(y):
-                        return 0.0, 0.0
-                    else:
-                        return np.zeros_like(x), np.zeros_like(y)
             
-            # Add metadata to the function
-            vector_field_function.f_expression = str(f_expr)
-            vector_field_function.g_expression = str(g_expr)
-            
-            return vector_field_function
+            return vector_field_func
             
         except Exception:
             return None
