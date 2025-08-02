@@ -9,14 +9,14 @@ A Python desktop application that recreates images into paintings
 Hill Climb Painter is an image reconstruction algorithm that transforms images and short animations into painted representations by sequentially placing textured brush strokes. 
 A greedy hill-climbing algorithm is used to iteratively optimize each stroke’s position, rotation, and scale, minimizing the visual difference between the target image and the canvas.
 
-Each brush stroke is assessed for its visual impact before being applied to the canvas, ensuring that only those contributing meaningful detail are added. As more strokes are layered, coarse and abstract forms are gradually refined into structure, resulting in a painting that blends photorealism with the textured aesthetics of impressionism.
+Each brush stroke is assessed for its visual impact before being applied to the canvas, ensuring that only those contributing meaningful detail are added. As more strokes are layered, coarse and abstract forms are gradually refined into structure, creating a photorealistic painting with the textured aesthetics of impressionism.
 
 ## Features
 
 ![Image](/readme_stuff/ui_owl.png "Painting of an owl")
 
 ### 🎨 Input and Output
-- **Multiple Format Support**: PNG, JPG, JPEG, and animated GIF inputs
+- **Multiple Format Input**: PNG, JPG, JPEG, and animated GIF inputs
 - **High-Resolution Output**: Specify a desired resolution of the final painting (up to 4K)
 - **Texture-Based Painting**: Use custom PNG textures such as brush strokes or shapes
 
@@ -27,14 +27,8 @@ Each brush stroke is assessed for its visual impact before being applied to the 
 
 ### ⚙️ GUI for parameter customization
 - **Persistent settings**: Selected target, texture and parameters are automatically saved
-- **Hill Climbing Settings**: Extensive customization for hill climbing parameters
-- **Vector Field Equations**: Align textures to a mathematically defined vector field
-
-
-### ⚡ Performance optimisation
-- **Numba Acceleration**: JIT compilation for expensive functions
-- **Multiprocessing Support**: Paint multiple GIF frames in parallel
-
+- **Hill Climb Settings**: Extensive customization of hill climbing parameters
+- **Vector Field Pattern**: Align textures to a mathematically defined vector field
 
 
 ## Installation and setup
@@ -63,6 +57,10 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+<details>
+<summary>Dependencies</summary>
+
 - **numpy**: Numerical computing for image arrays
 - **matplotlib**: Plotting and final image display
 - **Pillow**: Image processing (PNG/JPEG/GIF handling)
@@ -70,10 +68,8 @@ pip install -r requirements.txt
 - **pygame**: Real-time painting progress display
 - **imageio**: GIF creation from frames
 - **sympy**: Vector field equation parsing
-
-
-
-
+</details>
+<br>
 
 ## Usage
 ### Step 1: Run the application
@@ -95,7 +91,7 @@ Experiment with various parameters to achieve your desired style of painting
 
 <details>
 
-<summary>GUI guide</summary>
+<summary>Parameter guide</summary>
 
 | #  | **Parameters**                          | **Effect**                                                                                             |
 |----|---------------------------------------------|--------------------------------------------------------------------------------------------------------|
@@ -127,14 +123,16 @@ Experiment with various parameters to achieve your desired style of painting
 
 
 ### Step 4: View the painting process
-If **display painting progress** was enabled, you can watch the algorithm paint in real time in a display. The pygame window can be closed to prematurely stop the painting process.
+If **display painting progress** was enabled, you can watch the algorithm paint in real time in a display. 
+
+The pygame window can be closed to prematurely stop the painting process.
 
 https://github.com/user-attachments/assets/db229c0f-234f-4ed7-b74b-e8ecd0e8e5f7
 
 
 
-### Step 5: Obtain result from output folder
-All painted results are saved to `hill-climb-painter\output`
+### Step 5: Output
+After the painting is completed, you can obtain the results from `hill-climb-painter\output`
 
 <p float="left">
   <img src="readme_stuff/street_painting_progress.gif" width="45%"/>
@@ -143,10 +141,7 @@ All painted results are saved to `hill-climb-painter\output`
 
 
 ## Animated inputs
-
-GIFs can be recreated into painted versions too.
-
-For faster results, you can enable multiprocessing to paint multiple frames in parallel
+You can upload GIFs for processing, where each frame of the input GIF is painted and saved to a new GIF. To improve efficiency, multiprocessing can be enabled to paint frames in parallel.
 
 <p float="left">
   <img src="readme_stuff/shrek_ui.gif" height = "260px"/>
@@ -156,11 +151,14 @@ For faster results, you can enable multiprocessing to paint multiple frames in p
 
 
 
-## Creative constraints
+## Setting creative constraints
 
 
 ### 1) Different textures
-The textures used are not limited to just brushstrokes. We can use various shapes such as circles, triangles and squares as the texture. We can also use unusual textures such as lines to produce a chaotic and scribbly abstract rendition of the original image.
+Aside from paintstrokes, can use various shapes such as circles, triangles and squares as the texture
+
+We can also provide unusual textures such as lines to produce a chaotic and scribbly abstract rendition of the original image.
+
 
 ### 2) Disable scaling of texture
 By setting an initial texture size and restricting it, we can achieve painting styles like pointillism, where small textures are applied in patterns to form an image.
@@ -169,14 +167,37 @@ By setting an initial texture size and restricting it, we can achieve painting s
 
 ### 3) Vector fields
 
-Vector fields `(f(x,y), g(x,y))` allow us to control texture directionality by constraining brush strokes to align with the field's flow. To demonstrate this, we create a radial sink pattern using the vector field `(-x, -y)`, which causes textures to converge toward a central point. By positioning this convergence point at the cat's nose `(267, 279)`, all brush strokes naturally flow inward, creating a focal point that draws the viewer's attention. 
+Vector fields `(f(x,y), g(x,y))` allow us to control texture directionality by forcing their rotation to align with the field's flow. To demonstrate this, we create a radial sink pattern using the vector field `(-x, -y)`, which causes textures to converge toward a central point. By positioning this convergence point `(267, 279)`, all textures drawn to the canvas will point towards the cat's nose.
 ![Image](/readme_stuff/cat_vector.png "Setting a vector field")
 ![Image](/readme_stuff/cat.gif "Vector field aligned textures")
+
+Vector field constraints can be set for GIF inputs too
+
+
+
+<p float="left">
+  <img src="readme_stuff/select_coords_sunset.gif" height = "260px"/>
+  <img src="/readme_stuff/select_coords_sunset.gif" height = "260px" /> 
+  <img src="/readme_stuff/somebody.gif" height = "260px" /> 
+</p>
+
+
+
+<!-- 30% width each:
+<p align="center" width="100%">
+    <img width="30%" src="https://i.stack.imgur.com/RJj4x.png"> 
+    <img width="30%" src="https://i.stack.imgur.com/RJj4x.png"> 
+    <img width="30%" src="https://i.stack.imgur.com/RJj4x.png"> 
+</p> -->
+
 
 ### 2) Prevent resizing of textures
 
 ### 3) 
 
+## Optimization Tips
+
+here are a few tips...
 
 
 ## How it works
@@ -255,9 +276,7 @@ By repeatedly applying the same optimization technique across several hundred st
 ![Image](/readme_stuff/mona_lisa_gif_final.gif "Mona Lisa")
 
 
-
-
-## Optimizations
+## Optimizations implemented
 
 ### Performance Tuning
 - **Computation Size**: 50-200 for testing, 300-600 for final output
@@ -277,10 +296,6 @@ By repeatedly applying the same optimization technique across several hundred st
 ## Lessons learnt
 
 ## Inspiration
-
-
-
-
 
 
 ## Gallery
