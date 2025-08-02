@@ -267,7 +267,7 @@ if __name__ == "__main__":
 
 
     # Additional settings for smaller GIFs (only works if create_gif_of_painting_progress = True and display_placement_progress = False)
-    IS_ENABLE_SMALLER_GIF_EXPORT_SIZE = False  # Skip frames to create smaller GIFs size
+    IS_ENABLE_SMALLER_GIF_EXPORT_SIZE = True  # Skip frames to create smaller GIFs size
     ENABLE_SMALLER_GIF_FRAME_CAP = 50  # Target number of frames when power law frame skipping is enabled  
     ENABLE_SMALLER_GIF_NUMBER_OF_EXTRA_FRAMES_AT_END = 30  # Number of frames to add at the end of the GIF (so the gif will not end abruptly after the last frame)
 

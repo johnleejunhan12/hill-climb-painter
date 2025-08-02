@@ -4,7 +4,7 @@ Provides structured configuration objects that replace global variables.
 """
 
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 
 
 @dataclass
@@ -61,6 +61,16 @@ class VectorFieldConfig:
     g_equation: str = ""
     center_x: float = 0
     center_y: float = 0
+    all_frame_coordinates: Optional[List[List[float]]] = None  # [[x1,y1], [x2,y2], ...] for GIF frames
+    
+    def get_coordinates_for_frame(self, frame_index: int) -> Tuple[float, float]:
+        """Get vector field center coordinates for specific frame"""
+        if not self.all_frame_coordinates or frame_index >= len(self.all_frame_coordinates):
+            return self.center_x, self.center_y
+        coords = self.all_frame_coordinates[frame_index]
+        if len(coords) >= 2:
+            return float(coords[0]), float(coords[1])
+        return self.center_x, self.center_y
     
     def validate(self) -> List[str]:
         """Validate vector field configuration"""
@@ -213,7 +223,7 @@ class PaintingConfig:
         """Create VectorFieldConfig from UI dictionary"""
         coordinates = ui_dict.get("vector_field_origin_shift", [[0, 0]])
         
-        # Safely extract coordinates with proper validation
+        # Safely extract first coordinate for backward compatibility
         center_x, center_y = 0, 0
         if coordinates and len(coordinates) > 0 and len(coordinates[0]) >= 2:
             center_x, center_y = coordinates[0][0], coordinates[0][1]
@@ -223,7 +233,8 @@ class PaintingConfig:
             f_equation=ui_dict.get("vector_field_f", ""),
             g_equation=ui_dict.get("vector_field_g", ""),
             center_x=float(center_x),
-            center_y=float(center_y)
+            center_y=float(center_y),
+            all_frame_coordinates=coordinates  # Store all coordinates for per-frame processing
         )
     
     @staticmethod
@@ -292,7 +303,8 @@ class PaintingConfig:
                 'f_equation': self.vector_field.f_equation,
                 'g_equation': self.vector_field.g_equation,
                 'center_x': self.vector_field.center_x,
-                'center_y': self.vector_field.center_y
+                'center_y': self.vector_field.center_y,
+                'all_frame_coordinates': self.vector_field.all_frame_coordinates
             },
             'display': {
                 'show_pygame': self.display.show_pygame,

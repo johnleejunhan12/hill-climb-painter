@@ -87,25 +87,45 @@ class PaintingOrchestrator:
     @staticmethod
     def _paint_batch_sequential(frame_paths: List[str], texture_paths: List[str],
                                output_folder: str, ui_dict: Dict[str, Any]) -> bool:
-        """Paint frames sequentially without multiprocessing"""
+        """Paint frames sequentially with per-frame vector field support"""
         try:
-            # Create engine once for all frames
-            engine = PaintingEngineFactory.create_from_ui_dict(
-                ui_dict, is_gif_target=True, is_multiprocessing_worker=False
-            )
-            
             print(f"🔄 Painting {len(frame_paths)} frames sequentially...")
             
+            # Extract vector field coordinates for per-frame processing
+            coordinates = ui_dict.get("vector_field_origin_shift", [[0, 0]])
+            has_per_frame_coords = len(coordinates) > 1
+            
+            if has_per_frame_coords and ui_dict.get("enable_vector_field", False):
+                print(f"📍 Using per-frame vector field coordinates ({len(coordinates)} coordinates available)")
+            
             for i, frame_path in enumerate(frame_paths):
+                # Create frame-specific ui_dict with updated vector field coordinates
+                frame_ui_dict = ui_dict.copy()
+                
+                # Extract frame-specific coordinates if available
+                if has_per_frame_coords and i < len(coordinates):
+                    frame_ui_dict["vector_field_origin_shift"] = [coordinates[i]]
+                    coord_info = f"coords=({coordinates[i][0]}, {coordinates[i][1]})" if len(coordinates[i]) >= 2 else "coords=default"
+                else:
+                    coord_info = "coords=default"
+                
+                # Create engine for this frame with frame-specific config
+                engine = PaintingEngineFactory.create_from_ui_dict(
+                    frame_ui_dict, is_gif_target=True, is_multiprocessing_worker=False
+                )
+                
                 filename = f"frame_{i:04d}"
-                print(f"  Processing frame {i+1}/{len(frame_paths)}: {frame_path}")
+                print(f"  Processing frame {i+1}/{len(frame_paths)}: {coord_info}")
                 
                 success = engine.paint_image(frame_path, texture_paths, output_folder, filename)
                 if not success:
                     print(f"❌ Failed to paint frame {i}: {frame_path}")
                     return False
             
-            print(f"✅ Successfully painted {len(frame_paths)} frames")
+            if has_per_frame_coords:
+                print(f"✅ Successfully painted {len(frame_paths)} frames with frame-specific vector fields")
+            else:
+                print(f"✅ Successfully painted {len(frame_paths)} frames")
             return True
             
         except Exception as e:
@@ -115,30 +135,41 @@ class PaintingOrchestrator:
     @staticmethod
     def _paint_batch_parallel(frame_paths: List[str], texture_paths: List[str],
                              output_folder: str, ui_dict: Dict[str, Any]) -> bool:
-        """Paint frames using multiprocessing"""
+        """Paint frames using multiprocessing with per-frame vector field support"""
         try:
             import multiprocessing
             from .config import PaintingConfig
+
+            coordinates = ui_dict.get("vector_field_origin_shift", [[0, 0]])
+            has_per_frame_coords = len(coordinates) > 1
             
-            # Create config and serialize it for workers
-            config = PaintingConfig.from_ui_dict(ui_dict, is_gif_target=True)
-            config_dict = config.to_serializable_dict()
-            # Include ui_dict for frame skipping parameters
-            config_dict['ui_dict'] = ui_dict
+            if has_per_frame_coords and ui_dict.get("enable_vector_field", False):
+                print(f"📍 Using per-frame vector field coordinates ({len(coordinates)} coordinates available)")
             
-            # Prepare work items
+            # Prepare work items with frame-specific coordinates
             work_items = []
             for i, frame_path in enumerate(frame_paths):
+                # Create frame-specific ui_dict
+                frame_ui_dict = ui_dict.copy()
+                if has_per_frame_coords and i < len(coordinates):
+                    frame_ui_dict["vector_field_origin_shift"] = [coordinates[i]]
+                
+                # Create frame-specific config
+                config = PaintingConfig.from_ui_dict(frame_ui_dict, is_gif_target=True)
+                config_dict = config.to_serializable_dict()
+                config_dict['ui_dict'] = frame_ui_dict
+                
                 work_items.append({
                     'frame_path': frame_path,
                     'texture_paths': texture_paths,
                     'output_folder': output_folder,
                     'filename': f"frame_{i:04d}",
-                    'config_dict': config_dict
+                    'config_dict': config_dict,
+                    'frame_index': i  # Include frame index for debugging
                 })
-            
+
             # Determine worker count
-            cpu_percentage = config.multiprocessing.cpu_usage_percentage
+            cpu_percentage = work_items[0]['config_dict']['multiprocessing']['cpu_usage_percentage']
             num_workers = max(1, int(multiprocessing.cpu_count() * cpu_percentage))
             num_workers = min(num_workers, len(work_items))
             
@@ -153,7 +184,10 @@ class PaintingOrchestrator:
             total = len(results)
             
             if successful == total:
-                print(f"✅ Successfully painted {successful}/{total} frames")
+                if has_per_frame_coords:
+                    print(f"✅ Successfully painted {successful}/{total} frames with frame-specific vector fields")
+                else:
+                    print(f"✅ Successfully painted {successful}/{total} frames")
                 return True
             else:
                 print(f"⚠ Painted {successful}/{total} frames (some failed)")

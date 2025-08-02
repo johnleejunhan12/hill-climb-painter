@@ -4,6 +4,13 @@ import tkinter as tk
 import os
 import warnings
 
+try:
+    from utils.file_operations import clear_folder_contents
+except ImportError:
+    import sys
+    sys.path.append('..')
+    from utils.file_operations import clear_folder_contents
+
 
 
 try:
@@ -670,6 +677,14 @@ class ParameterUI:
         self.root.destroy()  # Destroy window
     def on_submit_button_press(self):
         """Handle 'Submit' button press"""
+        # Clear painted_gif_frames folder if input is a GIF
+        if self.file_ext == ".gif":
+            try:
+                clear_folder_contents("painted_gif_frames")
+                print("Cleared painted_gif_frames folder")
+            except Exception as e:
+                print(f"Warning: Failed to clear painted_gif_frames folder: {e}")
+        
         self.returned_dict_command = {"command": "run", "parameters": self.get_parameters()}
         # write the new parameters to parameters.json
         self.save_parameters()

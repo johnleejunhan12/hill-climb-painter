@@ -135,18 +135,17 @@ https://github.com/user-attachments/assets/db229c0f-234f-4ed7-b74b-e8ecd0e8e5f7
 After the painting is completed, you can obtain the results from `hill-climb-painter\output`
 
 <p float="left">
-  <img src="readme_stuff/street_painting_progress.gif" width="45%"/>
-  <img src="/readme_stuff/street_painting.png" width="45%" /> 
+  <img src="readme_stuff/street_painting_progress.gif" height="250"/>
+  <img src="readme_stuff/street_painting.png" height="250" /> 
 </p>
 
 
 ## Animated inputs
-You can upload GIFs for processing, where each frame of the input GIF is painted and saved to a new GIF. To improve efficiency, multiprocessing can be enabled to paint frames in parallel.
+You can obtain a painted version of an input GIF too
 
 <p float="left">
-  <img src="readme_stuff/shrek_ui.gif" height = "260px"/>
-  <img src="/readme_stuff/shrek_ui_params.png" height = "260px" /> 
-  <img src="/readme_stuff/somebody.gif" height = "260px" /> 
+  <img src="readme_stuff/shrek_ui.gif" height = "250"/>
+  <img src="readme_stuff/somebody.gif" height = "250" /> 
 </p>
 
 
@@ -154,46 +153,57 @@ You can upload GIFs for processing, where each frame of the input GIF is painted
 ## Setting creative constraints
 
 
-### 1) Different textures
-Aside from paintstrokes, can use various shapes such as circles, triangles and squares as the texture
+### 1) Texture Type
+Aside from paint strokes, you can select any texture to create different styles of paintings.
 
-We can also provide unusual textures such as lines to produce a chaotic and scribbly abstract rendition of the original image.
+#### Shapes
+Painting with traingles, squares and circle textures
+<p float="left">
+  <img src="readme_stuff/mona_lisa_shape.png" height = "260"/>
+  <img src="readme_stuff/night_city.png" height = "260" /> 
+    <img src="readme_stuff/dog.png" height = "260" /> 
+
+</p>
 
 
-### 2) Disable scaling of texture
+
+#### Lines
+Painting with long lines as textures
+<p float="left">
+  <img src="readme_stuff/vg.png" height = "260" /> 
+  <img src="readme_stuff/sunflower.png" height = "260" /> 
+  <img src="readme_stuff/sign_scribble.png" height = "260"/>
+
+</p>
+
+
+
+### 2) Disable texture scaling
 By setting an initial texture size and restricting it, we can achieve painting styles like pointillism, where small textures are applied in patterns to form an image.
 
 
 
 ### 3) Vector fields
 
-Vector fields `(f(x,y), g(x,y))` allow us to control texture directionality by forcing their rotation to align with the field's flow. To demonstrate this, we create a radial sink pattern using the vector field `(-x, -y)`, which causes textures to converge toward a central point. By positioning this convergence point `(267, 279)`, all textures drawn to the canvas will point towards the cat's nose.
-![Image](/readme_stuff/cat_vector.png "Setting a vector field")
-![Image](/readme_stuff/cat.gif "Vector field aligned textures")
+Vector fields `(f(x,y), g(x,y))` allow us to control texture directionality by forcing their rotation to align with the field's flow. 
+
+Here we create a radial sink pattern using the vector field `(-x, -y)`, which converges at `(0,0)`. By translating the field's origin to `(267, 279)`, we can strategically align all textures to face a point of interest.
+<p float="center">
+  <img src="readme_stuff/cat_vector_field.png" height = "235px"/>
+  <img src="readme_stuff/cat_vector_field_origin.png" height = "235px" /> 
+  <img src="readme_stuff/cat_painting_progress.gif" height = "235px" /> 
+</p>
+
 
 Vector field constraints can be set for GIF inputs too
 
 
-
-<p float="left">
-  <img src="readme_stuff/select_coords_sunset.gif" height = "260px"/>
-  <img src="/readme_stuff/select_coords_sunset.gif" height = "260px" /> 
-  <img src="/readme_stuff/somebody.gif" height = "260px" /> 
+<p float="center">
+  <img src="readme_stuff/sunset_vector_field.png" height = "220" /> 
+  <img src="readme_stuff/select_coords_sunset.gif" height = "220"/>
+  <img src="readme_stuff/sunset.gif" height = "220" /> 
 </p>
 
-
-
-<!-- 30% width each:
-<p align="center" width="100%">
-    <img width="30%" src="https://i.stack.imgur.com/RJj4x.png"> 
-    <img width="30%" src="https://i.stack.imgur.com/RJj4x.png"> 
-    <img width="30%" src="https://i.stack.imgur.com/RJj4x.png"> 
-</p> -->
-
-
-### 2) Prevent resizing of textures
-
-### 3) 
 
 ## Optimization Tips
 

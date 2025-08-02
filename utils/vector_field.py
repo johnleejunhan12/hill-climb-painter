@@ -16,9 +16,13 @@ class VectorField():
         self.center_x = center_x
         self.center_y = center_y
 
+    def update_center(self, center_x: float, center_y: float):
+        """Update vector field center coordinates for dynamic per-frame processing"""
+        self.center_x = center_x
+        self.center_y = center_y
 
     def get_vector_field_theta(self, x, y):
-        # translate (x,y) to position relative to (0,0)
+        # translate (x,y) to position relative to current center
         x -= self.center_x
         y -= self.center_y
 

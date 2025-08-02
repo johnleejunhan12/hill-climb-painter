@@ -5,39 +5,39 @@
         "max_value": 720
     },
     "num_textures": {
-        "value": 298,
+        "value": 179,
         "min_value": 100,
         "max_value": 10000
     },
     "num_hill_climb_iterations": {
-        "current_lower_value": 1,
-        "current_upper_value": 1,
+        "current_lower_value": 956,
+        "current_upper_value": 1000,
         "min_value": 1,
-        "max_value": 500
+        "max_value": 1000
     },
     "texture_opacity": {
-        "value": 100,
+        "value": 96,
         "min_value": 50,
         "max_value": 100
     },
     "initial_texture_width": {
-        "value": 37,
+        "value": 40,
         "min_value": 10,
         "max_value": 200
     },
     "uniform_texture_size": {
-        "value": true
+        "value": false
     },
     "allow_early_termination": {
         "value": true
     },
     "failed_iterations_threshold": {
-        "value": 63,
+        "value": 300,
         "min_value": 1,
         "max_value": 300
     },
     "enable_vector_field": {
-        "value": true
+        "value": false
     },
     "vector_field_f": {
         "value": "-x"
@@ -47,462 +47,11 @@
     },
     "vector_field_origin_shift": {
         "value": [
-            [
-                47,
-                31
-            ],
-            [
-                15,
-                63
-            ],
-            [
-                10,
-                73
-            ],
-            [
-                4,
-                89
-            ],
-            [
-                0,
-                99
-            ],
-            [
-                0,
-                99
-            ],
-            [
-                24,
-                99
-            ],
-            [
-                59,
-                99
-            ],
-            [
-                85,
-                99
-            ],
-            [
-                110,
-                99
-            ],
-            [
-                137,
-                99
-            ],
-            [
-                176,
-                99
-            ],
-            [
-                176,
-                99
-            ],
-            [
-                176,
-                99
-            ],
-            [
-                176,
-                99
-            ],
-            [
-                176,
-                83
-            ],
-            [
-                176,
-                55
-            ],
-            [
-                176,
-                28
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                143,
-                0
-            ],
-            [
-                81,
-                0
-            ],
-            [
-                36,
-                0
-            ],
-            [
-                0,
-                0
-            ],
-            [
-                0,
-                0
-            ],
-            [
-                0,
-                0
-            ],
-            [
-                0,
-                23
-            ],
-            [
-                0,
-                69
-            ],
-            [
-                0,
-                99
-            ],
-            [
-                0,
-                99
-            ],
-            [
-                89,
-                99
-            ],
-            [
-                142,
-                99
-            ],
-            [
-                176,
-                99
-            ],
-            [
-                176,
-                99
-            ],
-            [
-                176,
-                67
-            ],
-            [
-                176,
-                40
-            ],
-            [
-                176,
-                19
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                169,
-                0
-            ],
-            [
-                169,
-                0
-            ],
-            [
-                169,
-                0
-            ],
-            [
-                175,
-                0
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                176,
-                5
-            ],
-            [
-                176,
-                23
-            ],
-            [
-                176,
-                34
-            ],
-            [
-                176,
-                47
-            ],
-            [
-                176,
-                64
-            ],
-            [
-                176,
-                72
-            ],
-            [
-                170,
-                77
-            ],
-            [
-                158,
-                85
-            ],
-            [
-                147,
-                92
-            ],
-            [
-                138,
-                97
-            ],
-            [
-                123,
-                99
-            ],
-            [
-                100,
-                99
-            ],
-            [
-                75,
-                99
-            ],
-            [
-                55,
-                99
-            ],
-            [
-                38,
-                99
-            ],
-            [
-                28,
-                99
-            ],
-            [
-                19,
-                99
-            ],
-            [
-                7,
-                94
-            ],
-            [
-                0,
-                86
-            ],
-            [
-                0,
-                78
-            ],
-            [
-                0,
-                66
-            ],
-            [
-                0,
-                48
-            ],
-            [
-                0,
-                31
-            ],
-            [
-                0,
-                14
-            ],
-            [
-                0,
-                0
-            ],
-            [
-                0,
-                0
-            ],
-            [
-                2,
-                0
-            ],
-            [
-                28,
-                0
-            ],
-            [
-                59,
-                0
-            ],
-            [
-                89,
-                0
-            ],
-            [
-                114,
-                0
-            ],
-            [
-                143,
-                0
-            ],
-            [
-                166,
-                0
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                176,
-                10
-            ],
-            [
-                176,
-                35
-            ],
-            [
-                176,
-                55
-            ],
-            [
-                176,
-                77
-            ],
-            [
-                176,
-                92
-            ],
-            [
-                176,
-                99
-            ],
-            [
-                175,
-                99
-            ],
-            [
-                150,
-                99
-            ],
-            [
-                120,
-                99
-            ],
-            [
-                95,
-                99
-            ],
-            [
-                69,
-                99
-            ],
-            [
-                35,
-                99
-            ],
-            [
-                0,
-                99
-            ],
-            [
-                0,
-                99
-            ],
-            [
-                0,
-                90
-            ],
-            [
-                0,
-                66
-            ],
-            [
-                0,
-                47
-            ],
-            [
-                0,
-                23
-            ],
-            [
-                0,
-                1
-            ],
-            [
-                0,
-                0
-            ],
-            [
-                0,
-                0
-            ],
-            [
-                19,
-                0
-            ],
-            [
-                96,
-                0
-            ],
-            [
-                132,
-                0
-            ],
-            [
-                163,
-                0
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                176,
-                0
-            ],
-            [
-                176,
-                0
-            ]
+            []
         ],
-        "target_previous_height": 338,
-        "target_previous_width": 600,
-        "target_previous_extention": ".gif"
+        "target_previous_height": 484,
+        "target_previous_width": 377,
+        "target_previous_extention": ".png"
     },
     "display_painting_progress": {
         "value": true
@@ -514,23 +63,23 @@
         "value": false
     },
     "output_image_size": {
-        "value": 500,
+        "value": 1550,
         "min_value": 500,
         "max_value": 4000
     },
     "output_image_name": {
-        "value": "street_painting"
+        "value": "good_boy"
     },
     "create_gif_of_painting_progress": {
         "value": true
     },
     "painting_progress_gif_name": {
-        "value": "street_painting_progress"
+        "value": "good_boy"
     },
     "painted_gif_name": {
-        "value": "test2"
+        "value": "sunset"
     },
     "enable_multiprocessing": {
-        "value": true
+        "value": false
     }
 }
