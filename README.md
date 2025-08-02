@@ -142,14 +142,16 @@ All painted results are saved to `hill-climb-painter\output`
 </p>
 
 
-## GIF inputs
+## Animated inputs
 
-GIFs can be selected as the target. Multiple frames can be painted in parallel using multiprocessing.
+GIFs can be recreated into painted versions too.
+
+For faster results, you can enable multiprocessing to paint multiple frames in parallel
 
 <p float="left">
-  <img src="readme_stuff/shrek_ui.gif" width="40%"/>
-  <img src="/readme_stuff/shrek_ui_params.png" width="40%" /> 
-  <img src="/readme_stuff/somebody.gif" width="40%" /> 
+  <img src="readme_stuff/shrek_ui.gif" height = "260px"/>
+  <img src="/readme_stuff/shrek_ui_params.png" height = "260px" /> 
+  <img src="/readme_stuff/somebody.gif" height = "260px" /> 
 </p>
 
 
