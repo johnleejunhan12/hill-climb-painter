@@ -1,35 +1,35 @@
 {
     "computation_size": {
-        "value": 100,
+        "value": 300,
         "min_value": 100,
         "max_value": 720
     },
     "num_textures": {
-        "value": 179,
+        "value": 10000,
         "min_value": 100,
         "max_value": 10000
     },
     "num_hill_climb_iterations": {
-        "current_lower_value": 956,
-        "current_upper_value": 1000,
+        "current_lower_value": 1,
+        "current_upper_value": 227,
         "min_value": 1,
         "max_value": 1000
     },
     "texture_opacity": {
-        "value": 96,
+        "value": 100,
         "min_value": 50,
         "max_value": 100
     },
     "initial_texture_width": {
-        "value": 40,
-        "min_value": 10,
+        "value": 16,
+        "min_value": 5,
         "max_value": 200
     },
     "uniform_texture_size": {
         "value": false
     },
     "allow_early_termination": {
-        "value": true
+        "value": false
     },
     "failed_iterations_threshold": {
         "value": 300,
@@ -49,9 +49,9 @@
         "value": [
             []
         ],
-        "target_previous_height": 484,
-        "target_previous_width": 377,
-        "target_previous_extention": ".png"
+        "target_previous_height": 360,
+        "target_previous_width": 643,
+        "target_previous_extention": ".jpg"
     },
     "display_painting_progress": {
         "value": true
@@ -63,18 +63,18 @@
         "value": false
     },
     "output_image_size": {
-        "value": 1550,
+        "value": 1508,
         "min_value": 500,
         "max_value": 4000
     },
     "output_image_name": {
-        "value": "good_boy"
+        "value": "night_city_low_res"
     },
     "create_gif_of_painting_progress": {
-        "value": true
+        "value": false
     },
     "painting_progress_gif_name": {
-        "value": "good_boy"
+        "value": ""
     },
     "painted_gif_name": {
         "value": "sunset"

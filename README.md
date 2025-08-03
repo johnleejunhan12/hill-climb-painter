@@ -149,37 +149,80 @@ You can obtain a painted version of an input GIF too
 </p>
 
 
+## Influential parameters
+
+### 1) Number of textures
+
+Depending on how many textures are added to the cavas, you can obtain a painting with a desired level of detail. The following example demonstrates a painting of a cat, created from increasing number of textures.
+
+| 100 | 200 | 300 | 400 |
+|:---:|:---:|:---:|:---:|
+| <img src="readme_stuff/100.png" width="100%"/> | <img src="readme_stuff/200.png" width="100%"/> | <img src="readme_stuff/300.png" width="100%"/> | <img src="readme_stuff/400.png" width="100%"/> |
+
+| 500 | 1000 | 2000 | 5000 |
+|:---:|:---:|:---:|:---:|
+| <img src="readme_stuff/500.png" width="100%"/> | <img src="readme_stuff/1000.png" width="100%"/> | <img src="readme_stuff/2000.png" width="100%"/> | <img src="readme_stuff/5000.png" width="100%"/> |
+
+
+
+
+### 2) Number of hill climbing steps
+
+Given a fixed number of textures, the quality of their placement can be significantly affected by the number of optimization steps used. In this application, the number of optimization steps increases linearly from `min_iterations` to `max_iterations`. In this example, 400 textures are applied with varying numbers of hill climbing steps. The painting with fewer optimization steps appears messier and more chaotic, while the one with more steps results in a cleaner and more structured composition. Finer strokes generally benefit from more precise placement to improve the overall coherence of the painting. 
+
+| 1–50 steps | 50–200 steps | 500–1000 steps |
+|:----:|:------:|:--------:|
+| <img src="readme_stuff/1_to_50.png" width="100%"/> | <img src="readme_stuff/50_to_200.png" width="100%"/> | <img src="readme_stuff/500_to_1000.png" width="100%"/> |
+
+### 3) Computational canvas size
+*(Not to be confused with the output canvas size)*
+
+To generate a highly realistic and detailed painting, thousands of textures may be applied. However, as the level of detail increases, the canvas resolution eventually becomes the limiting factor, no matter how many textures are used. Typically, a canvas size of 200-300 pixels strikes a good balance between computational speed and visual quality. For finer detail, you can increase the canvas size, though this will result in longer processing times.
+
+The example below compares two paintings, each generated with 10,000 textures and identical parameter settings, except for the computational canvas size. Despite having the same output resolution, the painting 
+created on a 300px canvas appears significantly more detailed than the other one created on a 100px canvas, demonstrating the impact of computational resolution on final quality.
+
+
+
+
+| 100px | 300px |
+|:-----:|:-----:|
+| <img src="readme_stuff/night_city_low_res.png" width="100%"/> | <img src="readme_stuff/night_city_high_res.png" width="100%"/> |
+
+
 
 ## Setting creative constraints
 
 
-### 1) Texture Type
-Aside from paint strokes, you can select any texture to create different styles of paintings.
+### 1) Texture Types
+Aside from paint strokes, you can use various textures to create different styles of paintings.
 
-#### Shapes
-Painting with traingles, squares and circle textures
+
+**Traingles, squares and circles**
 <p float="left">
-  <img src="readme_stuff/mona_lisa_shape.png" height = "260"/>
-  <img src="readme_stuff/night_city.png" height = "260" /> 
-    <img src="readme_stuff/dog.png" height = "260" /> 
-
+  <img src="readme_stuff/mona_lisa_shape.png" height = "242"/>
+  <img src="readme_stuff/wave.png" height = "242" /> 
+  <img src="readme_stuff/dog.png" height = "242" /> 
 </p>
 
 
 
-#### Lines
-Painting with long lines as textures
+**Long lines**
 <p float="left">
-  <img src="readme_stuff/vg.png" height = "260" /> 
-  <img src="readme_stuff/sunflower.png" height = "260" /> 
-  <img src="readme_stuff/sign_scribble.png" height = "260"/>
-
+  <img src="readme_stuff/vg.png" height = "240" /> 
+  <img src="readme_stuff/sunflower.png" height = "240" /> 
+  <img src="readme_stuff/sign_scribble.png" height = "240"/>
 </p>
 
 
 
 ### 2) Disable texture scaling
-By setting an initial texture size and restricting it, we can achieve painting styles like pointillism, where small textures are applied in patterns to form an image.
+By specifying and fixing a small texture size, you can create a distinctive painting style where all textures are uniformly sized. In this example, 10,000 circles are used, each constrained to 13 pixels. Given the canvas resolution of 317 pixels, the relatively small texture size results in a composition made entirely of tiny, dot-like elements.
+<p float="left">
+  <img src="readme_stuff/parrot.gif" height = "220" /> 
+  <img src="readme_stuff/parrot.png" height = "220" /> 
+</p>
+
 
 
 
@@ -205,9 +248,6 @@ Vector field constraints can be set for GIF inputs too
 </p>
 
 
-## Optimization Tips
-
-here are a few tips...
 
 
 ## How it works
@@ -283,27 +323,22 @@ This iterative process continues until an iteration limit is reached or terminat
 ### Painting the image
 By repeatedly applying the same optimization technique across several hundred strokes, we gradually build up the image, layer by layer, until a coherent painting emerges. The GIF below illustrates the overall painting process where each stroke's position, scale, and rotation are optimized using greedy hill climbing before being committed to the canvas.
 
-![Image](/readme_stuff/mona_lisa_gif_final.gif "Mona Lisa")
+<p float="center">
+  <img src="readme_stuff/mona_lisa_original.jpg" height = "400" /> 
+  <img src="readme_stuff/mona_lisa_gif_final.gif" height = "400"/>
+</p>
 
 
-## Optimizations implemented
+## Key optimisations implemented
 
-### Performance Tuning
-- **Computation Size**: 50-200 for testing, 300-600 for final output
-- **Texture Count**: 100-500 for speed, 1000-5000 for quality
-- **Multiprocessing**: Enable for GIFs with 10+ frames
+1) Numba 
+2) Per pixel scoring
+3) 
 
-### Quality Settings
-- **High Quality**: Large computation size, many textures, high iterations
-- **Fast Preview**: Small computation size, few textures, low iterations
-- **Balanced**: Medium settings with early termination enabled
-
-### Memory Considerations
-- Large GIFs may require significant RAM
-- Enable multiprocessing to distribute load
-- Consider reducing frame count for very long animations
 
 ## Lessons learnt
+
+
 
 ## Inspiration
 

@@ -21,8 +21,8 @@
     "max_value": 100
   },
   "initial_texture_width": {
-    "value": 100,
-    "min_value": 10,
+    "value": 5,
+    "min_value": 5,
     "max_value": 200
   },
   "uniform_texture_size": {

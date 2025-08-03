@@ -82,8 +82,8 @@ def get_mutated_rectangle_copy(rectangle, canvas_height, canvas_width, vector_fi
         
     if case == 1:
         # Case 1: Mutate x and y
-        dx = np.random.randint(-50, 50)
-        dy = np.random.randint(-50, 50)
+        dx = np.random.randint(-100, 100)
+        dy = np.random.randint(-100, 100)
         mutated[0] = clamp_int(x + dx, 0, canvas_width - 1)
         mutated[1] = clamp_int(y + dy, 0, canvas_height - 1)
 
