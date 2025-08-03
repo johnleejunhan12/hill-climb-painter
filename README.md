@@ -232,9 +232,9 @@ Vector fields `(f(x,y), g(x,y))` allow us to control texture directionality by f
 
 Here we create a radial sink pattern using the vector field `(-x, -y)`, which converges at `(0,0)`. By translating the field's origin to `(267, 279)`, we can strategically align all textures to face a point of interest.
 <p float="center">
-  <img src="readme_stuff/cat_vector_field.jpg" height = "235px"/>
-  <img src="readme_stuff/cat_vector_field_origin.jpg" height = "235px" /> 
-  <img src="readme_stuff/cat_painting_progress.gif" height = "235px" /> 
+  <img src="readme_stuff/cat_vector_field.jpg" height = "245px"/>
+  <img src="readme_stuff/cat_vector_field_origin.jpg" height = "245px" /> 
+  <img src="readme_stuff/cat_painting_progress.gif" height = "245px" /> 
 </p>
 
 
@@ -242,9 +242,9 @@ Vector field constraints can be set for GIF inputs too
 
 
 <p float="center">
-  <img src="readme_stuff/sunset_vector_field.jpg" height = "220" /> 
-  <img src="readme_stuff/select_coords_sunset.gif" height = "220"/>
-  <img src="readme_stuff/sunset.gif" height = "220" /> 
+  <img src="readme_stuff/sunset_vector_field.jpg" height = "230" /> 
+  <img src="readme_stuff/select_coords_sunset.gif" height = "230"/>
+  <img src="readme_stuff/sunset.gif" height = "230" /> 
 </p>
 
 
