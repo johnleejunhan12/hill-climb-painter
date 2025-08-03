@@ -6,26 +6,26 @@ A Python desktop application that recreates images into paintings
 
 ## Overview
 
-Hill Climb Painter is an image reconstruction algorithm that transforms images and short animations into painted representations by sequentially placing textured brush strokes. 
-A greedy hill-climbing algorithm is used to iteratively optimize each stroke’s position, rotation, and scale, minimizing the visual difference between the target image and the canvas.
+Hill Climb Painter is an image reconstruction algorithm that converts images and short animations into painted versions by sequentially placing textured brush strokes. It uses a greedy hill-climbing algorithm to optimize the position, rotation, and scale of each stroke to reduce the visual difference between the target image and the canvas. 
 
 Each brush stroke is assessed for its visual impact before being applied to the canvas, ensuring that only those contributing meaningful detail are added. As more strokes are layered, coarse and abstract forms are gradually refined into structure, creating a photorealistic painting with the textured aesthetics of impressionism.
+
 
 ## Features
 
 ![Image](/readme_stuff/ui_owl.jpg "Painting of an owl")
 
-### 🎨 Input and Output
+### Input and Output
 - **Multiple Format Input**: PNG, JPG, JPEG, and animated GIF inputs
 - **High-Resolution Output**: Specify a desired resolution of the final painting (up to 4K)
 - **Texture-Based Painting**: Use custom PNG textures such as brush strokes or shapes
 
-### ⏰ Real-Time Visualization
+### Real-Time Visualization
 - **Live Painting Display**: Watch the algorithm work in real-time in a pygame display
 - **Progress Tracking**: Visualize improvements of texture placements during optimisation process
 - **Painting Progress GIFs**: Save time-lapse animations of painting progress
 
-### ⚙️ GUI for parameter customization
+### GUI for parameter customization
 - **Persistent settings**: Selected target, texture and parameters are automatically saved
 - **Hill Climb Settings**: Extensive customization of hill climbing parameters
 - **Vector Field Pattern**: Align textures to a mathematically defined vector field
@@ -242,9 +242,9 @@ Vector field constraints can be set for GIF inputs too
 
 
 <p float="center">
-  <img src="readme_stuff/sunset_vector_field.jpg" height = "230" /> 
-  <img src="readme_stuff/select_coords_sunset.gif" height = "230"/>
-  <img src="readme_stuff/sunset.gif" height = "230" /> 
+  <img src="readme_stuff/sunset_vector_field.jpg" height = "208" /> 
+  <img src="readme_stuff/select_coords_sunset.gif" height = "208"/>
+  <img src="readme_stuff/sunset.gif" height = "208" /> 
 </p>
 
 
@@ -271,19 +271,7 @@ To achieve this, we define a quantitative scoring system that satisfies the foll
 - **Inefficiency:** Tiny strokes in sparse areas (prefer larger strokes for better coverage). 
 
 
-<!-- #### **Reward good placements that**:
-- **Add more detail** to empty or blurry regions of the canvas, bringing it closer to the target image by filling in underdeveloped areas.
-- **Use a suitable color** that closely resembles the corresponding region in the target image. This ensures the paint stroke blends naturally into the canvas.  
-  > *Note:* Since the stroke's color is calculated using the average RGB values of the region it would cover, the most suitable colors occur when the target region has low color variance. The painted result will look more cohesive if strokes are placed in areas of consistent color rather than highly varied regions.
-- **Maximize coverage** by filling in large areas of empty or blurry canvas without overwriting existing details.
-
-
-
-#### Penalize bad placements that:
-- **Make the canvas worse** by reducing its similarity to the target image. Such strokes are destructive and lead to a sloppier final result.
-- **Overwrite already detailed or accurate areas**, which can undo valuable work already done in previous strokes.
-- **Contribute little to no meaningful detail**. For example, placing tiny strokes in nearly empty areas. In such cases, using larger strokes would be more effective and should be encouraged. -->
-
+The intuition behind the scoring system is to determine whether a paint stroke reduces the visual error between the target image and the current canvas. To implement this, we can compare the error before and after applying the stroke. The greater the reduction in error, the better the score, which is an indicator of the goodness of fit of the texture on the canvas.
 
 ### Calculating the scoring heuristic:
 
@@ -329,18 +317,37 @@ By repeatedly applying the same optimization technique across several hundred st
 </p>
 
 
-## Key optimisations implemented
 
-1) Numba 
-2) Per pixel scoring
-3) 
+## Optimizations Implemented
 
+### Numba Acceleration
+The painting algorithm would not be feasible in pure Python due to its performance limitations. As an interpreted language, Python is significantly slower for numerical operations and array processing. By leveraging a just-in-time (JIT) compiler like Numba, Python functions can be compiled into optimized machine code at runtime, delivering near-C performance. This dramatically speeds up critical components such as scoring and rasterization.
 
-## Lessons learnt
+### Efficient Scoring and Rasterization
+Rather than comparing the entire canvas to the target image for each stroke, the scoring function calculates the per-pixel contribution of a stroke directly. This avoids unnecessary computation, which is especially important when placing small textures on a large canvas, where full-image comparisons would be too slow.
 
+A scanline rasterization algorithm is used to identify which pixels are actually affected by the texture. This means operations are only applied to non-transparent regions, improving efficiency by skipping unnecessary calculations over fully transparent areas.
 
+### Optimized for CPU
+This application is fully capable of running on a slow laptop. It takes advantage of multiprocessing to ensure that painting performance is not bottlenecked by tasks such as exporting GIF frames or updating the painting progress window.
 
 ## Inspiration
+This project was inspired by [Primitive](https://github.com/fogleman/primitive), a fantastic project by Michael Fogleman that uses hill climbing to recreate images using geometric shapes. My goal was to generalize this technique to support arbitrary textures rather than just primitives, while also providing a UI for selecting textures and target images.
+
+I was also influenced by [Spu7Nix](https://www.youtube.com/watch?v=6aXx6RA1IK4), who explored a similar idea in the video *Generating Videos in Geometry Dash with Evolution*. His insights on texture scoring helped guide my approach to evaluating brush strokes effectively.
+
+
+## Final Thoughts
+Building this project was a lot of fun. I created a few smaller test repositories along the way to try out different strategies before settling on the current design.
+
+One limitation of the current implementation is that texture placements often get stuck in local minima, resulting in suboptimal stroke positioning. A potential improvement would be to sample several random positions before committing to a hill climbing run. This could help identify better starting points, leading to higher-quality placements and faster convergence.
+
+While the codebase has grown messy and is admittedly hard to maintain, I’m still satisfied with the result. It accomplished what I set out to do: Generate painted art algorithmically for free without relying on large language models.
+
+
+
+
+
 
 
 ## Gallery
