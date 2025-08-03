@@ -13,7 +13,7 @@ Each brush stroke is assessed for its visual impact before being applied to the 
 
 ## Features
 
-![Image](/readme_stuff/ui_owl.png "Painting of an owl")
+![Image](/readme_stuff/ui_owl.jpg "Painting of an owl")
 
 ### 🎨 Input and Output
 - **Multiple Format Input**: PNG, JPG, JPEG, and animated GIF inputs
@@ -80,14 +80,14 @@ python main.py
 * Choose a target image to paint (PNG, JPG, JPEG)
 * Choose textures (PNG)
 
-![Image](/readme_stuff/usage_1.png "Select target and textures")
+![Image](/readme_stuff/usage_1.jpg "Select target and textures")
 
 
 ### Step 3: Adjust parameters
 
 Experiment with various parameters to achieve your desired style of painting
 
-![Image](/readme_stuff/usage_2.png "Adjust parameters")
+![Image](/readme_stuff/usage_2.jpg "Adjust parameters")
 
 <details>
 
@@ -136,7 +136,7 @@ After the painting is completed, you can obtain the results from `hill-climb-pai
 
 <p float="left">
   <img src="readme_stuff/street_painting_progress.gif" height="250"/>
-  <img src="readme_stuff/street_painting.png" height="250" /> 
+  <img src="readme_stuff/street_painting.jpg" height="250" /> 
 </p>
 
 
@@ -157,11 +157,11 @@ Depending on how many textures are added to the cavas, you can obtain a painting
 
 | 100 | 200 | 300 | 400 |
 |:---:|:---:|:---:|:---:|
-| <img src="readme_stuff/100.png" width="100%"/> | <img src="readme_stuff/200.png" width="100%"/> | <img src="readme_stuff/300.png" width="100%"/> | <img src="readme_stuff/400.png" width="100%"/> |
+| <img src="readme_stuff/100.jpg" width="100%"/> | <img src="readme_stuff/200.jpg" width="100%"/> | <img src="readme_stuff/300.jpg" width="100%"/> | <img src="readme_stuff/400.jpg" width="100%"/> |
 
 | 500 | 1000 | 2000 | 5000 |
 |:---:|:---:|:---:|:---:|
-| <img src="readme_stuff/500.png" width="100%"/> | <img src="readme_stuff/1000.png" width="100%"/> | <img src="readme_stuff/2000.png" width="100%"/> | <img src="readme_stuff/5000.png" width="100%"/> |
+| <img src="readme_stuff/500.jpg" width="100%"/> | <img src="readme_stuff/1000.jpg" width="100%"/> | <img src="readme_stuff/2000.jpg" width="100%"/> | <img src="readme_stuff/5000.jpg" width="100%"/> |
 
 
 
@@ -172,7 +172,7 @@ Given a fixed number of textures, the quality of their placement can be signific
 
 | 1–50 steps | 50–200 steps | 500–1000 steps |
 |:----:|:------:|:--------:|
-| <img src="readme_stuff/1_to_50.png" width="100%"/> | <img src="readme_stuff/50_to_200.png" width="100%"/> | <img src="readme_stuff/500_to_1000.png" width="100%"/> |
+| <img src="readme_stuff/1_to_50.jpg" width="100%"/> | <img src="readme_stuff/50_to_200.jpg" width="100%"/> | <img src="readme_stuff/500_to_1000.jpg" width="100%"/> |
 
 ### 3) Computational canvas size
 *(Not to be confused with the output canvas size)*
@@ -187,7 +187,7 @@ created on a 300px canvas appears significantly more detailed than the other one
 
 | 100px | 300px |
 |:-----:|:-----:|
-| <img src="readme_stuff/night_city_low_res.png" width="100%"/> | <img src="readme_stuff/night_city_high_res.png" width="100%"/> |
+| <img src="readme_stuff/night_city_low_res.jpg" width="100%"/> | <img src="readme_stuff/night_city_high_res.jpg" width="100%"/> |
 
 
 
@@ -200,18 +200,18 @@ Aside from paint strokes, you can use various textures to create different style
 
 **Traingles, squares and circles**
 <p float="left">
-  <img src="readme_stuff/mona_lisa_shape.png" height = "242"/>
-  <img src="readme_stuff/wave.png" height = "242" /> 
-  <img src="readme_stuff/dog.png" height = "242" /> 
+  <img src="readme_stuff/mona_lisa_shape.jpg" height = "242"/>
+  <img src="readme_stuff/wave.jpg" height = "242" /> 
+  <img src="readme_stuff/dog.jpg" height = "242" /> 
 </p>
 
 
 
 **Long lines**
 <p float="left">
-  <img src="readme_stuff/vg.png" height = "240" /> 
-  <img src="readme_stuff/sunflower.png" height = "240" /> 
-  <img src="readme_stuff/sign_scribble.png" height = "240"/>
+  <img src="readme_stuff/vg.jpg" height = "240" /> 
+  <img src="readme_stuff/sunflower.jpg" height = "240" /> 
+  <img src="readme_stuff/sign_scribble.jpg" height = "240"/>
 </p>
 
 
@@ -220,7 +220,7 @@ Aside from paint strokes, you can use various textures to create different style
 By specifying and fixing a small texture size, you can create a distinctive painting style where all textures are uniformly sized. In this example, 10,000 circles are used, each constrained to 13 pixels. Given the canvas resolution of 317 pixels, the relatively small texture size results in a composition made entirely of tiny, dot-like elements.
 <p float="left">
   <img src="readme_stuff/parrot.gif" height = "220" /> 
-  <img src="readme_stuff/parrot.png" height = "220" /> 
+  <img src="readme_stuff/parrot.jpg" height = "220" /> 
 </p>
 
 
@@ -232,8 +232,8 @@ Vector fields `(f(x,y), g(x,y))` allow us to control texture directionality by f
 
 Here we create a radial sink pattern using the vector field `(-x, -y)`, which converges at `(0,0)`. By translating the field's origin to `(267, 279)`, we can strategically align all textures to face a point of interest.
 <p float="center">
-  <img src="readme_stuff/cat_vector_field.png" height = "235px"/>
-  <img src="readme_stuff/cat_vector_field_origin.png" height = "235px" /> 
+  <img src="readme_stuff/cat_vector_field.jpg" height = "235px"/>
+  <img src="readme_stuff/cat_vector_field_origin.jpg" height = "235px" /> 
   <img src="readme_stuff/cat_painting_progress.gif" height = "235px" /> 
 </p>
 
@@ -242,7 +242,7 @@ Vector field constraints can be set for GIF inputs too
 
 
 <p float="center">
-  <img src="readme_stuff/sunset_vector_field.png" height = "220" /> 
+  <img src="readme_stuff/sunset_vector_field.jpg" height = "220" /> 
   <img src="readme_stuff/select_coords_sunset.gif" height = "220"/>
   <img src="readme_stuff/sunset.gif" height = "220" /> 
 </p>
@@ -252,10 +252,10 @@ Vector field constraints can be set for GIF inputs too
 
 ## How it works
 To generate a painted approximation of a target image using textures, we begin by initializing a blank canvas with the average RGB color of the target image. In this example, we will use 11 different paintstrokes as textures. 
-![Image](/readme_stuff/how_work_1.png "Target, texture and canvas")
+![Image](/readme_stuff/how_work_1.jpg "Target, texture and canvas")
 <br><br>
 Initially, a random paint stroke is selected. It is assigned a random scale, position, and rotation. As seen in the image below, its color is computed by taking the average of the RGB values within the corresponding region of the target.
-![Image](/readme_stuff/how_work_2_v2.png "Target and canvas")
+![Image](/readme_stuff/how_work_2_v2.jpg "Target and canvas")
 <br><br>
 Next, we need to determine whether the placement of a paint stroke is "good" or "bad".
 To achieve this, we define a quantitative scoring system that satisfies the following requirements:
@@ -291,24 +291,24 @@ To achieve this, we define a quantitative scoring system that satisfies the foll
 **1) Finding the error between the target image and canvas**
 
 Pixel errors are calculated using root sum of squared difference between RGB values of the target and canvas.
-![Image](/readme_stuff/how_work_3.png "Target, texture and canvas")
+![Image](/readme_stuff/how_work_3.jpg "Target, texture and canvas")
 <br><br>
 
 **2) Finding the error between the target image and canvas with paint stroke**
 
 We calculate pixel errors again using the same formula but with the texture drawn onto the canvas
-![Image](/readme_stuff/how_work_4.png "Target, texture and canvas")
+![Image](/readme_stuff/how_work_4.jpg "Target, texture and canvas")
 <br><br>
 
 **3) Obtain the difference between errors**
 
 The final score is calculated by taking the difference in errors before and after the texture was added. As seen in the color map plot, textures that are well placed receive a higher score as they reduce the total pixel error between the canvas and target image.
-![Image](/readme_stuff/good_score.png "Target, texture and canvas")
+![Image](/readme_stuff/good_score.jpg "Target, texture and canvas")
 <br><br>
 #### **Penalizing sub-optimal placements**
 If the texture was placed in a suboptimal configuration, it will be penalized as shown in the red (negative) regions of the scoring color plot.
-![Image](/readme_stuff/bad_placement.png "Target, texture and canvas")
-![Image](/readme_stuff/bad_score.png "Target, texture and canvas")
+![Image](/readme_stuff/bad_placement.jpg "Target, texture and canvas")
+![Image](/readme_stuff/bad_score.jpg "Target, texture and canvas")
 
 ### Greedy Hill Climbing
 
@@ -347,9 +347,9 @@ By repeatedly applying the same optimization technique across several hundred st
 
 Here are some paintings that are genertated by Hill Climb Painter
 
-![Image](/readme_stuff/gato.png "Mr Cat")
+![Image](/readme_stuff/gato.jpg "Mr Cat")
 
-![Image](/readme_stuff/shrek_gif_painted.gif "Somebody")
+<!-- ![Image](/readme_stuff/shrek_gif_painted.gif "Somebody") -->
 
 ---
 
