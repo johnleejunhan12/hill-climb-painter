@@ -2,16 +2,16 @@
     "computation_size": {
         "value": 295,
         "min_value": 100,
-        "max_value": 720
+        "max_value": 400
     },
     "num_textures": {
-        "value": 7089,
+        "value": 1000,
         "min_value": 100,
         "max_value": 10000
     },
     "num_hill_climb_iterations": {
         "current_lower_value": 1,
-        "current_upper_value": 502,
+        "current_upper_value": 500,
         "min_value": 1,
         "max_value": 1000
     },
@@ -29,10 +29,10 @@
         "value": false
     },
     "allow_early_termination": {
-        "value": false
+        "value": true
     },
     "failed_iterations_threshold": {
-        "value": 300,
+        "value": 250,
         "min_value": 1,
         "max_value": 300
     },
@@ -48,65 +48,13 @@
     "vector_field_origin_shift": {
         "value": [
             [
-                259,
-                115
-            ],
-            [
-                259,
-                115
-            ],
-            [
-                259,
-                115
-            ],
-            [
-                259,
-                115
-            ],
-            [
-                259,
-                115
-            ],
-            [
-                259,
-                115
-            ],
-            [
-                259,
-                115
-            ],
-            [
-                259,
-                115
-            ],
-            [
-                259,
-                115
-            ],
-            [
-                259,
-                115
-            ],
-            [
-                259,
-                115
-            ],
-            [
-                259,
-                115
-            ],
-            [
-                259,
-                115
-            ],
-            [
-                259,
-                115
+                151,
+                204
             ]
         ],
-        "target_previous_height": 281,
+        "target_previous_height": 500,
         "target_previous_width": 500,
-        "target_previous_extention": ".gif"
+        "target_previous_extention": ".jpg"
     },
     "display_painting_progress": {
         "value": true
@@ -123,18 +71,18 @@
         "max_value": 4000
     },
     "output_image_name": {
-        "value": "keanu"
+        "value": "painting"
     },
     "create_gif_of_painting_progress": {
-        "value": false
+        "value": true
     },
     "painting_progress_gif_name": {
-        "value": ""
+        "value": "painting_progress"
     },
     "painted_gif_name": {
-        "value": "demon_slayer"
+        "value": "painted_animation"
     },
     "enable_multiprocessing": {
-        "value": true
+        "value": false
     }
 }

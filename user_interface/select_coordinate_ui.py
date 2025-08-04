@@ -160,8 +160,23 @@ class DynamicWindowSizer:
         return max(total_width, WindowConfig.MIN_WINDOW_WIDTH)
     
     def get_window_dimensions(self) -> Tuple[int, int]:
-        """Get the calculated window dimensions"""
-        return self.calculate_required_width(), self.calculate_required_height()
+        """Get the calculated window dimensions with screen height responsiveness"""
+        width = self.calculate_required_width()
+        calculated_height = self.calculate_required_height()
+        
+        # Get screen dimensions to cap height if needed
+        # Note: We'll get screen dimensions from a temporary root window if none exists
+        import tkinter as tk
+        temp_root = tk.Tk()
+        temp_root.withdraw()  # Hide the temporary window
+        screen_height = temp_root.winfo_screenheight()
+        temp_root.destroy()
+        
+        # Cap height at 90% of screen height to ensure window fits
+        max_height = int(screen_height * 0.9)
+        final_height = min(calculated_height, max_height)
+        
+        return width, final_height
 
 class SingleSliderModified(tk.Canvas):
     def __init__(self, master, min_val=0, max_val=100, init_val=None, width=300, height=None,

@@ -519,7 +519,16 @@ class ParameterUI:
 
         # Set window size and center it
         window_width = 570
-        window_height = 850
+        
+        # Get screen dimensions to calculate appropriate window height
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        
+        # Calculate window height based on screen size, leaving margin for taskbar/dock
+        # Use 90% of screen height, but cap at 850 (original size) for very large screens
+        max_height = min(850, int(screen_height * 0.9))
+        window_height = max_height
+        
         center_window(self.root, window_width, window_height)
         self.root.minsize(window_width, 570)   # Set minimum window size (width, height)
         self.root.configure(bg='white')

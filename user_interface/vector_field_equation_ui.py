@@ -143,9 +143,8 @@ class VectorFieldFunction:
 
 class VectorFieldVisualizer:
     def __init__(self, master=None, presets=None, sq_grid_size=None, initial_f_string=None, initial_g_string=None):
-        # Set initial window dimensions
+        # Set initial window width
         self.initial_width = 820
-        self.initial_height = 820
 
         if master is None:
             self.root = tk.Tk()
@@ -154,6 +153,14 @@ class VectorFieldVisualizer:
             self.root.transient(master)
             self.root.grab_set()
         self.root.title("Vector Field Selector")
+        
+        # Calculate responsive height based on screen size
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        
+        # Use 90% of screen height, but cap at 820 (original size) for very large screens
+        max_height = min(820, int(screen_height * 0.9))
+        self.initial_height = max_height
         
         # Center the window
         self.center_window(self.initial_width, self.initial_height)
