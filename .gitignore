@@ -13,7 +13,6 @@ target_gif/
 texture_image/
 original_gif_frames/
 painted_gif_frames
-texture_presets/
 target/
 texture/
 output/
