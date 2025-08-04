@@ -22,16 +22,16 @@ Each brush stroke is assessed for its visual impact before being applied to the 
 
 ### Real-Time Visualization
 - **Live Painting Display**: Watch the algorithm work in real-time in a pygame display
-- **Progress Tracking**: Visualize improvements of texture placements during optimisation process
+- **Progress Tracking**: Visualize improvements of texture placements during the optimisation process
 - **Painting Progress GIFs**: Save time-lapse animations of painting progress
 
-### GUI for parameter customization
+### GUI for Parameter Customization
 - **Persistent settings**: Selected target, texture and parameters are automatically saved
 - **Hill Climb Settings**: Extensive customization of hill climbing parameters
 - **Vector Field Pattern**: Align textures to a mathematically defined vector field
 
 
-## Installation and setup
+## Installation and Setup
 ### Prerequisites
 - Python 3.7 or higher
 - Virtual environment (recommended)
@@ -97,15 +97,15 @@ Experiment with various parameters to achieve your desired style of painting
 |----|---------------------------------------------|--------------------------------------------------------------------------------------------------------|
 | 1  | Computation size                            | Sets the computation canvas resolution. Decrease for speed, increase to capture greater detail. |
 | 2  | Add N textures                              | More textures result in a more detailed painting.                                                      |
-| 3  | Number of hill climb iterations             | Optimization steps per texture. Higher value leads to better texture placement, but runs slower.                         |
+| 3  | Number of hill climb iterations             | Optimization steps per texture. Higher values lead to better texture placement, but run slower.                         |
 | 4  | Texture opacity                             | Opacity of each texture. *100% = fully opaque; lower = more translucent.*                              |
-| 5  | Initial texture size                        | Specify length of texture's shorter side when it is initially generated                                         |
-| 6  | Constrain texture size to initial size      | If checked, texture size remain unchanged during hill climb optimisation                                                 |
-| 7  | Display painting progress                   | Shows the painting progress in real time                                                             |
+| 5  | Initial texture size                        | Specify the length of texture's shorter side when it is initially generated                                         |
+| 6  | Constrain texture size to initial size      | If checked, texture sizes remain unchanged during hill climb optimisation                                                 |
+| 7  | Display painting progress                   | Shows the painting progress in real-time                                                             |
 | 7a | Show improvement of individual textures      | Show optimisation process of texture placement                                          |
 | 7b | Display final image after painting          | Shows the completed painting after all textures are applied.                                           |
 | 8  | Allow early termination of hill climbing    | Optimisation of texture placements stop if no improvement occurs after N iterations.                                 |
-| 9  | Enable vector field                         | Enforces a contstraint on texture rotation, aligning them to a specified vector field                          |
+| 9  | Enable vector field                         | Enforces a constraint on texture rotation, aligning them to a specified vector field                          |
 
 
 
@@ -123,7 +123,7 @@ Experiment with various parameters to achieve your desired style of painting
 
 
 ### Step 4: View the painting process
-If **display painting progress** was enabled, you can watch the algorithm paint in real time in a display. 
+If **display painting progress** is enabled, you can watch the algorithm paint in real-time in a display. 
 
 The pygame window can be closed to prematurely stop the painting process.
 
@@ -141,7 +141,7 @@ After the painting is completed, you can obtain the results from `hill-climb-pai
 
 
 ## Animated inputs
-You can obtain a painted version of an input GIF too
+You can obtain a painted version of an input GIF as well
 
 <p float="left">
   <img src="readme_stuff/shrek_ui.gif" height = "250"/>
@@ -153,7 +153,7 @@ You can obtain a painted version of an input GIF too
 
 ### 1) Number of textures
 
-Depending on how many textures are added to the cavas, you can obtain a painting with a desired level of detail. The following example demonstrates a painting of a cat, created from increasing number of textures.
+Depending on how many textures are added to the canvas, you can obtain a painting with a desired level of detail. The following example demonstrates a painting of a cat, created from increasing number of textures.
 
 | 100 | 200 | 300 | 400 |
 |:---:|:---:|:---:|:---:|
@@ -168,7 +168,7 @@ Depending on how many textures are added to the cavas, you can obtain a painting
 
 ### 2) Number of hill climbing steps
 
-Given a fixed number of textures, the quality of their placement can be significantly affected by the number of optimization steps used. In this application, the number of optimization steps increases linearly from `min_iterations` to `max_iterations`. In this example, 400 textures are applied with varying numbers of hill climbing steps. The painting with fewer optimization steps appears messier and more chaotic, while the one with more steps results in a cleaner and more structured composition. Finer strokes generally benefit from more precise placement to improve the overall coherence of the painting. 
+Given a fixed number of textures, the quality of their placements can be significantly affected by the number of optimization steps used. In this application, the number of optimization steps increases linearly from `min_iterations` to `max_iterations`. In this example, 400 textures are applied with varying numbers of hill climbing steps. The painting with fewer optimization steps appears messier and more chaotic, while the one with more steps results in a cleaner and more structured composition. Finer strokes generally benefit from more precise placement to improve the overall coherence of the painting. 
 
 | 1–50 steps | 50–200 steps | 500–1000 steps |
 |:----:|:------:|:--------:|
@@ -179,8 +179,7 @@ Given a fixed number of textures, the quality of their placement can be signific
 
 To generate a highly realistic and detailed painting, thousands of textures may be applied. However, as the level of detail increases, the canvas resolution eventually becomes the limiting factor, no matter how many textures are used. Typically, a canvas size of 200-300 pixels strikes a good balance between computational speed and visual quality. For finer detail, you can increase the canvas size, though this will result in longer processing times.
 
-The example below compares two paintings, each generated with 10,000 textures and identical parameter settings, except for the computational canvas size. Despite having the same output resolution, the painting 
-created on a 300px canvas appears significantly more detailed than the other one created on a 100px canvas, demonstrating the impact of computational resolution on final quality.
+The example below compares two paintings, each generated with 10,000 textures and identical parameter settings, except for the computational canvas size. Despite having the same output resolution, the painting created on a 300px canvas appears significantly more detailed than the one created on a 100px canvas, demonstrating the impact of computational resolution on final quality.
 
 
 
@@ -198,7 +197,7 @@ created on a 300px canvas appears significantly more detailed than the other one
 Aside from paint strokes, you can use various textures to create different styles of paintings.
 
 
-**Traingles, squares and circles**
+**Triangles, circles and squares**
 <p float="left">
   <img src="readme_stuff/mona_lisa_shape.jpg" height = "242"/>
   <img src="readme_stuff/wave.jpg" height = "242" /> 
@@ -207,7 +206,7 @@ Aside from paint strokes, you can use various textures to create different style
 
 
 
-**Long lines**
+**Lines**
 <p float="left">
   <img src="readme_stuff/vg.jpg" height = "240" /> 
   <img src="readme_stuff/sunflower.jpg" height = "240" /> 
@@ -290,7 +289,7 @@ We calculate pixel errors again using the same formula but with the texture draw
 
 **3) Obtain the difference between errors**
 
-The final score is calculated by taking the difference in errors before and after the texture was added. As seen in the color map plot, textures that are well placed receive a higher score as they reduce the total pixel error between the canvas and target image.
+The final score is calculated by taking the difference in errors before and after the texture was added. As seen in the color map plot, textures that are well-placed receive a higher score as they reduce the total pixel error between the canvas and target image.
 ![Image](/readme_stuff/good_score.jpg "Target, texture and canvas")
 <br><br>
 #### **Penalizing sub-optimal placements**
@@ -321,7 +320,7 @@ By repeatedly applying the same optimization technique across several hundred st
 ## Optimizations Implemented
 
 ### Numba Acceleration
-The painting algorithm would not be feasible in pure Python due to its performance limitations. As an interpreted language, Python is significantly slower for numerical operations and array processing. By leveraging a just-in-time (JIT) compiler like Numba, Python functions can be compiled into optimized machine code at runtime, delivering near-C performance. This dramatically speeds up critical components such as scoring and rasterization.
+In my first few prototypes, I quickly realised that the painting algorithm would not be feasible in pure Python due to its performance limitations. As an interpreted language, Python is significantly slower for numerical operations and array processing. By leveraging a just-in-time (JIT) compiler like Numba, Python functions can be compiled into optimized machine code at runtime, delivering near-C performance. This dramatically speeds up critical components such as scoring and rasterization.
 
 ### Efficient Scoring and Rasterization
 Rather than comparing the entire canvas to the target image for each stroke, the scoring function calculates the per-pixel contribution of a stroke directly. This avoids unnecessary computation, which is especially important when placing small textures on a large canvas, where full-image comparisons would be too slow.
@@ -329,35 +328,28 @@ Rather than comparing the entire canvas to the target image for each stroke, the
 A scanline rasterization algorithm is used to identify which pixels are actually affected by the texture. This means operations are only applied to non-transparent regions, improving efficiency by skipping unnecessary calculations over fully transparent areas.
 
 ### Optimized for CPU
-This application is fully capable of running on a slow laptop. It takes advantage of multiprocessing to ensure that painting performance is not bottlenecked by tasks such as exporting GIF frames or updating the painting progress window.
+Hill Climb Painter is fully capable of running on a slow laptop. It takes advantage of multiprocessing to ensure that painting performance is not bottlenecked by tasks such as exporting GIF frames or updating the painting progress window.
 
 ## Inspiration
-This project was inspired by [Primitive](https://github.com/fogleman/primitive), a fantastic project by Michael Fogleman that uses hill climbing to recreate images using geometric shapes. My goal was to generalize this technique to support arbitrary textures rather than just primitives, while also providing a UI for selecting textures and target images.
+This project was inspired by [Primitive](https://github.com/fogleman/primitive), a fantastic project by Michael Fogleman that uses hill climbing to recreate images using geometric shapes. Building on this concept, my project extends the hill-climbing painting technique to incorporate arbitrary textures beyond primitives. Additionally, it includes a user interface for selecting textures and target images, enhancing flexibility and usability.
 
-I was also influenced by [Spu7Nix](https://www.youtube.com/watch?v=6aXx6RA1IK4), who explored a similar idea in the video *Generating Videos in Geometry Dash with Evolution*. His insights on texture scoring helped guide my approach to evaluating brush strokes effectively.
-
+I was also influenced by [Spu7Nix](https://www.youtube.com/watch?v=6aXx6RA1IK4), who explored a similar idea in the video *Generating Videos in Geometry Dash with Evolution*. His approach to texture scoring provided valuable insights, pointing me in the right direction in my approach to evaluating the goodness of fit of texture placements.
 
 ## Final Thoughts
-Building this project was a lot of fun. I created a few smaller test repositories along the way to try out different strategies before settling on the current design.
+Coding this project was a fun and challenging experience. Through trial and error, I created several smaller prototype projects to experiment with different strategies and validate concepts before finalizing the current design.
 
-One limitation of the current implementation is that texture placements often get stuck in local minima, resulting in suboptimal stroke positioning. A potential improvement would be to sample several random positions before committing to a hill climbing run. This could help identify better starting points, leading to higher-quality placements and faster convergence.
+One limitation of the current implementation is that texture placements often get stuck in local minima, resulting in suboptimal stroke positioning. A potential improvement would be to sample multiple random starting positions before initiating a hill-climbing run. This could lead to better initial points, improving placement quality and accelerating convergence.
 
-While the codebase has grown messy and is admittedly hard to maintain, I’m still satisfied with the result. It accomplished what I set out to do: Generate painted art algorithmically for free without relying on large language models.
-
-
-
-
-
+Though the codebase has admittedly grown complex and hard to maintain, I am satisfied with the result. The project not only meets its objectives but has surpassed my expectations, proving that a simple hill-climbing algorithm can produce paintings comparable to outputs from large language models, all without relying on GPU acceleration.
 
 
 ## Gallery
 
-Here are some paintings that are genertated by Hill Climb Painter
+Here are some paintings created using Hill Climb Painter
 
 ![Image](/readme_stuff/gato.jpg "Mr Cat")
 
-<!-- ![Image](/readme_stuff/shrek_gif_painted.gif "Somebody") -->
-
+Put images and gifs here (images first then gifs below)
 ---
 
 

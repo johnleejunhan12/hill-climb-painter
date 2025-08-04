@@ -1,17 +1,17 @@
 {
     "computation_size": {
-        "value": 300,
+        "value": 295,
         "min_value": 100,
         "max_value": 720
     },
     "num_textures": {
-        "value": 10000,
+        "value": 7089,
         "min_value": 100,
         "max_value": 10000
     },
     "num_hill_climb_iterations": {
         "current_lower_value": 1,
-        "current_upper_value": 227,
+        "current_upper_value": 502,
         "min_value": 1,
         "max_value": 1000
     },
@@ -21,7 +21,7 @@
         "max_value": 100
     },
     "initial_texture_width": {
-        "value": 16,
+        "value": 33,
         "min_value": 5,
         "max_value": 200
     },
@@ -37,7 +37,7 @@
         "max_value": 300
     },
     "enable_vector_field": {
-        "value": false
+        "value": true
     },
     "vector_field_f": {
         "value": "-x"
@@ -47,11 +47,66 @@
     },
     "vector_field_origin_shift": {
         "value": [
-            []
+            [
+                259,
+                115
+            ],
+            [
+                259,
+                115
+            ],
+            [
+                259,
+                115
+            ],
+            [
+                259,
+                115
+            ],
+            [
+                259,
+                115
+            ],
+            [
+                259,
+                115
+            ],
+            [
+                259,
+                115
+            ],
+            [
+                259,
+                115
+            ],
+            [
+                259,
+                115
+            ],
+            [
+                259,
+                115
+            ],
+            [
+                259,
+                115
+            ],
+            [
+                259,
+                115
+            ],
+            [
+                259,
+                115
+            ],
+            [
+                259,
+                115
+            ]
         ],
-        "target_previous_height": 360,
-        "target_previous_width": 643,
-        "target_previous_extention": ".jpg"
+        "target_previous_height": 281,
+        "target_previous_width": 500,
+        "target_previous_extention": ".gif"
     },
     "display_painting_progress": {
         "value": true
@@ -63,12 +118,12 @@
         "value": false
     },
     "output_image_size": {
-        "value": 1508,
+        "value": 3202,
         "min_value": 500,
         "max_value": 4000
     },
     "output_image_name": {
-        "value": "night_city_low_res"
+        "value": "keanu"
     },
     "create_gif_of_painting_progress": {
         "value": false
@@ -77,9 +132,9 @@
         "value": ""
     },
     "painted_gif_name": {
-        "value": "sunset"
+        "value": "demon_slayer"
     },
     "enable_multiprocessing": {
-        "value": false
+        "value": true
     }
 }

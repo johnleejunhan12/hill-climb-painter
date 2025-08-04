@@ -122,7 +122,7 @@ def select_frame_indices_for_painting(total_frames, num_frames_to_paint):
 
 def run_painting_algorithm(param_dict):
     """
-    Execute the painting algorithm using the new OOP architecture.
+    Painting algorithm orchestrator that runs the hill climbing algorithm based on UI parameters.
     
     Args:
         param_dict: Dictionary containing UI parameters
@@ -137,8 +137,9 @@ def run_painting_algorithm(param_dict):
     # 🎞️ Control how many frames are recorded to the painting progress GIF
     param_dict["probability_of_writing_intermediate_frame_to_gif"] = 0.2  # Probability of recording frames (0.0 = no frames, 1.0 = all frames)
     
-    for key, value in param_dict.items():
-        print(f"{key}: {value}")
+    # Debugging stuff
+    # for key, value in param_dict.items():
+    #     print(f"{key}: {value}")
     # quit()
     try:
         # Determine if target is a GIF based on file extension
