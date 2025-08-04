@@ -347,9 +347,46 @@ Though the codebase has admittedly grown complex and hard to maintain, I am sati
 
 Here are some paintings created using Hill Climb Painter
 
-![Image](/readme_stuff/gato.jpg "Mr Cat")
+![Image](/readme_stuff/gallery/rainy_street_2.jpg "Street")
+<!-- ![Image](/readme_stuff/gallery/nyc.jpg "NYC") -->
+![Image](/readme_stuff/gallery/cyberpunk.jpg "Cyberpunk")
 
-Put images and gifs here (images first then gifs below)
----
+![Image](/readme_stuff/gallery/kyoto.jpg "Kyoto")
 
+![Image](/readme_stuff/gallery/landscape.jpg "Bob Ross")
+
+![Image](/readme_stuff/gallery/fox.jpg "Fox")
+
+![Image](/readme_stuff/gallery/racoon.jpg "Racoon")
+
+![Image](/readme_stuff/gallery/gato.jpg "Cat")
+
+![Image](/readme_stuff/gallery/meerkat.jpg "Meerkat")
+
+![Image](/readme_stuff/gallery/peacock.jpg "Peacock")
+
+![Image](/readme_stuff/gallery/fowl.jpg "Fowl")
+
+![Image](/readme_stuff/gallery/scream.jpg "Scream")
+
+![Image](/readme_stuff/gallery/starry.jpg "Starry hurricane")
+
+![Image](/readme_stuff/gallery/vincent.jpg "Vincent van Gogh")
+
+
+![Image](/readme_stuff/gallery/binos.jpg "Girl")
+
+![Image](/readme_stuff/gallery/santa.jpg "Santa")
+
+### **(Epilepsy Warning)**
+
+![Image](/readme_stuff/gallery/starwars.jpg "Star Wars")
+
+![GIF](/readme_stuff/gallery/warp.gif "Warp")
+
+![GIF](/readme_stuff/somebody.gif "Shrek")
+
+![GIF](/readme_stuff/gallery/spidey.gif "Spiderverse")
+
+![Image](/readme_stuff/gallery/keanu.jpg "Keanu")
 

@@ -17,7 +17,8 @@ def convert_pngs_to_jpg(folder_path, quality=95, delete_original=False):
     
     if not os.path.exists(folder_path):
         raise ValueError(f"Folder path '{folder_path}' does not exist")
-    
+    print(folder_path)
+
     # Find all PNG files in the folder
     png_pattern = os.path.join(folder_path, "*.png")
     png_files = glob.glob(png_pattern, recursive=False)
@@ -78,13 +79,13 @@ def convert_pngs_to_jpg(folder_path, quality=95, delete_original=False):
 # Example usage
 if __name__ == "__main__":
     # Convert all PNGs in current directory
-    folder = "."  # Current directory
+    folder = "C:\\Git Repos\\hill-climb-painter\\readme_stuff\\gallery"  # Current directory
     
     # Or specify a different folder:
     # folder = "/path/to/your/image/folder"
     
     try:
-        converted = convert_pngs_to_jpg(folder, quality=95, delete_original=False)
+        converted = convert_pngs_to_jpg(folder, quality=95, delete_original=True)
         print(f"Converted {len(converted)} files successfully!")
     except Exception as e:
         print(f"Error: {e}")
